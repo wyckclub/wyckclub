@@ -1,61 +1,60 @@
-'use client';
-
-import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { useAccount, useBalance } from 'wagmi';
-
 export default function Home() {
-  const { address, isConnected } = useAccount();
-  const { data: balance } = useBalance({ address });
-
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col">
-      {/* HEADER: Navigation bar with Connect Wallet button on the top-right */}
-      <header className="w-full border-b border-slate-800 px-6 py-4 flex justify-between items-center">
-        {/* Brand Logo / Title */}
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center font-bold text-xl">
-            W
-          </div>
-          <span className="text-xl font-bold tracking-wide">WYCK CLUB</span>
-        </div>
+    <main className="max-w-5xl mx-auto p-6 space-y-16">
+      <section className="text-center py-16 space-y-4">
+        <h1 className="text-5xl font-extrabold text-blue-500">WYCK CLUB</h1>
+        <p className="text-slate-400 max-w-2xl mx-auto text-lg">
+          24/7 token tracking on the Base network. WyckClub scans and surfaces tokens accumulated by
+          strong players using Wyckoff-style patterns, before the crowd notices.
+        </p>
+      </section>
 
-        {/* Connect Wallet Button (Top-Right) */}
-        <div>
-          <ConnectButton 
-            chainStatus="icon" 
-            showBalance={false}
-          />
-        </div>
-      </header>
+      <section className="grid md:grid-cols-3 gap-6">
+        <FeatureCard
+          title="24/7 Tracking"
+          desc="Continuous monitoring of token activity across the Base ecosystem, no downtime."
+        />
+        <FeatureCard
+          title="Wyckoff Detection"
+          desc="Spot accumulation and distribution patterns driven by strong holders."
+        />
+        <FeatureCard
+          title="Actionable Signals"
+          desc="A live scoring system ranks tokens so you focus only on the strongest setups."
+        />
+      </section>
 
-      {/* MAIN CONTENT AREA */}
-      <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-        {!isConnected ? (
-          <div className="max-w-md space-y-4">
-            <h1 className="text-4xl font-extrabold text-blue-500">Connect EVM Wallet</h1>
-            <p className="text-slate-400">
-              Please click the button at the top-right corner to connect your wallet to Base Network.
-            </p>
-          </div>
-        ) : (
-          <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl max-w-md w-full text-left space-y-4 shadow-xl">
-            <h2 className="text-xl font-bold text-green-400 flex items-center gap-2">
-              <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
-              Wallet Connected
-            </h2>
-            <div className="space-y-2 text-sm text-slate-300">
-              <p><strong className="text-slate-500">Address:</strong></p>
-              <p className="font-mono bg-slate-950 p-2 rounded text-xs text-blue-400 break-all">
-                {address}
-              </p>
-              <p className="pt-2">
-                <strong className="text-slate-500">ETH Balance:</strong>{' '}
-                {balance ? `${parseFloat(balance.formatted).toFixed(4)} ${balance.symbol}` : 'Loading...'}
-              </p>
-            </div>
-          </div>
-        )}
-      </main>
+      <section className="grid md:grid-cols-2 gap-6">
+        <PlanCard
+          name="Pro Plan"
+          requirement="Hold 10,000,000+ WYCK tokens"
+          desc="Unlock the full token tracker table, combining data from all monitored categories."
+        />
+        <PlanCard
+          name="Vip Plan"
+          requirement="Hold 50,000,000+ WYCK tokens"
+          desc="Premium features, coming soon."
+        />
+      </section>
+    </main>
+  );
+}
+
+function FeatureCard({ title, desc }: { title: string; desc: string }) {
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-2">
+      <h3 className="text-blue-400 font-bold text-lg">{title}</h3>
+      <p className="text-slate-400 text-sm">{desc}</p>
+    </div>
+  );
+}
+
+function PlanCard({ name, requirement, desc }: { name: string; requirement: string; desc: string }) {
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-2">
+      <h3 className="text-xl font-bold text-blue-400">{name}</h3>
+      <p className="text-blue-300 text-xs font-mono">{requirement}</p>
+      <p className="text-slate-400 text-sm">{desc}</p>
     </div>
   );
 }

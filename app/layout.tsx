@@ -1,34 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google"; // Hoặc font mặc định dự án bạn vừa tạo
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-// 1. Import file Providers vừa tạo ở Bước 3
 import { Providers } from "./providers";
+import { Header } from "@/components/Header";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Wyck Club - Base Ecosystem",
-  description: "Web3 App on Base Network",
+  title: "WyckClub - Base Ecosystem Token Tracker",
+  description: "Track tokens controlled by strong Wyckoff-style players on Base network.",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {/* 2. Bọc thẻ <Providers> quanh {children} ở đây */}
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-950 text-white`}>
         <Providers>
+          <Header />
           {children}
         </Providers>
       </body>
