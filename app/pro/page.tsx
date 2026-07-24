@@ -3,25 +3,31 @@
 import { useEffect, useState } from 'react';
 import { useTokenGate, PRO_THRESHOLD } from '@/lib/tokenGate';
 import { fetchAllCategories, TokenEntry } from '@/lib/tokenApi';
+import { prefetchDexDataBatch, getCachedDexData } from '@/lib/dexData';
+import { formatCap } from '@/lib/format';
+import { ScoreBadge } from '@/components/ScoreBadge';
+import { HistoryStrip } from '@/components/HistoryStrip';
 
-function formatCap(cap: number | null) {
-  if (cap == null || isNaN(cap)) return 'N/A';
-  if (cap >= 1_000_000) return '$' + (cap / 1_000_000).toFixed(2) + 'M';
-  if (cap >= 1_000) return '$' + (cap / 1_000).toFixed(1) + 'K';
-  return '$' + cap.toFixed(0);
-}
+type SortCol = 'marketCap' | 'liq' | 'vol24h' | 'score' | 'change24h' | 'snapshot' | null;
 
 export default function ProPlanPage() {
   const { isConnected, isLoading, amount, hasAccess } = useTokenGate(PRO_THRESHOLD);
   const [tokens, setTokens] = useState<TokenEntry[]>([]);
   const [loadError, setLoadError] = useState('');
   const [loadingData, setLoadingData] = useState(false);
+  const [dexReady, setDexReady] = useState(false);
+  const [sortCol, setSortCol] = useState<SortCol>(null);
+  const [sortDir, setSortDir] = useState<1 | -1>(1);
 
   useEffect(() => {
     if (!hasAccess) return;
     setLoadingData(true);
     fetchAllCategories()
-      .then(setTokens)
+      .then(async (data) => {
+        setTokens(data);
+        await prefetchDexDataBatch(data.map((t) => t.CA));
+        setDexReady(true);
+      })
       .catch((e) => setLoadError(e.message))
       .finally(() => setLoadingData(false));
   }, [hasAccess]);
@@ -37,8 +43,40 @@ export default function ProPlanPage() {
     );
   }
 
+  function getSortValue(t: TokenEntry, col: SortCol): number {
+    if (col === 'marketCap') return t.latestMarketCap ?? -Infinity;
+    if (col === 'score') return t.latestScore ?? -Infinity;
+    const d = getCachedDexData(t.CA);
+    if (col === 'change24h') return d?.h24 ?? -Infinity;
+    if (col === 'vol24h') return d?.vol24h ?? -Infinity;
+    if (col === 'liq') return d?.liq ?? -Infinity;
+    if (col === 'snapshot') {
+      if (d?.priceUsd == null || !t.latestPrice) return -Infinity;
+      return (d.priceUsd - t.latestPrice) / t.latestPrice;
+    }
+    return 0;
+  }
+
+  function handleSort(col: SortCol) {
+    setSortDir(sortCol === col ? (sortDir === 1 ? -1 : 1) : 1);
+    setSortCol(col);
+  }
+
+  const sortedTokens = sortCol
+    ? [...tokens].sort((a, b) => (getSortValue(a, sortCol) - getSortValue(b, sortCol)) * sortDir)
+    : tokens;
+
+  const headers: { col: SortCol; label: string }[] = [
+    { col: 'marketCap', label: 'Market Cap' },
+    { col: 'liq', label: 'Liquidity' },
+    { col: 'vol24h', label: 'Vol 24h' },
+    { col: 'score', label: 'Score' },
+    { col: 'change24h', label: 'Change 24h' },
+    { col: 'snapshot', label: 'Snapshot Change' },
+  ];
+
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="w-full px-4 py-6">
       <h1 className="text-2xl font-bold text-blue-400 mb-4">Pro Plan - Token Tracker</h1>
       {loadingData && <p className="text-slate-400">Loading data...</p>}
       {loadError && <p className="text-red-400">{loadError}</p>}
@@ -47,25 +85,70 @@ export default function ProPlanPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-slate-900 text-blue-400">
-                <th className="text-left p-3">Symbol</th>
-                <th className="text-left p-3">CA</th>
-                <th className="text-left p-3">Category</th>
-                <th className="text-left p-3">Market Cap</th>
-                <th className="text-left p-3">Score</th>
-                <th className="text-left p-3">Last Update</th>
+                <th className="text-left p-3 whitespace-nowrap">Token</th>
+                <th className="text-left p-3 whitespace-nowrap">CA</th>
+                {headers.map((h) => (
+                  <th
+                    key={h.col}
+                    onClick={() => handleSort(h.col)}
+                    className={`text-left p-3 whitespace-nowrap cursor-pointer select-none ${
+                      sortCol === h.col ? 'text-white' : ''
+                    }`}
+                  >
+                    {h.label}
+                  </th>
+                ))}
+                <th className="text-left p-3 whitespace-nowrap">7D</th>
               </tr>
             </thead>
             <tbody>
-              {tokens.map((t) => (
-                <tr key={t.CA} className="border-t border-slate-800">
-                  <td className="p-3 font-semibold">{t.symbol}</td>
-                  <td className="p-3 font-mono text-xs text-blue-400">{t.CA.slice(0, 6)}...{t.CA.slice(-4)}</td>
-                  <td className="p-3">{t.category}</td>
-                  <td className="p-3">{formatCap(t.latestMarketCap)}</td>
-                  <td className="p-3">{t.latestScoreDisplay}</td>
-                  <td className="p-3">{t.latestDate}</td>
-                </tr>
-              ))}
+              {sortedTokens.map((t) => {
+                const dex = dexReady ? getCachedDexData(t.CA) : null;
+                const change24h = dex?.h24;
+                const snapshot =
+                  dex?.priceUsd != null && t.latestPrice
+                    ? ((dex.priceUsd - t.latestPrice) / t.latestPrice) * 100
+                    : null;
+
+                return (
+                  <tr key={t.CA} className="border-t border-slate-800">
+                    <td className="p-3 font-semibold whitespace-nowrap">{t.symbol}</td>
+                    <td className="p-3 whitespace-nowrap">
+                      <a
+                        href={`https://dexscreener.com/base/${t.CA}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-xs text-blue-400 hover:underline"
+                      >
+                        {t.CA.slice(0, 6)}...{t.CA.slice(-4)}
+                      </a>
+                    </td>
+                    <td className="p-3 whitespace-nowrap">{formatCap(t.latestMarketCap)}</td>
+                    <td className="p-3 whitespace-nowrap">{dex?.liq == null ? 'N/A' : formatCap(dex.liq)}</td>
+                    <td className="p-3 whitespace-nowrap">{dex?.vol24h == null ? 'N/A' : formatCap(dex.vol24h)}</td>
+                    <td className="p-3 whitespace-nowrap">
+                      <ScoreBadge scoreDisplay={t.latestScoreDisplay} score={t.latestScore} />
+                    </td>
+                    <td
+                      className={`p-3 whitespace-nowrap ${
+                        change24h == null ? 'text-slate-500' : change24h >= 0 ? 'text-green-400' : 'text-red-400'
+                      }`}
+                    >
+                      {change24h == null ? 'N/A' : `${change24h >= 0 ? '+' : ''}${change24h.toFixed(1)}%`}
+                    </td>
+                    <td
+                      className={`p-3 whitespace-nowrap ${
+                        snapshot == null ? 'text-slate-500' : snapshot >= 0 ? 'text-green-400' : 'text-red-400'
+                      }`}
+                    >
+                      {snapshot == null ? 'N/A' : `${snapshot >= 0 ? '+' : ''}${snapshot.toFixed(0)}%`}
+                    </td>
+                    <td className="p-3">
+                      <HistoryStrip last7={t.last7} />
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
