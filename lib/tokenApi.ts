@@ -33,3 +33,18 @@ export async function fetchAllCategories(): Promise<TokenEntry[]> {
 
   return results.flat().sort((a, b) => b.latestScore - a.latestScore);
 }
+
+export interface PriceHistoryEntry {
+  date: string;
+  price: number | null;
+  score: number | null;
+  scoreDisplay: string | null;
+}
+
+export async function fetchTokenHistory(category: number, ca: string): Promise<PriceHistoryEntry[]> {
+  if (!API_BASE) throw new Error('NEXT_PUBLIC_API_BASE chưa được cấu hình');
+  const res = await fetch(`${API_BASE}/api/public/history?category=${category}&ca=${ca}`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Lỗi tải lịch sử giá');
+  const data = await res.json();
+  return data.history || [];
+}

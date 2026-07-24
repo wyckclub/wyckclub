@@ -7,6 +7,7 @@ import { prefetchDexDataBatch, getCachedDexData } from '@/lib/dexData';
 import { formatCap } from '@/lib/format';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { HistoryStrip } from '@/components/HistoryStrip';
+import { PriceChartModal } from '@/components/PriceChartModal';
 
 type SortCol = 'marketCap' | 'liq' | 'vol24h' | 'score' | 'change24h' | 'snapshot' | null;
 
@@ -18,6 +19,7 @@ export default function ProPlanPage() {
   const [dexReady, setDexReady] = useState(false);
   const [sortCol, setSortCol] = useState<SortCol>(null);
   const [sortDir, setSortDir] = useState<1 | -1>(1);
+  const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string } | null>(null);
 
   useEffect(() => {
     if (!hasAccess) return;
@@ -112,7 +114,12 @@ export default function ProPlanPage() {
 
                 return (
                   <tr key={t.CA} className="border-t border-slate-800">
-                    <td className="p-3 font-semibold whitespace-nowrap">{t.symbol}</td>
+                    <td
+                      className="p-3 font-semibold whitespace-nowrap cursor-pointer text-blue-400 hover:text-blue-300 underline decoration-dotted"
+                      onClick={() => setChartToken({ category: t.category, ca: t.CA, symbol: t.symbol })}
+                    >
+                      {t.symbol}
+                    </td>
                     <td className="p-3 whitespace-nowrap">
                       <a
                         href={`https://dexscreener.com/base/${t.CA}`}
@@ -152,6 +159,14 @@ export default function ProPlanPage() {
             </tbody>
           </table>
         </div>
+      )}
+      {chartToken && (
+        <PriceChartModal
+          category={chartToken.category}
+          ca={chartToken.ca}
+          symbol={chartToken.symbol}
+          onClose={() => setChartToken(null)}
+        />
       )}
     </div>
   );
