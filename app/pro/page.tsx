@@ -64,8 +64,8 @@ export default function ProPlanPage() {
   if (!hasAccess) {
     return (
       <GateMessage
-        title="Vip Plan Locked"
-        message={`You need at least ${VIP_THRESHOLD.toLocaleString()} tokens. Your balance: ${amount.toLocaleString()}.`}
+        title="PRO Plan Locked"
+        message={`You need at least ${PRO_THRESHOLD.toLocaleString()} tokens. Your balance: ${amount.toLocaleString()}.`}
         showBuyPrompt
       />
     );
