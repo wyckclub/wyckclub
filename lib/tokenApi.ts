@@ -67,9 +67,16 @@ function toTokenEntry(ca: string, raw: RawToken, category: number): TokenEntry {
   };
 }
 
+export const CATEGORY_LABELS: Record<number, string> = {
+  1: 'Clanker & Bankr',
+  2: 'Other Base',
+  3: 'Virtuals',
+  4: 'New Token',
+};
+
 export async function fetchAllCategories(): Promise<TokenEntry[]> {
   const results = await Promise.all(
-    [1, 2, 3].map(async (cat) => {
+    [1, 2, 3, 4].map(async (cat) => {
       const raw = await fetchCategoryRaw(cat);
       return Object.entries(raw).map(([ca, token]) => toTokenEntry(ca, token, cat));
     })

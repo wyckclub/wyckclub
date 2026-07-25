@@ -4,6 +4,7 @@ const URLS: Record<string, (string | undefined)[]> = {
   '1': [process.env.WYCK_CLAW_URL, process.env.WYCK_C3_URL],
   '2': [process.env.WYCK_B1_URL, process.env.WYCK_B2_URL],
   '3': [process.env.WYCK_V1_URL],
+  '4': [process.env.WYCK_5NEW_URL],
 };
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ cat: string }> }) {

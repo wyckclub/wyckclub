@@ -53,7 +53,7 @@ export function PriceChartModal({ category, ca, symbol, onClose }: Props) {
     >
       <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 max-w-5xl w-[90%]">
         <div className="flex justify-between items-center mb-3 text-blue-400 text-sm">
-          <span>{symbol} - Price chart by entry</span>
+          <span>WYCKSCORE & Price chart. Token: {symbol}</span>
           <div className="flex items-center gap-4">
           {livePrice != null && (
             <span className={`flex items-center gap-1.5 font-mono ${isUp ? 'text-green-400' : 'text-red-400'}`}>
@@ -151,7 +151,7 @@ function ChartSVG({ entries, livePrice }: { entries: PriceHistoryEntry[]; livePr
           const above = i % 2 === 0;
           const y = above ? p.y - 8 : p.y + 14;
           return (
-            <text key={i} x={p.x} y={y} textAnchor="middle" className="fill-slate-300 text-xs">
+            <text key={i} x={p.x} y={y} textAnchor="middle" className="fill-slate-300 text-sm font-bold">
               {p.scoreDisplay ?? '-'}
             </text>
           );

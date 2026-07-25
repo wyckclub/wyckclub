@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useTokenGate, PRO_THRESHOLD } from '@/lib/tokenGate';
-import { fetchAllCategories, TokenEntry } from '@/lib/tokenApi';
 import { prefetchDexDataBatch, getCachedDexData } from '@/lib/dexData';
 import { formatCap } from '@/lib/format';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { HistoryStrip } from '@/components/HistoryStrip';
 import { PriceChartModal } from '@/components/PriceChartModal';
+import { fetchAllCategories, TokenEntry, CATEGORY_LABELS } from '@/lib/tokenApi';
+import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
 
 type SortCol = 'marketCap' | 'liq' | 'vol24h' | 'score' | 'change24h' | 'snapshot' | null;
 
@@ -22,6 +23,7 @@ export default function ProPlanPage() {
   const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string } | null>(null);
   const [search, setSearch] = useState('');
   const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
+  const [categoryFilter, setCategoryFilter] = useState<number | 'all'>('all');
 
   useEffect(() => {
     const saved = localStorage.getItem('wyck_watchlist');
@@ -62,8 +64,9 @@ export default function ProPlanPage() {
   if (!hasAccess) {
     return (
       <GateMessage
-        title="Pro Plan Locked"
-        message={`You need at least ${PRO_THRESHOLD.toLocaleString()} tokens. Your balance: ${amount.toLocaleString()}.`}
+        title="Vip Plan Locked"
+        message={`You need at least ${VIP_THRESHOLD.toLocaleString()} tokens. Your balance: ${amount.toLocaleString()}.`}
+        showBuyPrompt
       />
     );
   }
@@ -90,12 +93,14 @@ export default function ProPlanPage() {
     setSortCol(col);
   }
 
+  const categoryFiltered = categoryFilter === 'all' ? tokens : tokens.filter((t) => t.category === categoryFilter);
+
   const filteredTokens = search.trim()
-    ? tokens.filter((t) => {
+    ? categoryFiltered.filter((t) => {
         const q = search.trim().toLowerCase();
         return t.symbol.toLowerCase().includes(q) || t.CA.toLowerCase().includes(q);
       })
-    : tokens;
+    : categoryFiltered;
 
   const baseSorted = sortCol
     ? [...filteredTokens].sort((a, b) => (getSortValue(a, sortCol) - getSortValue(b, sortCol)) * sortDir)
@@ -126,6 +131,17 @@ export default function ProPlanPage() {
           placeholder="Search token symbol or CA 0x..."
           className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
         />
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+          className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+        >
+          <option value="all">All tokens</option>
+          <option value={1}>Clanker & Bankr</option>
+          <option value={2}>Other Base</option>
+          <option value={3}>Virtuals</option>
+          <option value={4}>New tokens</option>
+        </select>
         <button
           onClick={loadData}
           disabled={loadingData}
@@ -155,6 +171,7 @@ export default function ProPlanPage() {
                   </th>
                 ))}
                 <th className="text-left p-3 whitespace-nowrap">Latest entries</th>
+                <th className="text-left p-3 whitespace-nowrap">Category</th>
                 <th className="text-left p-3 whitespace-nowrap">Watchlist</th>
               </tr>
             </thead>
@@ -208,6 +225,9 @@ export default function ProPlanPage() {
                     <td className="p-3">
                       <HistoryStrip last7={t.last7} />
                     </td>
+                    <td className="p-3 whitespace-nowrap text-slate-400 text-xs">
+                      {CATEGORY_LABELS[t.category] ?? t.category}
+                    </td>
                     <td className="p-3 whitespace-nowrap">
                       <button
                         onClick={() => toggleWatchlist(t.CA)}
@@ -236,12 +256,13 @@ export default function ProPlanPage() {
   );
 }
 
-function GateMessage({ title, message }: { title: string; message: string }) {
+function GateMessage({ title, message, showBuyPrompt }: { title: string; message: string; showBuyPrompt?: boolean }) {
   return (
     <div className="min-h-[60vh] flex items-center justify-center p-6">
       <div className="max-w-md text-center space-y-3">
         <h1 className="text-2xl font-bold text-blue-400">{title}</h1>
         <p className="text-slate-400">{message}</p>
+        {showBuyPrompt && <BuyTokenPrompt />}
       </div>
     </div>
   );
