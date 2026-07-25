@@ -32,12 +32,6 @@ interface RawToken {
 
 type RawCategoryData = Record<string, RawToken>;
 
-const CATEGORY_URLS: Record<number, string> = {
-  1: 'https://wyck.live/k/claw/exported_scores.json',
-  2: 'https://wyck.live/k/b1/exported_scores.json',
-  3: 'https://wyck.live/k/v1/exported_scores.json',
-};
-
 const rawCache = new Map<number, RawCategoryData>();
 
 async function fetchCategoryRaw(cat: number): Promise<RawCategoryData> {

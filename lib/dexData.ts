@@ -25,8 +25,12 @@ export async function prefetchDexDataBatch(caList: string[]) {
   for (let i = 0; i < need.length; i += BATCH_SIZE) {
     const chunk = need.slice(i, i + BATCH_SIZE);
     try {
-      const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${chunk.join(',')}`).then((r) => r.json());
-      const pairs = res.pairs || [];
+      const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${chunk.join(',')}`);
+      if (!res.ok) {
+        console.error('Dexscreener error, status:', res.status, res.statusText);
+      }
+      const json = await res.json();
+      const pairs = json.pairs || [];
       chunk.forEach((ca) => {
         const caPairs = pairs.filter(
           (p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase() && p.chainId === 'base'
@@ -52,5 +56,20 @@ export async function prefetchDexDataBatch(caList: string[]) {
       // bỏ qua lỗi chunk
     }
     if (i + BATCH_SIZE < need.length) await new Promise((r) => setTimeout(r, 300));
+  }
+}
+
+export async function fetchLivePrice(ca: string): Promise<number | null> {
+  try {
+    const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${ca}`).then((r) => r.json());
+    const pairs = res.pairs || [];
+    const caPairs = pairs.filter(
+      (p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase() && p.chainId === 'base'
+    );
+    const pair = caPairs[0] || pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase());
+    const priceUsd = pair?.priceUsd;
+    return priceUsd == null ? null : Number(priceUsd);
+  } catch {
+    return null;
   }
 }

@@ -20,10 +20,29 @@ export default function ProPlanPage() {
   const [sortCol, setSortCol] = useState<SortCol>(null);
   const [sortDir, setSortDir] = useState<1 | -1>(1);
   const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string } | null>(null);
+  const [search, setSearch] = useState('');
+  const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    const saved = localStorage.getItem('wyck_watchlist');
+    if (saved) setWatchlist(new Set(JSON.parse(saved)));
+  }, []);
+
+  function toggleWatchlist(ca: string) {
+    setWatchlist((prev) => {
+      const next = new Set(prev);
+      if (next.has(ca)) next.delete(ca);
+      else next.add(ca);
+      localStorage.setItem('wyck_watchlist', JSON.stringify([...next]));
+      return next;
+    });
+  }
+
+  function loadData() {
     if (!hasAccess) return;
     setLoadingData(true);
+    setLoadError('');
+    setDexReady(false);
     fetchAllCategories()
       .then(async (data) => {
         setTokens(data);
@@ -32,6 +51,10 @@ export default function ProPlanPage() {
       })
       .catch((e) => setLoadError(e.message))
       .finally(() => setLoadingData(false));
+  }
+
+  useEffect(() => {
+    loadData();
   }, [hasAccess]);
 
   if (!isConnected) return <GateMessage title="Connect your wallet" message="Connect your wallet to check Pro Plan access." />;
@@ -67,22 +90,50 @@ export default function ProPlanPage() {
     setSortCol(col);
   }
 
-  const sortedTokens = sortCol
-    ? [...tokens].sort((a, b) => (getSortValue(a, sortCol) - getSortValue(b, sortCol)) * sortDir)
+  const filteredTokens = search.trim()
+    ? tokens.filter((t) => {
+        const q = search.trim().toLowerCase();
+        return t.symbol.toLowerCase().includes(q) || t.CA.toLowerCase().includes(q);
+      })
     : tokens;
+
+  const baseSorted = sortCol
+    ? [...filteredTokens].sort((a, b) => (getSortValue(a, sortCol) - getSortValue(b, sortCol)) * sortDir)
+    : filteredTokens;
+
+  const sortedTokens = [
+    ...baseSorted.filter((t) => watchlist.has(t.CA)),
+    ...baseSorted.filter((t) => !watchlist.has(t.CA)),
+  ];
 
   const headers: { col: SortCol; label: string }[] = [
     { col: 'marketCap', label: 'Market Cap' },
     { col: 'liq', label: 'Liquidity' },
     { col: 'vol24h', label: 'Vol 24h' },
-    { col: 'score', label: 'Score' },
+    { col: 'score', label: 'WYCKSCORE' },
     { col: 'change24h', label: 'Change 24h' },
     { col: 'snapshot', label: 'Snapshot Change' },
   ];
 
   return (
     <div className="w-full px-4 py-6">
-      <h1 className="text-2xl font-bold text-blue-400 mb-4">Pro Plan - Token Tracker</h1>
+      <h2 className="text-2xl font-bold text-blue-400 mb-4">Pro Plan - WYCKSCORE Token Tracker</h2>
+      <div className="flex items-center gap-3 mb-4">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search token symbol or CA 0x..."
+          className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+        />
+        <button
+          onClick={loadData}
+          disabled={loadingData}
+          className="px-3 py-2 text-sm rounded-lg bg-slate-900 border border-slate-800 text-blue-400 hover:text-blue-300 hover:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+        >
+          {loadingData ? 'Loading...' : '↻ Refresh'}
+        </button>
+      </div>
       {loadingData && <p className="text-slate-400">Loading data...</p>}
       {loadError && <p className="text-red-400">{loadError}</p>}
       {!loadingData && !loadError && (
@@ -103,7 +154,8 @@ export default function ProPlanPage() {
                     {h.label}
                   </th>
                 ))}
-                <th className="text-left p-3 whitespace-nowrap">7D</th>
+                <th className="text-left p-3 whitespace-nowrap">Latest entries</th>
+                <th className="text-left p-3 whitespace-nowrap">Watchlist</th>
               </tr>
             </thead>
             <tbody>
@@ -155,6 +207,15 @@ export default function ProPlanPage() {
                     </td>
                     <td className="p-3">
                       <HistoryStrip last7={t.last7} />
+                    </td>
+                    <td className="p-3 whitespace-nowrap">
+                      <button
+                        onClick={() => toggleWatchlist(t.CA)}
+                        className={`text-lg ${watchlist.has(t.CA) ? 'text-yellow-400' : 'text-slate-600 hover:text-slate-400'}`}
+                        aria-label="Toggle watchlist"
+                      >
+                        ★
+                      </button>
                     </td>
                   </tr>
                 );

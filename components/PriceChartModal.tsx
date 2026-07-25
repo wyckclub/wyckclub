@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { fetchTokenHistory, PriceHistoryEntry } from '@/lib/tokenApi';
+import { fetchLivePrice } from '@/lib/dexData';
 import { formatPriceShort } from '@/lib/format';
 
 interface Props {
@@ -15,6 +16,7 @@ export function PriceChartModal({ category, ca, symbol, onClose }: Props) {
   const [entries, setEntries] = useState<PriceHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [livePrice, setLivePrice] = useState<number | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -26,6 +28,24 @@ export function PriceChartModal({ category, ca, symbol, onClose }: Props) {
       .finally(() => setLoading(false));
   }, [category, ca]);
 
+  useEffect(() => {
+    let active = true;
+    function poll() {
+      fetchLivePrice(ca).then((p) => {
+        if (active) setLivePrice(p);
+      });
+    }
+    poll();
+    const id = setInterval(poll, 15000);
+    return () => {
+      active = false;
+      clearInterval(id);
+    };
+  }, [ca]);
+
+  const e0Price = entries[entries.length - 1]?.price ?? null;
+  const isUp = livePrice != null && e0Price != null ? livePrice >= e0Price : true;
+
   return (
     <div
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
@@ -34,33 +54,52 @@ export function PriceChartModal({ category, ca, symbol, onClose }: Props) {
       <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 max-w-5xl w-[90%]">
         <div className="flex justify-between items-center mb-3 text-blue-400 text-sm">
           <span>{symbol} - Price chart by entry</span>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">✕</button>
+          <div className="flex items-center gap-4">
+          {livePrice != null && (
+            <span className={`flex items-center gap-1.5 font-mono ${isUp ? 'text-green-400' : 'text-red-400'}`}>
+              <span className={`w-2 h-2 rounded-full animate-pulse ${isUp ? 'bg-green-400' : 'bg-red-400'}`} />
+              Live: {formatPriceShort(livePrice)}
+              {e0Price != null && e0Price > 0 && (
+                <span>
+                  ({isUp ? '+' : ''}{(((livePrice - e0Price) / e0Price) * 100).toFixed(1)}%)
+                </span>
+              )}
+            </span>
+          )}
+            <button onClick={onClose} className="text-slate-400 hover:text-white">✕</button>
+          </div>
         </div>
         {loading && <div className="text-center py-10 opacity-60">Loading...</div>}
         {error && <div className="text-center py-10 opacity-60">Error: {error}</div>}
         {!loading && !error && (
           entries.length < 2
             ? <div className="text-center py-10 opacity-60">Not enough price data to draw a chart</div>
-            : <ChartSVG entries={entries} />
+            : <ChartSVG entries={entries} livePrice={livePrice} />
         )}
       </div>
     </div>
   );
 }
 
-function ChartSVG({ entries }: { entries: PriceHistoryEntry[] }) {
+function ChartSVG({ entries, livePrice }: { entries: PriceHistoryEntry[]; livePrice: number | null }) {
   const width = 960;
   const height = 520;
   const pad = { left: 64, right: 16, top: 30, bottom: 30 };
 
-  const prices = entries.map((e) => Math.log10(e.price as number));
-  let minLog = Math.min(...prices);
-  let maxLog = Math.max(...prices);
+  const hasLive = livePrice != null && livePrice > 0;
+  const totalCount = entries.length + (hasLive ? 1 : 0);
+
+  const allPrices = [
+    ...entries.map((e) => Math.log10(e.price as number)),
+    ...(hasLive ? [Math.log10(livePrice as number)] : []),
+  ];
+  let minLog = Math.min(...allPrices);
+  let maxLog = Math.max(...allPrices);
   if (minLog === maxLog) { minLog -= 0.1; maxLog += 0.1; }
 
   const innerW = width - pad.left - pad.right;
   const innerH = height - pad.top - pad.bottom;
-  const xStep = entries.length > 1 ? innerW / (entries.length - 1) : 0;
+  const xStep = totalCount > 1 ? innerW / (totalCount - 1) : 0;
 
   const points = entries.map((e, i) => {
     const x = pad.left + i * xStep;
@@ -68,7 +107,17 @@ function ChartSVG({ entries }: { entries: PriceHistoryEntry[] }) {
     return { x, y, ...e };
   });
 
-  const polyline = points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const e0Price = entries[entries.length - 1]?.price ?? null;
+  const livePoint = hasLive
+    ? {
+        x: pad.left + entries.length * xStep,
+        y: pad.top + innerH * (1 - (Math.log10(livePrice as number) - minLog) / (maxLog - minLog)),
+        price: livePrice as number,
+      }
+    : null;
+
+  const polylinePoints = [...points, ...(livePoint ? [livePoint] : [])];
+  const polyline = polylinePoints.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
 
   const tickCount = 4;
   const yTicks = Array.from({ length: tickCount + 1 }, (_, i) => {
@@ -77,6 +126,9 @@ function ChartSVG({ entries }: { entries: PriceHistoryEntry[] }) {
     const y = pad.top + innerH * (1 - i / tickCount);
     return { y, price };
   });
+
+  const isUp = livePoint && e0Price != null ? livePoint.price >= e0Price : true;
+  const liveColorClass = isUp ? 'fill-green-400' : 'fill-red-400';
 
   return (
     <div className="overflow-x-auto">
@@ -104,6 +156,24 @@ function ChartSVG({ entries }: { entries: PriceHistoryEntry[] }) {
             </text>
           );
         })}
+        {livePoint && (
+          <g>
+            <line
+              x1={livePoint.x} y1={pad.top} x2={livePoint.x} y2={height - pad.bottom}
+              className="stroke-slate-700" strokeDasharray="4 4"
+            />
+            <circle cx={livePoint.x} cy={livePoint.y} r={9} className={liveColorClass} fillOpacity={0.3}>
+              <animate attributeName="r" values="6;12;6" dur="1.4s" repeatCount="indefinite" />
+              <animate attributeName="fill-opacity" values="0.35;0;0.35" dur="1.4s" repeatCount="indefinite" />
+            </circle>
+            <circle cx={livePoint.x} cy={livePoint.y} r={5} className={liveColorClass}>
+              <title>Live: {formatPriceShort(livePoint.price)}</title>
+            </circle>
+            <text x={livePoint.x} y={pad.top - 10} textAnchor="middle" className={`${liveColorClass} text-xs font-bold`}>
+              LIVE
+            </text>
+          </g>
+        )}
       </svg>
     </div>
   );
