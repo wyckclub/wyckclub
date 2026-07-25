@@ -3,6 +3,7 @@ export interface DexData {
   priceUsd: number | null;
   vol24h: number | null;
   liq: number | null;
+  marketCap: number | null;
 }
 
 const TTL = 20 * 60 * 1000;
@@ -35,12 +36,14 @@ export async function prefetchDexDataBatch(caList: string[]) {
         const priceUsd = pair?.priceUsd;
         const vol24h = caPairs.reduce((s: number, p: any) => s + (Number(p.volume?.h24) || 0), 0);
         const liq = caPairs.reduce((s: number, p: any) => s + (Number(p.liquidity?.usd) || 0), 0);
+        const marketCap = pair?.marketCap ?? pair?.fdv;
         cache.set(ca, {
           data: {
             h24: h24 == null ? null : Number(h24),
             priceUsd: priceUsd == null ? null : Number(priceUsd),
             vol24h: caPairs.length ? vol24h : null,
             liq: caPairs.length ? liq : null,
+            marketCap: marketCap == null ? null : Number(marketCap),
           },
           timestamp: Date.now(),
         });

@@ -46,7 +46,10 @@ export default function ProPlanPage() {
   }
 
   function getSortValue(t: TokenEntry, col: SortCol): number {
-    if (col === 'marketCap') return t.latestMarketCap ?? -Infinity;
+    if (col === 'marketCap') {
+      const d = getCachedDexData(t.CA);
+      return d?.marketCap ?? -Infinity;
+    }
     if (col === 'score') return t.latestScore ?? -Infinity;
     const d = getCachedDexData(t.CA);
     if (col === 'change24h') return d?.h24 ?? -Infinity;
@@ -130,7 +133,7 @@ export default function ProPlanPage() {
                         {t.CA.slice(0, 6)}...{t.CA.slice(-4)}
                       </a>
                     </td>
-                    <td className="p-3 whitespace-nowrap">{formatCap(t.latestMarketCap)}</td>
+                    <td className="p-3 whitespace-nowrap">{dex?.marketCap == null ? 'N/A' : formatCap(dex.marketCap)}</td>
                     <td className="p-3 whitespace-nowrap">{dex?.liq == null ? 'N/A' : formatCap(dex.liq)}</td>
                     <td className="p-3 whitespace-nowrap">{dex?.vol24h == null ? 'N/A' : formatCap(dex.vol24h)}</td>
                     <td className="p-3 whitespace-nowrap">
