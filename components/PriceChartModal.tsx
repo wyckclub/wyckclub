@@ -116,8 +116,37 @@ function ChartSVG({ entries, livePrice }: { entries: PriceHistoryEntry[]; livePr
       }
     : null;
 
-  const polylinePoints = [...points, ...(livePoint ? [livePoint] : [])];
-  const polyline = polylinePoints.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  function segmentColorClass(currentScore: number, prevScores: number[]) {
+      if (prevScores.length < 3) return 'stroke-blue-400';
+      if (currentScore <= 2) return 'stroke-blue-400'; // điểm sau phải > 2 score
+
+      const avg = (prevScores[0] + prevScores[1] + prevScores[2]) / 3;
+      const aboveAvg = currentScore - avg;
+
+      if (aboveAvg > 3) return 'stroke-green-600'; // xanh lá đậm
+      if (aboveAvg > 0) return 'stroke-green-300'; // xanh lá nhạt
+      return 'stroke-blue-400';
+    }
+
+    const segments = points.slice(1).map((p, idx) => {
+      const i = idx + 1;
+      const prev = points[i - 1];
+      const prevScores = [points[i - 1]?.score, points[i - 2]?.score, points[i - 3]?.score].filter(
+        (s): s is number => s != null
+      );
+      return {
+        x1: prev.x,
+        y1: prev.y,
+        x2: p.x,
+        y2: p.y,
+        colorClass: segmentColorClass(p.score, prevScores),
+      };
+    });
+
+  if (livePoint) {
+    const last = points[points.length - 1];
+    segments.push({ x1: last.x, y1: last.y, x2: livePoint.x, y2: livePoint.y, colorClass: 'stroke-blue-400' });
+  }
 
   const tickCount = 4;
   const yTicks = Array.from({ length: tickCount + 1 }, (_, i) => {
@@ -141,7 +170,9 @@ function ChartSVG({ entries, livePrice }: { entries: PriceHistoryEntry[]; livePr
             <line x1={pad.left} y1={t.y} x2={width - pad.right} y2={t.y} className="stroke-slate-800" />
           </g>
         ))}
-        <polyline points={polyline} fill="none" className="stroke-blue-400" strokeWidth={1.5} />
+        {segments.map((s, i) => (
+                  <line key={i} x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} className={s.colorClass} strokeWidth={1.5} />
+                ))}
         {points.map((p, i) => (
           <circle key={i} cx={p.x} cy={p.y} r={3} className="fill-blue-400">
             <title>{p.date}: {formatPriceShort(p.price)} (Score {p.scoreDisplay ?? '-'})</title>
@@ -150,8 +181,17 @@ function ChartSVG({ entries, livePrice }: { entries: PriceHistoryEntry[]; livePr
         {points.map((p, i) => {
           const above = i % 2 === 0;
           const y = above ? p.y - 8 : p.y + 14;
+
+          const prevScores = [points[i - 1]?.score, points[i - 2]?.score, points[i - 3]?.score].filter(
+            (s): s is number => s != null
+          );
+          const avg = prevScores.length === 3 ? (prevScores[0] + prevScores[1] + prevScores[2]) / 3 : null;
+          const isTripleAvg = avg != null && avg > 0 && p.score > 5 && p.score > avg * 2.5;
+
+          const scoreColorClass = p.score > 7 || isTripleAvg ? 'fill-yellow-400' : 'fill-slate-300';
+
           return (
-            <text key={i} x={p.x} y={y} textAnchor="middle" className="fill-slate-300 text-sm font-bold">
+            <text key={i} x={p.x} y={y} textAnchor="middle" className={`${scoreColorClass} text-sm font-bold`}>
               {p.scoreDisplay ?? '-'}
             </text>
           );
