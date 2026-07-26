@@ -139,7 +139,7 @@ function ChartSVG({ entries, livePrice }: { entries: PriceHistoryEntry[]; livePr
         y1: prev.y,
         x2: p.x,
         y2: p.y,
-        colorClass: segmentColorClass(p.score, prevScores),
+        colorClass: p.score == null ? 'stroke-blue-400' : segmentColorClass(p.score, prevScores),
       };
     });
 
@@ -186,9 +186,10 @@ function ChartSVG({ entries, livePrice }: { entries: PriceHistoryEntry[]; livePr
             (s): s is number => s != null
           );
           const avg = prevScores.length === 3 ? (prevScores[0] + prevScores[1] + prevScores[2]) / 3 : null;
-          const isTripleAvg = avg != null && avg > 0 && p.score > 5 && p.score > avg * 2.5;
+          const isTripleAvg =
+            avg != null && avg > 0 && p.score != null && p.score > 5 && p.score > avg * 3;
 
-          const scoreColorClass = p.score > 7 || isTripleAvg ? 'fill-yellow-400' : 'fill-slate-300';
+          const scoreColorClass = (p.score ?? 0) > 8 || isTripleAvg ? 'fill-yellow-400' : 'fill-slate-300';
 
           return (
             <text key={i} x={p.x} y={y} textAnchor="middle" className={`${scoreColorClass} text-sm font-bold`}>
