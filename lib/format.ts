@@ -22,3 +22,15 @@ export function getScoreColorClass(score: number) {
   if (score >= 3) return 'text-orange-500';
   return 'text-red-500';
 }
+
+export function formatDateShort(timestamp: string | null | undefined) {
+  if (!timestamp) return '';
+  const d = new Date(timestamp);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-US', {
+    timeZone: 'UTC',
+    month: '2-digit',
+    day: '2-digit',
+    year: 'numeric',
+  });
+}

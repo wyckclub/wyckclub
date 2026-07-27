@@ -23,6 +23,8 @@ interface RawEntry {
   score: number;
   hasBuyNow: boolean;
   display: string;
+  topwhale?: string;
+  timestamp?: string;
 }
 
 interface RawToken {
@@ -89,6 +91,8 @@ export interface PriceHistoryEntry {
   price: number | null;
   score: number | null;
   scoreDisplay: string | null;
+  topwhale?: string;
+  timestamp?: string;
 }
 
 export async function fetchTokenHistory(category: number, ca: string): Promise<PriceHistoryEntry[]> {
@@ -101,5 +105,7 @@ export async function fetchTokenHistory(category: number, ca: string): Promise<P
     price: e.price,
     score: e.score,
     scoreDisplay: e.display,
+    topwhale: e.topwhale,
+    timestamp: e.timestamp,
   }));
 }

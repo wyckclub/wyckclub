@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { fetchTokenHistory, PriceHistoryEntry } from '@/lib/tokenApi';
 import { fetchLivePrice } from '@/lib/dexData';
-import { formatPriceShort } from '@/lib/format';
+import { formatPriceShort, formatDateShort } from '@/lib/format';
 
 interface Props {
   category: number;
@@ -84,7 +84,7 @@ export function PriceChartModal({ category, ca, symbol, onClose }: Props) {
 function ChartSVG({ entries, livePrice }: { entries: PriceHistoryEntry[]; livePrice: number | null }) {
   const width = 960;
   const height = 520;
-  const pad = { left: 64, right: 16, top: 30, bottom: 30 };
+  const pad = { left: 64, right: 16, top: 30, bottom: 46 };
 
   const hasLive = livePrice != null && livePrice > 0;
   const totalCount = entries.length + (hasLive ? 1 : 0);
@@ -128,19 +128,18 @@ function ChartSVG({ entries, livePrice }: { entries: PriceHistoryEntry[]; livePr
       return 'stroke-blue-400';
     }
 
+    const starredIndices = new Set<number>();
     const segments = points.slice(1).map((p, idx) => {
       const i = idx + 1;
       const prev = points[i - 1];
       const prevScores = [points[i - 1]?.score, points[i - 2]?.score, points[i - 3]?.score].filter(
         (s): s is number => s != null
       );
-      return {
-        x1: prev.x,
-        y1: prev.y,
-        x2: p.x,
-        y2: p.y,
-        colorClass: p.score == null ? 'stroke-blue-400' : segmentColorClass(p.score, prevScores),
-      };
+      const colorClass = p.score == null ? 'stroke-blue-400' : segmentColorClass(p.score, prevScores);
+      if ((colorClass === 'stroke-green-600' || colorClass === 'stroke-green-300') && p.topwhale === 'y') {
+        starredIndices.add(i);
+      }
+      return { x1: prev.x, y1: prev.y, x2: p.x, y2: p.y, colorClass };
     });
 
   if (livePoint) {
@@ -170,6 +169,22 @@ function ChartSVG({ entries, livePrice }: { entries: PriceHistoryEntry[]; livePr
             <line x1={pad.left} y1={t.y} x2={width - pad.right} y2={t.y} className="stroke-slate-800" />
           </g>
         ))}
+        {[0, Math.floor((points.length - 1) / 2), points.length - 1].map((idx) => {
+          const p = points[idx];
+          if (!p) return null;
+          const isLatest = idx === points.length - 1;
+          return (
+            <text
+              key={`date-${idx}`}
+              x={p.x}
+              y={height - 12}
+              textAnchor={isLatest ? 'end' : idx === 0 ? 'start' : 'middle'}
+              className="fill-slate-500 text-[10px]"
+            >
+              {formatDateShort(p.timestamp)}{isLatest ? ' (UTC +0)' : ''}
+            </text>
+          );
+        })}
         {segments.map((s, i) => (
                   <line key={i} x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} className={s.colorClass} strokeWidth={1.5} />
                 ))}
@@ -193,7 +208,7 @@ function ChartSVG({ entries, livePrice }: { entries: PriceHistoryEntry[]; livePr
 
           return (
             <text key={i} x={p.x} y={y} textAnchor="middle" className={`${scoreColorClass} text-sm font-bold`}>
-              {p.scoreDisplay ?? '-'}
+              {starredIndices.has(i) ? '🐋' : ''}{p.scoreDisplay ?? '-'}
             </text>
           );
         })}
