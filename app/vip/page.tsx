@@ -125,7 +125,7 @@ export default function VipPlanPage() {
             if (balRes.status !== 'success' || decRes.status !== 'success') return;
             const raw = balRes.result as bigint;
             const decimals = decRes.result as number;
-            if (raw === 0n) return;
+            if (raw === BigInt(0)) return;
             const qty = Number(raw) / 10 ** decimals;
             const dex = getCachedDexData(t.CA);
             const valueUsd = dex?.priceUsd != null ? qty * dex.priceUsd : null;
