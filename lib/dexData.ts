@@ -7,7 +7,32 @@ export interface DexData {
 }
 
 const TTL = 20 * 60 * 1000;
+const STORAGE_KEY = 'wyck_dex_cache_v1';
 const cache = new Map<string, { data: DexData; timestamp: number }>();
+
+function loadFromStorage() {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const parsed: Record<string, { data: DexData; timestamp: number }> = JSON.parse(raw);
+    const now = Date.now();
+    Object.entries(parsed).forEach(([ca, entry]) => {
+      if (now - entry.timestamp < TTL) cache.set(ca, entry);
+    });
+  } catch {}
+}
+
+function saveToStorage() {
+  if (typeof window === 'undefined') return;
+  try {
+    const obj: Record<string, { data: DexData; timestamp: number }> = {};
+    cache.forEach((v, k) => (obj[k] = v));
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+  } catch {}
+}
+
+loadFromStorage();
 
 export function getCachedDexData(ca: string): DexData | null {
   return cache.get(ca)?.data ?? null;
@@ -57,6 +82,7 @@ export async function prefetchDexDataBatch(caList: string[]) {
     }
     if (i + BATCH_SIZE < need.length) await new Promise((r) => setTimeout(r, 300));
   }
+  saveToStorage();
 }
 
 export async function fetchLivePrice(ca: string): Promise<number | null> {

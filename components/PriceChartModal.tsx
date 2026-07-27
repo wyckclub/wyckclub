@@ -53,7 +53,18 @@ export function PriceChartModal({ category, ca, symbol, onClose }: Props) {
     >
       <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 max-w-5xl w-[90%]">
         <div className="flex justify-between items-center mb-3 text-blue-400 text-sm">
-          <span>WYCKSCORE & Price chart. Token: {symbol}</span>
+          <span className="text-base">
+            Powered by{' '}
+            <a
+              href="https://x.com/WYCKSCORE"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold hover:underline"
+            >
+              @WYCKSCORE
+            </a>
+            . Token: <span className="font-bold">{symbol}</span>
+          </span>
           <div className="flex items-center gap-4">
           {livePrice != null && (
             <span className={`flex items-center gap-1.5 font-mono ${isUp ? 'text-green-400' : 'text-red-400'}`}>

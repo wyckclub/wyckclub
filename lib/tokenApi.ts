@@ -34,13 +34,17 @@ interface RawToken {
 
 type RawCategoryData = Record<string, RawToken>;
 
-const rawCache = new Map<number, RawCategoryData>();
+const rawCache = new Map<number, { data: RawCategoryData; timestamp: number }>();
+const RAW_TTL = 30 * 1000;
 
 async function fetchCategoryRaw(cat: number): Promise<RawCategoryData> {
+  const cached = rawCache.get(cat);
+  if (cached && Date.now() - cached.timestamp < RAW_TTL) return cached.data;
+
   const res = await fetch(`/api/scores/${cat}`, { cache: 'no-store' });
   if (!res.ok) throw new Error(`Lỗi tải category ${cat}`);
   const data: RawCategoryData = await res.json();
-  rawCache.set(cat, data);
+  rawCache.set(cat, { data, timestamp: Date.now() });
   return data;
 }
 
@@ -54,6 +58,7 @@ function toTokenEntry(ca: string, raw: RawToken, category: number): TokenEntry {
       price: e.price,
       score: e.score,
       scoreDisplay: e.display,
+      topwhale: e.topwhale,
     }));
 
   return {
@@ -96,9 +101,9 @@ export interface PriceHistoryEntry {
 }
 
 export async function fetchTokenHistory(category: number, ca: string): Promise<PriceHistoryEntry[]> {
-  let raw = rawCache.get(category);
-  if (!raw) raw = await fetchCategoryRaw(category);
-  const token = raw[ca];
+  let entry = rawCache.get(category);
+  if (!entry || Date.now() - entry.timestamp >= RAW_TTL) entry = { data: await fetchCategoryRaw(category), timestamp: Date.now() };
+  const token = entry.data[ca];
   if (!token) return [];
   return [...token.entries].reverse().map((e) => ({
     date: `#${e.entry}`,
@@ -108,4 +113,12 @@ export async function fetchTokenHistory(category: number, ca: string): Promise<P
     topwhale: e.topwhale,
     timestamp: e.timestamp,
   }));
+}
+
+export interface HistoryEntry {
+  date: string;
+  price: number | null;
+  score: number;
+  scoreDisplay: string;
+  topwhale?: string;
 }

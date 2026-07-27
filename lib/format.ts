@@ -34,3 +34,29 @@ export function formatDateShort(timestamp: string | null | undefined) {
     year: 'numeric',
   });
 }
+
+export function getWhaleStarredScore(latestScoreDisplay: string, last7: { score: number; topwhale?: string }[]) {
+  if (!last7 || last7.length < 4) return latestScoreDisplay;
+  const current = last7[0];
+  const prevScores = [last7[1]?.score, last7[2]?.score, last7[3]?.score].filter(
+    (s): s is number => s != null
+  );
+  if (prevScores.length < 3) return latestScoreDisplay;
+  if (current.score <= 2) return latestScoreDisplay;
+  const avg = (prevScores[0] + prevScores[1] + prevScores[2]) / 3;
+  const aboveAvg = current.score - avg;
+  const isWhaleColor = aboveAvg > 0;
+  return isWhaleColor && current.topwhale === 'y' ? `🐋${latestScoreDisplay}` : latestScoreDisplay;
+}
+
+export function getChartScoreTextColorClass(
+  latestScore: number,
+  last7: { score: number }[]
+) {
+  const prevScores = [last7[1]?.score, last7[2]?.score, last7[3]?.score].filter(
+    (s): s is number => s != null
+  );
+  const avg = prevScores.length === 3 ? (prevScores[0] + prevScores[1] + prevScores[2]) / 3 : null;
+  const isTripleAvg = avg != null && avg > 0 && latestScore > 5 && latestScore > avg * 3;
+  return latestScore > 8 || isTripleAvg ? 'text-yellow-400' : 'text-slate-300';
+}

@@ -15,7 +15,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ cat
   try {
     const results = await Promise.all(
       urls.map(async (url) => {
-        const res = await fetch(url, { cache: 'no-store' });
+        const res = await fetch(url, { next: { revalidate: 20 } });
         if (!res.ok) throw new Error(`Upstream error: ${url}`);
         return res.json();
       })
