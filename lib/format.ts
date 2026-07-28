@@ -2,8 +2,8 @@ export function formatCap(cap: number | null | undefined) {
   if (cap == null || isNaN(cap)) return 'N/A';
   const n = Number(cap);
   if (n >= 1_000_000) return '$' + (n / 1_000_000).toFixed(2) + 'M';
-  if (n >= 1_000) return '$' + (n / 1_000).toFixed(1) + 'K';
-  return '$' + n.toFixed(0);
+  if (n >= 1_000) return '$' + Math.round(n / 1_000) + 'K';
+  return '$' + Math.round(n);
 }
 
 export function formatPriceShort(price: number | null | undefined) {
@@ -49,6 +49,16 @@ export function getWhaleStarredScore(latestScoreDisplay: string, last7: { score:
   return isWhaleColor && current.topwhale === 'y' ? `🐋${latestScoreDisplay}` : latestScoreDisplay;
 }
 
+export function hasDoubleWhaleStreak(last7: { score: number; topwhale?: string }[]) {
+  if (!last7 || last7.length < 2) return false;
+  for (let i = 0; i < last7.length - 1; i++) {
+    const newer = last7[i];
+    const older = last7[i + 1];
+    if (newer.topwhale === 'y' && older.topwhale === 'y' && newer.score >= older.score) return true;
+  }
+  return false;
+}
+
 export function getChartScoreTextColorClass(
   latestScore: number,
   last7: { score: number }[]
@@ -59,4 +69,26 @@ export function getChartScoreTextColorClass(
   const avg = prevScores.length === 3 ? (prevScores[0] + prevScores[1] + prevScores[2]) / 3 : null;
   const isTripleAvg = avg != null && avg > 0 && latestScore > 5 && latestScore > avg * 3;
   return latestScore > 8 || isTripleAvg ? 'text-yellow-400' : 'text-slate-300';
+}
+
+function isWhaleStarred(last7: { score: number; topwhale?: string }[], idx: number): boolean {
+  const current = last7[idx];
+  if (!current || current.topwhale !== 'y') return false;
+  const prevScores = [last7[idx + 1]?.score, last7[idx + 2]?.score, last7[idx + 3]?.score].filter(
+    (s): s is number => s != null
+  );
+  if (prevScores.length < 3) return false;
+  if (current.score <= 2) return false;
+  const avg = (prevScores[0] + prevScores[1] + prevScores[2]) / 3;
+  return current.score - avg > 0;
+}
+
+export function hasWhaleAtE0E1(
+  last7: { score: number; topwhale?: string }[],
+  requireScoreGte: boolean
+) {
+  if (!last7 || last7.length < 2) return false;
+  if (!isWhaleStarred(last7, 0) || !isWhaleStarred(last7, 1)) return false;
+  if (requireScoreGte && last7[0].score < last7[1].score) return false;
+  return true;
 }

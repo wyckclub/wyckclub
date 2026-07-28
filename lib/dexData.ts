@@ -4,6 +4,7 @@ export interface DexData {
   vol24h: number | null;
   liq: number | null;
   marketCap: number | null;
+  twitter: string | null;
 }
 
 const TTL = 20 * 60 * 1000;
@@ -36,6 +37,14 @@ loadFromStorage();
 
 export function getCachedDexData(ca: string): DexData | null {
   return cache.get(ca)?.data ?? null;
+}
+
+function extractTwitter(pair: any): string | null {
+  const socials = pair?.info?.socials || [];
+  const tw = socials.find((s: any) => s.type === 'twitter');
+  if (!tw?.url) return null;
+  const match = tw.url.match(/(?:x|twitter)\.com\/([^/?]+)/i);
+  return match ? match[1] : null;
 }
 
 export async function prefetchDexDataBatch(caList: string[]) {
@@ -73,6 +82,7 @@ export async function prefetchDexDataBatch(caList: string[]) {
             vol24h: caPairs.length ? vol24h : null,
             liq: caPairs.length ? liq : null,
             marketCap: marketCap == null ? null : Number(marketCap),
+            twitter: extractTwitter(pair),
           },
           timestamp: Date.now(),
         });

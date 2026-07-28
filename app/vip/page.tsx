@@ -6,8 +6,8 @@ import { useTokenGate, VIP_THRESHOLD } from '@/lib/tokenGate';
 import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
 import { fetchAllCategories, TokenEntry, CATEGORY_LABELS } from '@/lib/tokenApi';
 import { prefetchDexDataBatch, getCachedDexData } from '@/lib/dexData';
-import { formatCap, getWhaleStarredScore, getChartScoreTextColorClass } from '@/lib/format';
 import { PriceChartModal } from '@/components/PriceChartModal';
+import { formatCap, getWhaleStarredScore, getChartScoreTextColorClass, hasWhaleAtE0E1 } from '@/lib/format';
 
 const erc20Abi = [
   { name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: 'account', type: 'address' }], outputs: [{ name: '', type: 'uint256' }] },
@@ -64,6 +64,50 @@ async function multicallWithRetry(
     }
     throw e;
   }
+}
+
+function getTier(t: TokenEntry): number {
+  const scoreWithWhale = getWhaleStarredScore(t.latestScoreDisplay, t.last7);
+  const hasWhale = scoreWithWhale.includes('🐋');
+  const isYellow = getChartScoreTextColorClass(t.latestScore, t.last7) === 'text-yellow-400';
+  const hasPlus = t.latestScoreDisplay.endsWith('+');
+  const streakWithScore = hasWhaleAtE0E1(t.last7, true);
+  const streak = hasWhaleAtE0E1(t.last7, false);
+
+  if (streakWithScore) return 1;
+  if (hasWhale && isYellow && hasPlus) return 2;
+  if (streak) return 3;
+  return 4;
+}
+
+function buildShareText(tokens: { symbol: string; marketCap: string; twitter: string | null }[]) {
+  const date = new Date();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+
+  const lines = tokens
+    .map((t) => `$${t.symbol} / Cap: ${t.marketCap}${t.twitter ? ` / @${t.twitter}` : ''}`)
+    .join('\n');
+
+  return `⛈️⛈️ Top #BASE tokens best positioned by #WYCKSCORE ${mm}/${dd} ⛈️⛈️\n\n${lines}\nPowered by @WYCKSCORE\n\n#bankr #clanker #virtuals`;
+}
+
+function handleShare(strongTokens: TokenEntry[]) {
+  const topTokens = strongTokens
+    .filter((t) => getTier(t) === 1 || getTier(t) === 2)
+    .map((t) => {
+      const dex = getCachedDexData(t.CA);
+      return {
+        symbol: t.symbol,
+        marketCap: dex?.marketCap == null ? 'N/A' : formatCap(dex.marketCap),
+        twitter: dex?.twitter ?? null,
+      };
+    });
+  if (!topTokens.length) return;
+
+  const text = buildShareText(topTokens);
+  const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 export default function VipPlanPage() {
@@ -260,23 +304,8 @@ export default function VipPlanPage() {
             return scoreWithWhale.includes('🐋') || colorClass === 'text-yellow-400';
           })
           .sort((a, b) => {
-            const aScore = getWhaleStarredScore(a.latestScoreDisplay, a.last7);
-            const bScore = getWhaleStarredScore(b.latestScoreDisplay, b.last7);
-            const aColor = getChartScoreTextColorClass(a.latestScore, a.last7);
-            const bColor = getChartScoreTextColorClass(b.latestScore, b.last7);
-
-            const aHasWhale = aScore.includes('🐋');
-            const bHasWhale = bScore.includes('🐋');
-            if (aHasWhale !== bHasWhale) return aHasWhale ? -1 : 1;
-
-            const aYellow = aColor === 'text-yellow-400';
-            const bYellow = bColor === 'text-yellow-400';
-            if (aYellow !== bYellow) return aYellow ? -1 : 1;
-
-            const aPlus = a.latestScoreDisplay.endsWith('+');
-            const bPlus = b.latestScoreDisplay.endsWith('+');
-            if (aPlus !== bPlus) return aPlus ? -1 : 1;
-
+            const diff = getTier(a) - getTier(b);
+            if (diff !== 0) return diff;
             return b.latestScore - a.latestScore;
           });
 
@@ -284,7 +313,15 @@ export default function VipPlanPage() {
 
         return (
           <div className="mt-10">
-            <h2 className="text-2xl font-bold text-blue-400 mb-4">Whale Activity - Strong Momentum</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-blue-400">Whale Activity - Strong Momentum</h2>
+            <button
+              onClick={() => handleShare(strongTokens)}
+              className="px-3 py-1.5 text-sm rounded-lg bg-slate-900 border border-slate-800 text-blue-400 hover:text-blue-300 hover:border-blue-500"
+            >
+              Share
+            </button>
+          </div>
             <div className="overflow-x-auto rounded-xl border border-slate-800">
               <table className="w-full text-sm">
                 <thead>
