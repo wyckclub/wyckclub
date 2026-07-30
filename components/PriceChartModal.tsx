@@ -19,6 +19,14 @@ export function PriceChartModal({ category, ca, symbol, onClose }: Props) {
   const [livePrice, setLivePrice] = useState<number | null>(null);
 
   useEffect(() => {
+    fetch('/api/stats/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'chart_view' }),
+    }).catch(() => {});
+  }, [ca]);
+
+  useEffect(() => {
     setLoading(true);
     fetchTokenHistory(category, ca)
       .then((history) => {

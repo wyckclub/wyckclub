@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useAccount } from 'wagmi';
 
 const navItems = [
   { href: '/', label: 'Home' },
@@ -12,6 +14,19 @@ const navItems = [
 
 export function Header() {
   const pathname = usePathname();
+  const { isConnected, address } = useAccount();
+  const wasConnected = useRef(false);
+
+  useEffect(() => {
+    if (isConnected && address && !wasConnected.current) {
+      fetch('/api/stats/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'connect', address }),
+      }).catch(() => {});
+    }
+    wasConnected.current = isConnected;
+  }, [isConnected, address]);
 
   return (
     <header className="w-full border-b border-slate-800 px-6 py-4 flex justify-between items-center bg-slate-950/80 backdrop-blur sticky top-0 z-50">

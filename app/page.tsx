@@ -1,4 +1,12 @@
-export default function Home() {
+import { getConnectedWalletsCount, getChartViews, getTotalTokens } from '@/lib/stats';
+
+export default async function Home() {
+  const [totalTokens, totalConnects, totalChartViews] = await Promise.all([
+    getTotalTokens(),
+    getConnectedWalletsCount(),
+    getChartViews(),
+  ]);
+
   return (
     <main className="max-w-5xl mx-auto p-6 space-y-16">
       <section className="text-center py-16 space-y-4">
@@ -10,33 +18,31 @@ export default function Home() {
       </section>
 
       <section className="grid md:grid-cols-3 gap-6">
-        <FeatureCard
-          title="24/7 Tracking"
-          desc="Continuous monitoring of token activity across the Base ecosystem, no downtime."
-        />
-        <FeatureCard
-          title="Wyckoff Detection"
-          desc="Spot accumulation and distribution patterns driven by strong holders."
-        />
-        <FeatureCard
-          title="Actionable Signals"
-          desc="A live scoring system ranks tokens so you focus only on the strongest setups."
-        />
+        <FeatureCard title="24/7 Tracking" desc="Continuous monitoring of token activity across the Base ecosystem, no downtime." />
+        <FeatureCard title="Wyckoff Detection" desc="Spot accumulation and distribution patterns driven by strong holders." />
+        <FeatureCard title="Actionable Signals" desc="A live scoring system ranks tokens so you focus only on the strongest setups." />
+      </section>
+
+      <section className="grid md:grid-cols-3 gap-6">
+        <StatCard label="Tokens Tracked" value={totalTokens.toLocaleString()} />
+        <StatCard label="Total Users" value={totalConnects.toLocaleString()} />
+        <StatCard label="Tracker Views" value={totalChartViews.toLocaleString()} />
       </section>
 
       <section className="grid md:grid-cols-2 gap-6">
-        <PlanCard
-          name="Pro Plan"
-          requirement="Hold 10,000,000+ WYCK tokens"
-          desc="Unlock the full token tracker table, combining data from all monitored categories."
-        />
-        <PlanCard
-          name="Vip Plan"
-          requirement="Hold 50,000,000+ WYCK tokens"
-          desc="Premium features, coming soon."
-        />
+        <PlanCard name="Pro Plan" requirement="Hold 10,000,000+ WYCK tokens" desc="Unlock the full token tracker table, combining data from all monitored categories." />
+        <PlanCard name="Vip Plan" requirement="Hold 50,000,000+ WYCK tokens" desc="Premium features, coming soon." />
       </section>
     </main>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center space-y-1">
+      <div className="text-3xl font-extrabold text-blue-400">{value}</div>
+      <div className="text-slate-400 text-sm">{label}</div>
+    </div>
   );
 }
 
