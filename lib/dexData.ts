@@ -88,7 +88,7 @@ export async function prefetchDexDataBatch(caList: string[]) {
         });
       });
     } catch {
-      // bỏ qua lỗi chunk
+      // skip error
     }
     if (i + BATCH_SIZE < need.length) await new Promise((r) => setTimeout(r, 300));
   }

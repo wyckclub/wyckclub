@@ -2,21 +2,23 @@
 
 import { useAccount, useBalance } from 'wagmi';
 
-export const GATE_TOKEN_ADDRESS = '0x65021a79aeef22b17cdc1b768f5e79a8618beba3';
+export const GATE_TOKEN_ADDRESS = '0x22af33fe49fd1fa80c7149773dde5890d3c76f3b';
 
 export const PRO_THRESHOLD = 1_000_000;
 export const VIP_THRESHOLD = 1_500_000;
+
+const FREE_ACCESS_MODE = true;
 
 export function useTokenGate(threshold: number) {
   const { address, isConnected } = useAccount();
   const { data: balance, isLoading } = useBalance({
     address,
     token: GATE_TOKEN_ADDRESS,
-    query: { enabled: isConnected },
+    query: { enabled: isConnected && !FREE_ACCESS_MODE },
   });
 
   const amount = balance ? parseFloat(balance.formatted) : 0;
-  const hasAccess = isConnected && amount >= threshold;
+  const hasAccess = FREE_ACCESS_MODE ? isConnected : isConnected && amount >= threshold;
 
-  return { isConnected, isLoading, amount, hasAccess };
+  return { isConnected, isLoading: FREE_ACCESS_MODE ? false : isLoading, amount, hasAccess };
 }

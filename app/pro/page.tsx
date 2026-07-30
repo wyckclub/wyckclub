@@ -18,8 +18,8 @@ export default function ProPlanPage() {
   const [loadError, setLoadError] = useState('');
   const [loadingData, setLoadingData] = useState(false);
   const [dexReady, setDexReady] = useState(false);
-  const [sortCol, setSortCol] = useState<SortCol>(null);
-  const [sortDir, setSortDir] = useState<1 | -1>(1);
+  const [sortCol, setSortCol] = useState<SortCol>('marketCap');
+  const [sortDir, setSortDir] = useState<1 | -1>(-1);
   const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string } | null>(null);
   const [search, setSearch] = useState('');
   const [watchlist, setWatchlist] = useState<Set<string>>(new Set());

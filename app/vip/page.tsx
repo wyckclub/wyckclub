@@ -20,9 +20,9 @@ interface Holding {
   valueUsd: number | null;
 }
 
-const BATCH_SIZE = 20; // 40 calls / batch, an toàn hơn cho mainnet.base.org
-const DELAY_BETWEEN_BATCHES = 500; // ms nghỉ giữa các batch
-const HOLDINGS_TTL = 1 * 60 * 1000; // cache 10 phút
+const BATCH_SIZE = 20;
+const DELAY_BETWEEN_BATCHES = 500;
+const HOLDINGS_TTL = 1 * 60 * 1000;
 const HOLDINGS_CACHE_KEY = 'wyck_holdings_cache_v1';
 
 function loadHoldingsCache(address: string): Holding[] | null {
@@ -225,18 +225,19 @@ export default function VipPlanPage() {
     );
   }
 
-  const initialLoading = !dexReady || checkingBalances;
+  const holdingsLoading = !dexReady || checkingBalances;
+  const whaleLoading = !dexReady;
 
   return (
     <div className="w-full px-4 py-6">
       <h2 className="text-2xl font-bold text-blue-400 mb-4">Vip Plan - Wallet Holdings</h2>
       {loadError && <p className="text-red-400">{loadError}</p>}
       {balanceError && <p className="text-yellow-400 text-sm mb-2">{balanceError}</p>}
-      {initialLoading && <p className="text-slate-400">Tracking Your Wallet...</p>}
-      {!initialLoading && holdings.length === 0 && (
+      {holdingsLoading && <p className="text-slate-400">Tracking Your Wallet...</p>}
+      {!holdingsLoading && holdings.length === 0 && (
         <p className="text-slate-400">Your wallet doesn't contain any tracked tokens</p>
       )}
-      {!initialLoading && holdings.length > 0 && (
+      {!holdingsLoading && holdings.length > 0 && (
         <div className="overflow-x-auto rounded-xl border border-slate-800">
           <table className="w-full text-sm">
             <thead>
@@ -310,7 +311,7 @@ export default function VipPlanPage() {
         </div>
       )}
 
-      {!initialLoading && (() => {
+      {!whaleLoading && (() => {
         const strongTokens = tokens
           .filter((t) => {
             const scoreWithWhale = getWhaleStarredScore(t.latestScoreDisplay, t.last7);

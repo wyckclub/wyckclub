@@ -10,6 +10,7 @@ const navItems = [
   { href: '/', label: 'Home' },
   { href: '/pro', label: 'Pro Plan' },
   { href: '/vip', label: 'Vip Plan' },
+  { href: '/guide', label: 'Guide' },
 ];
 
 export function Header() {
