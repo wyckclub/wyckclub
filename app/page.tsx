@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getConnectedWalletsCount, getChartViews, getTotalTokens } from '@/lib/stats';
 
 export default async function Home() {
@@ -9,12 +10,33 @@ export default async function Home() {
 
   return (
     <main className="max-w-5xl mx-auto p-6 space-y-16">
-      <section className="text-center py-16 space-y-4">
+      <section className="text-center py-16 space-y-6">
         <h1 className="text-5xl font-extrabold text-blue-500">WYCKSCORE</h1>
         <p className="text-slate-400 max-w-2xl mx-auto text-lg">
           24/7 token tracking on the Base network. WyckClub scans and surfaces tokens accumulated by
           strong players using Wyckoff-style patterns, before the crowd notices.
         </p>
+
+        <div className="flex flex-wrap justify-center gap-4 pt-4">
+          <Link
+            href="/pro"
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/20"
+          >
+            Open Pro App
+          </Link>
+          <Link
+            href="/vip"
+            className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-blue-400 font-semibold rounded-xl border border-slate-700 transition-all"
+          >
+            Vip App
+          </Link>
+          <Link
+            href="/guide"
+            className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-slate-300 font-semibold rounded-xl border border-slate-800 transition-all"
+          >
+            Guide
+          </Link>
+        </div>
       </section>
 
       <section className="grid md:grid-cols-3 gap-6">
