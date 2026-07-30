@@ -42,7 +42,7 @@ async function fetchCategoryRaw(cat: number): Promise<RawCategoryData> {
   if (cached && Date.now() - cached.timestamp < RAW_TTL) return cached.data;
 
   const res = await fetch(`/api/scores/${cat}`, { cache: 'no-store' });
-  if (!res.ok) throw new Error(`Lỗi tải category ${cat}`);
+  if (!res.ok) throw new Error(`ERROR category ${cat}`);
   const data: RawCategoryData = await res.json();
   rawCache.set(cat, { data, timestamp: Date.now() });
   return data;

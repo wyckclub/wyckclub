@@ -36,6 +36,14 @@ export default async function Home() {
           >
             Guide
           </Link>
+          <a
+            href="https://x.com/WYCKSCORE"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-slate-300 font-semibold rounded-xl border border-slate-800 transition-all"
+          >
+            X
+          </a>
         </div>
       </section>
 
