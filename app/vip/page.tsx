@@ -25,6 +25,8 @@ const DELAY_BETWEEN_BATCHES = 500;
 const HOLDINGS_TTL = 1 * 60 * 1000;
 const HOLDINGS_CACHE_KEY = 'wyck_holdings_cache_v1';
 
+type StrongSortCol = 'marketCap' | 'liq' | 'vol24h' | 'score' | 'change24h' | 'snapshot' | null;
+
 function loadHoldingsCache(address: string): Holding[] | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -80,6 +82,20 @@ function getTier(t: TokenEntry): number {
   return 4;
 }
 
+function getStrongSortValue(t: TokenEntry, col: StrongSortCol): number {
+  const d = getCachedDexData(t.CA);
+  if (col === 'marketCap') return d?.marketCap ?? -Infinity;
+  if (col === 'liq') return d?.liq ?? -Infinity;
+  if (col === 'vol24h') return d?.vol24h ?? -Infinity;
+  if (col === 'score') return t.latestScore ?? -Infinity;
+  if (col === 'change24h') return d?.h24 ?? -Infinity;
+  if (col === 'snapshot') {
+    if (d?.priceUsd == null || !t.latestPrice) return -Infinity;
+    return (d.priceUsd - t.latestPrice) / t.latestPrice;
+  }
+  return 0;
+}
+
 const SHARE_CATEGORIES: { category: number; label: string; title: string }[] = [
   { category: 3, label: 'Virtuals', title: '#VIRTUALS' },
   { category: 1, label: 'Bankr & Clanker', title: '#BANKR & #CLANKER' },
@@ -98,7 +114,7 @@ function buildShareText(
     .map((t) => `$${t.symbol} / Cap: ${t.marketCap}\nCA: ${t.ca}`)
     .join('\n\n');
 
-  return `⛈️⛈️ Top ${title} Tokens Best Positioned by @WYCKSCORE ${mm}/${dd} ⛈️⛈️\n${tokenBlocks}\n\nPowered by #WYCKSCORE on #BASE`;
+  return `⛈️ ${title} Smart Money Tracker ⛈️\nBest Positioned Tokens by @WYCKSCORE (${mm}/${dd})\n\n${tokenBlocks}\n\nPowered by #WYCKSCORE on #BASE`;
 }
 
 function handleShare(strongTokens: TokenEntry[], category: number) {
@@ -107,7 +123,10 @@ function handleShare(strongTokens: TokenEntry[], category: number) {
 
   const topTokens = strongTokens
     .filter((t) => t.category === category)
-    .filter((t) => getTier(t) === 1 || getTier(t) === 2)
+    .filter((t) => {
+      const isYellow = getChartScoreTextColorClass(t.latestScore, t.last7) === 'text-yellow-400';
+      return getTier(t) === 1 || getTier(t) === 2 || isYellow;
+    })
     .map((t) => {
       const dex = getCachedDexData(t.CA);
       return {
@@ -137,6 +156,14 @@ export default function VipPlanPage() {
   const [balanceError, setBalanceError] = useState('');
   const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string } | null>(null);
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
+
+  const [strongSortCol, setStrongSortCol] = useState<StrongSortCol>(null);
+  const [strongSortDir, setStrongSortDir] = useState<1 | -1>(-1);
+
+  function handleStrongSort(col: StrongSortCol) {
+    setStrongSortDir(strongSortCol === col ? (strongSortDir === 1 ? -1 : 1) : 1);
+    setStrongSortCol(col);
+  }
 
   // 1. Load all tokens in data + dex prices
   useEffect(() => {
@@ -227,6 +254,15 @@ export default function VipPlanPage() {
 
   const holdingsLoading = !dexReady || checkingBalances;
   const whaleLoading = !dexReady;
+
+  const strongHeaders: { col: Exclude<StrongSortCol, null>; label: string }[] = [
+    { col: 'marketCap', label: 'Market Cap' },
+    { col: 'liq', label: 'Liquidity' },
+    { col: 'vol24h', label: 'Vol 24h' },
+    { col: 'score', label: 'WYCKSCORE' },
+    { col: 'change24h', label: 'Change 24h' },
+    { col: 'snapshot', label: 'Snapshot Change' },
+  ];
 
   return (
     <div className="w-full px-4 py-6">
@@ -326,6 +362,12 @@ export default function VipPlanPage() {
 
         if (!strongTokens.length) return null;
 
+        const displayedStrongTokens = strongSortCol
+          ? [...strongTokens].sort(
+              (a, b) => (getStrongSortValue(a, strongSortCol) - getStrongSortValue(b, strongSortCol)) * strongSortDir
+            )
+          : strongTokens;
+
         return (
           <div className="mt-10">
           <div className="flex items-center justify-between mb-4">
@@ -364,17 +406,22 @@ export default function VipPlanPage() {
                   <tr className="bg-slate-900 text-blue-400">
                     <th className="text-left p-3 whitespace-nowrap">Token</th>
                     <th className="text-left p-3 whitespace-nowrap">CA</th>
-                    <th className="text-left p-3 whitespace-nowrap">Market Cap</th>
-                    <th className="text-left p-3 whitespace-nowrap">Liquidity</th>
-                    <th className="text-left p-3 whitespace-nowrap">Vol 24h</th>
-                    <th className="text-left p-3 whitespace-nowrap">WYCKSCORE</th>
-                    <th className="text-left p-3 whitespace-nowrap">Change 24h</th>
-                    <th className="text-left p-3 whitespace-nowrap">Snapshot Change</th>
+                    {strongHeaders.map((h) => (
+                      <th
+                        key={h.col}
+                        onClick={() => handleStrongSort(h.col)}
+                        className={`text-left p-3 whitespace-nowrap cursor-pointer select-none ${
+                          strongSortCol === h.col ? 'text-white' : ''
+                        }`}
+                      >
+                        {h.label}
+                      </th>
+                    ))}
                     <th className="text-left p-3 whitespace-nowrap">Category</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {strongTokens.map((t) => {
+                  {displayedStrongTokens.map((t) => {
                     const dex = getCachedDexData(t.CA);
                     const change24h = dex?.h24;
                     const snapshot =
