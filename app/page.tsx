@@ -53,15 +53,19 @@ export default async function Home() {
         <FeatureCard title="Actionable Signals" desc="A live scoring system ranks tokens so you focus only on the strongest setups." />
       </section>
 
-      <section className="grid md:grid-cols-3 gap-6">
-        <StatCard label="Tokens Tracked" value={totalTokens.toLocaleString()} />
-        <StatCard label="Total Users" value={totalConnects.toLocaleString()} />
-        <StatCard label="Tracker Views" value={totalChartViews.toLocaleString()} />
+      {/* PHẦN THỐNG KÊ ĐÃ ĐƯỢC THÊM TIÊU ĐỀ */}
+      <section className="space-y-6">
+        <h2 className="text-3xl font-bold text-center text-white">Statistics</h2>
+        <div className="grid md:grid-cols-3 gap-6">
+          <StatCard label="Tokens analyzed in depth" value={totalTokens.toLocaleString()} />
+          <StatCard label="Total Users" value={totalConnects.toLocaleString()} />
+          <StatCard label="Tracker Views" value={totalChartViews.toLocaleString()} />
+        </div>
       </section>
 
       <section className="grid md:grid-cols-2 gap-6">
-        <PlanCard name="Pro Plan" requirement="Hold 10,000,000+ WYCK tokens" desc="Unlock the full token tracker table, combining data from all monitored categories." />
-        <PlanCard name="Vip Plan" requirement="Hold 50,000,000+ WYCK tokens" desc="Premium features, coming soon." />
+        <PlanCard name="Pro Plan" requirement="Hold XX,000,000+ WYCK tokens" desc="Unlock the full token tracker table, combining data from all monitored categories." />
+        <PlanCard name="Vip Plan" requirement="Hold XX,000,000+ WYCK tokens" desc="Premium features." />
       </section>
     </main>
   );
