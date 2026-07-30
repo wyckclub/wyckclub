@@ -18,7 +18,7 @@ export function Header() {
       <div className="flex items-center gap-8">
         <Link href="/" className="flex items-center gap-2">
           <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center font-bold text-xl">W</div>
-          <span className="text-xl font-bold tracking-wide">WYCK CLUB</span>
+          <span className="text-xl font-bold tracking-wide">WYCKSCORE</span>
         </Link>
         <nav className="hidden md:flex gap-6">
           {navItems.map((item) => (

@@ -7,7 +7,7 @@ export interface DexData {
   twitter: string | null;
 }
 
-const TTL = 20 * 60 * 1000;
+const TTL = 2 * 60 * 1000;
 const STORAGE_KEY = 'wyck_dex_cache_v1';
 const cache = new Map<string, { data: DexData; timestamp: number }>();
 

@@ -21,8 +21,8 @@ interface Holding {
 }
 
 const BATCH_SIZE = 20; // 40 calls / batch, an toàn hơn cho mainnet.base.org
-const DELAY_BETWEEN_BATCHES = 1500; // ms nghỉ giữa các batch
-const HOLDINGS_TTL = 10 * 60 * 1000; // cache 10 phút
+const DELAY_BETWEEN_BATCHES = 500; // ms nghỉ giữa các batch
+const HOLDINGS_TTL = 1 * 60 * 1000; // cache 10 phút
 const HOLDINGS_CACHE_KEY = 'wyck_holdings_cache_v1';
 
 function loadHoldingsCache(address: string): Holding[] | null {
@@ -80,32 +80,45 @@ function getTier(t: TokenEntry): number {
   return 4;
 }
 
-function buildShareText(tokens: { symbol: string; marketCap: string; twitter: string | null }[]) {
+const SHARE_CATEGORIES: { category: number; label: string; title: string }[] = [
+  { category: 3, label: 'Virtuals', title: '#VIRTUALS' },
+  { category: 1, label: 'Bankr & Clanker', title: '#BANKR & #CLANKER' },
+  { category: 2, label: 'Other Base', title: '#BASE' },
+];
+
+function buildShareText(
+  tokens: { symbol: string; marketCap: string; ca: string }[],
+  title: string
+) {
   const date = new Date();
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   const dd = String(date.getDate()).padStart(2, '0');
 
-  const lines = tokens
-    .map((t) => `$${t.symbol} / Cap: ${t.marketCap}${t.twitter ? ` / @${t.twitter}` : ''}`)
-    .join('\n');
+  const tokenBlocks = tokens
+    .map((t) => `$${t.symbol} / Cap: ${t.marketCap}\nCA: ${t.ca}`)
+    .join('\n\n');
 
-  return `⛈️⛈️ Top #BASE tokens best positioned by #WYCKSCORE ${mm}/${dd} ⛈️⛈️\n\n${lines}\nPowered by @WYCKSCORE\n\n#bankr #clanker #virtuals`;
+  return `⛈️⛈️ Top ${title} Tokens Best Positioned by @WYCKSCORE ${mm}/${dd} ⛈️⛈️\n${tokenBlocks}\n\nPowered by #WYCKSCORE on #BASE`;
 }
 
-function handleShare(strongTokens: TokenEntry[]) {
+function handleShare(strongTokens: TokenEntry[], category: number) {
+  const config = SHARE_CATEGORIES.find((c) => c.category === category);
+  if (!config) return;
+
   const topTokens = strongTokens
+    .filter((t) => t.category === category)
     .filter((t) => getTier(t) === 1 || getTier(t) === 2)
     .map((t) => {
       const dex = getCachedDexData(t.CA);
       return {
         symbol: t.symbol,
         marketCap: dex?.marketCap == null ? 'N/A' : formatCap(dex.marketCap),
-        twitter: dex?.twitter ?? null,
+        ca: t.CA,
       };
     });
   if (!topTokens.length) return;
 
-  const text = buildShareText(topTokens);
+  const text = buildShareText(topTokens, config.title);
   const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank', 'noopener,noreferrer');
 }
@@ -123,6 +136,7 @@ export default function VipPlanPage() {
   const [checkingBalances, setCheckingBalances] = useState(false);
   const [balanceError, setBalanceError] = useState('');
   const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string } | null>(null);
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
 
   // 1. Load all tokens in data + dex prices
   useEffect(() => {
@@ -315,12 +329,33 @@ export default function VipPlanPage() {
           <div className="mt-10">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-blue-400">Whale Activity - Strong Momentum</h2>
-            <button
-              onClick={() => handleShare(strongTokens)}
-              className="px-3 py-1.5 text-sm rounded-lg bg-slate-900 border border-slate-800 text-blue-400 hover:text-blue-300 hover:border-blue-500"
-            >
-              Share
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShareMenuOpen((v) => !v)}
+                className="px-3 py-1.5 text-sm rounded-lg bg-slate-900 border border-slate-800 text-blue-400 hover:text-blue-300 hover:border-blue-500"
+              >
+                Share ▾
+              </button>
+              {shareMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShareMenuOpen(false)} />
+                  <div className="absolute right-0 mt-1 w-44 z-20 rounded-lg border border-slate-800 bg-slate-900 shadow-lg overflow-hidden">
+                    {SHARE_CATEGORIES.map((c) => (
+                      <button
+                        key={c.category}
+                        onClick={() => {
+                          handleShare(strongTokens, c.category);
+                          setShareMenuOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-blue-300"
+                      >
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
             <div className="overflow-x-auto rounded-xl border border-slate-800">
               <table className="w-full text-sm">
