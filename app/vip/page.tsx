@@ -7,7 +7,7 @@ import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
 import { fetchAllCategories, TokenEntry, CATEGORY_LABELS } from '@/lib/tokenApi';
 import { prefetchDexDataBatch, getCachedDexData } from '@/lib/dexData';
 import { PriceChartModal } from '@/components/PriceChartModal';
-import { formatCap, getWhaleStarredScore, getChartScoreTextColorClass, hasWhaleAtE0E1 } from '@/lib/format';
+import { formatCap, formatPriceShort, getWhaleStarredScore, getChartScoreTextColorClass, hasWhaleAtE0E1 } from '@/lib/format';
 
 const erc20Abi = [
   { name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: 'account', type: 'address' }], outputs: [{ name: '', type: 'uint256' }] },
@@ -103,7 +103,7 @@ const SHARE_CATEGORIES: { category: number; label: string; title: string }[] = [
 ];
 
 function buildShareText(
-  tokens: { symbol: string; marketCap: string; ca: string }[],
+  tokens: { symbol: string; price: string; marketCap: string; ca: string }[],
   title: string
 ) {
   const date = new Date();
@@ -111,7 +111,7 @@ function buildShareText(
   const dd = String(date.getDate()).padStart(2, '0');
 
   const tokenBlocks = tokens
-    .map((t) => `$${t.symbol} / Cap: ${t.marketCap}\nCA: ${t.ca}`)
+    .map((t) => `$${t.symbol} / ${t.price} / Cap: ${t.marketCap}\nCA: ${t.ca}`)
     .join('\n\n');
 
   return `⛈️ ${title} Smart Money Tracker ⛈️\nBest Positioned Tokens by @WYCKSCORE (${mm}/${dd})\n\n${tokenBlocks}\n\nPowered by #WYCKSCORE on #BASE`;
@@ -131,10 +131,13 @@ function handleShare(strongTokens: TokenEntry[], category: number) {
       const dex = getCachedDexData(t.CA);
       return {
         symbol: t.symbol,
+        price: dex?.priceUsd == null ? null : `$${formatPriceShort(dex.priceUsd)}`,
         marketCap: dex?.marketCap == null ? 'N/A' : formatCap(dex.marketCap),
         ca: t.CA,
       };
-    });
+    })
+    .filter((t): t is { symbol: string; price: string; marketCap: string; ca: string } => t.price !== null);
+
   if (!topTokens.length) return;
 
   const text = buildShareText(topTokens, config.title);
@@ -292,7 +295,7 @@ export default function VipPlanPage() {
               </tr>
             </thead>
             <tbody>
-              {holdings.map(({ token: t, qty, valueUsd }) => {
+              {holdings.filter((h) => hasEnoughLiq(h.token.CA)).map(({ token: t, qty, valueUsd }) => {
                 const dex = getCachedDexData(t.CA);
                 const change24h = dex?.h24;
                 const snapshot =
@@ -352,7 +355,7 @@ export default function VipPlanPage() {
           .filter((t) => {
             const scoreWithWhale = getWhaleStarredScore(t.latestScoreDisplay, t.last7);
             const colorClass = getChartScoreTextColorClass(t.latestScore, t.last7);
-            return scoreWithWhale.includes('🐋') || colorClass === 'text-yellow-400';
+            return (scoreWithWhale.includes('🐋') || colorClass === 'text-yellow-400') && hasEnoughLiq(t.CA);
           })
           .sort((a, b) => {
             const diff = getTier(a) - getTier(b);
@@ -509,4 +512,9 @@ function GateMessage({ title, message, showBuyPrompt }: { title: string; message
       </div>
     </div>
   );
+}
+
+function hasEnoughLiq(ca: string): boolean {
+  const liq = getCachedDexData(ca)?.liq;
+  return liq == null || liq >= 20000;
 }

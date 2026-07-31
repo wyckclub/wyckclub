@@ -102,9 +102,16 @@ export default function ProPlanPage() {
       })
     : categoryFiltered;
 
-  const baseSorted = sortCol
-    ? [...filteredTokens].sort((a, b) => (getSortValue(a, sortCol) - getSortValue(b, sortCol)) * sortDir)
+  const liqFilteredTokens = dexReady
+    ? filteredTokens.filter((t) => {
+        const liq = getCachedDexData(t.CA)?.liq;
+        return liq == null || liq >= 20000;
+      })
     : filteredTokens;
+
+  const baseSorted = sortCol
+    ? [...liqFilteredTokens].sort((a, b) => (getSortValue(a, sortCol) - getSortValue(b, sortCol)) * sortDir)
+    : liqFilteredTokens;
 
   const sortedTokens = [
     ...baseSorted.filter((t) => watchlist.has(t.CA)),
