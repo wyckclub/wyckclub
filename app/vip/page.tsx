@@ -163,9 +163,26 @@ export default function VipPlanPage() {
   const [strongSortCol, setStrongSortCol] = useState<StrongSortCol>(null);
   const [strongSortDir, setStrongSortDir] = useState<1 | -1>(-1);
 
+  // Data riêng cho bảng "Whale Activity - Strong Momentum" để refresh độc lập
+  const [whaleTokens, setWhaleTokens] = useState<TokenEntry[] | null>(null);
+  const [whaleRefreshing, setWhaleRefreshing] = useState(false);
+
   function handleStrongSort(col: StrongSortCol) {
     setStrongSortDir(strongSortCol === col ? (strongSortDir === 1 ? -1 : 1) : 1);
     setStrongSortCol(col);
+  }
+
+  async function refreshWhaleData() {
+    setWhaleRefreshing(true);
+    try {
+      const data = await fetchAllCategories();
+      await prefetchDexDataBatch(data.map((t) => t.CA));
+      setWhaleTokens(data);
+    } catch {
+      // giữ nguyên data cũ nếu lỗi
+    } finally {
+      setWhaleRefreshing(false);
+    }
   }
 
   // 1. Load all tokens in data + dex prices
@@ -256,7 +273,7 @@ export default function VipPlanPage() {
   }
 
   const holdingsLoading = !dexReady || checkingBalances;
-  const whaleLoading = !dexReady;
+  const whaleLoading = whaleTokens === null && !dexReady;
 
   const strongHeaders: { col: Exclude<StrongSortCol, null>; label: string }[] = [
     { col: 'marketCap', label: 'Market Cap' },
@@ -351,7 +368,9 @@ export default function VipPlanPage() {
       )}
 
       {!whaleLoading && (() => {
-        const strongTokens = tokens
+        const sourceTokens = whaleTokens ?? tokens;
+
+        const strongTokens = sourceTokens
           .filter((t) => {
             const scoreWithWhale = getWhaleStarredScore(t.latestScoreDisplay, t.last7);
             const colorClass = getChartScoreTextColorClass(t.latestScore, t.last7);
@@ -363,8 +382,6 @@ export default function VipPlanPage() {
             return b.latestScore - a.latestScore;
           });
 
-        if (!strongTokens.length) return null;
-
         const displayedStrongTokens = strongSortCol
           ? [...strongTokens].sort(
               (a, b) => (getStrongSortValue(a, strongSortCol) - getStrongSortValue(b, strongSortCol)) * strongSortDir
@@ -373,36 +390,45 @@ export default function VipPlanPage() {
 
         return (
           <div className="mt-10">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-blue-400">Whale Activity - Strong Momentum</h2>
-            <div className="relative">
-              <button
-                onClick={() => setShareMenuOpen((v) => !v)}
-                className="px-3 py-1.5 text-sm rounded-lg bg-slate-900 border border-slate-800 text-blue-400 hover:text-blue-300 hover:border-blue-500"
-              >
-                Share ▾
-              </button>
-              {shareMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShareMenuOpen(false)} />
-                  <div className="absolute right-0 mt-1 w-44 z-20 rounded-lg border border-slate-800 bg-slate-900 shadow-lg overflow-hidden">
-                    {SHARE_CATEGORIES.map((c) => (
-                      <button
-                        key={c.category}
-                        onClick={() => {
-                          handleShare(strongTokens, c.category);
-                          setShareMenuOpen(false);
-                        }}
-                        className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-blue-300"
-                      >
-                        {c.label}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-blue-400">Whale Activity - Strong Momentum</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={refreshWhaleData}
+                  disabled={whaleRefreshing}
+                  className="px-3 py-1.5 text-sm rounded-lg bg-slate-900 border border-slate-800 text-blue-400 hover:text-blue-300 hover:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {whaleRefreshing ? 'Loading...' : '↻ Refresh'}
+                </button>
+                <div className="relative">
+                  <button
+                    onClick={() => setShareMenuOpen((v) => !v)}
+                    className="px-3 py-1.5 text-sm rounded-lg bg-slate-900 border border-slate-800 text-blue-400 hover:text-blue-300 hover:border-blue-500"
+                  >
+                    Share ▾
+                  </button>
+                  {shareMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setShareMenuOpen(false)} />
+                      <div className="absolute right-0 mt-1 w-44 z-20 rounded-lg border border-slate-800 bg-slate-900 shadow-lg overflow-hidden">
+                        {SHARE_CATEGORIES.map((c) => (
+                          <button
+                            key={c.category}
+                            onClick={() => {
+                              handleShare(strongTokens, c.category);
+                              setShareMenuOpen(false);
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-blue-300"
+                          >
+                            {c.label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
             <div className="overflow-x-auto rounded-xl border border-slate-800">
               <table className="w-full text-sm">
                 <thead>
