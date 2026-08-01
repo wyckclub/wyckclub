@@ -25,9 +25,12 @@ export async function getChartViews(): Promise<number> {
 const CATEGORY_URLS = [
   process.env.WYCK_CLAW_URL,
   process.env.WYCK_C3_URL,
+  process.env.WYCK_CLAW2_URL,
   process.env.WYCK_B1_URL,
   process.env.WYCK_B2_URL,
+  process.env.WYCK_B3_URL,
   process.env.WYCK_V1_URL,
+  process.env.WYCK_V2_URL,
   process.env.WYCK_5NEW_URL,
 ].filter((u): u is string => !!u);
 

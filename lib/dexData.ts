@@ -5,6 +5,7 @@ export interface DexData {
   liq: number | null;
   marketCap: number | null;
   twitter: string | null;
+  imageUrl: string | null;
 }
 
 const TTL = 2 * 60 * 1000;
@@ -47,7 +48,10 @@ function extractTwitter(pair: any): string | null {
   return match ? match[1] : null;
 }
 
-export async function prefetchDexDataBatch(caList: string[]) {
+export async function prefetchDexDataBatch(
+  caList: string[],
+  onBatch?: () => void
+) {
   const now = Date.now();
   const need = [...new Set(caList)].filter((ca) => {
     const c = cache.get(ca);
@@ -55,7 +59,7 @@ export async function prefetchDexDataBatch(caList: string[]) {
   });
   if (!need.length) return;
 
-  const BATCH_SIZE = 10;
+  const BATCH_SIZE = 30;
   for (let i = 0; i < need.length; i += BATCH_SIZE) {
     const chunk = need.slice(i, i + BATCH_SIZE);
     try {
@@ -83,6 +87,7 @@ export async function prefetchDexDataBatch(caList: string[]) {
             liq: caPairs.length ? liq : null,
             marketCap: marketCap == null ? null : Number(marketCap),
             twitter: extractTwitter(pair),
+            imageUrl: pair?.info?.imageUrl ?? null,
           },
           timestamp: Date.now(),
         });
@@ -90,9 +95,10 @@ export async function prefetchDexDataBatch(caList: string[]) {
     } catch {
       // skip error
     }
+    saveToStorage();
+    onBatch?.();
     if (i + BATCH_SIZE < need.length) await new Promise((r) => setTimeout(r, 300));
   }
-  saveToStorage();
 }
 
 export async function fetchLivePrice(ca: string): Promise<number | null> {

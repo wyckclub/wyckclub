@@ -24,6 +24,9 @@ export default function ProPlanPage() {
   const [search, setSearch] = useState('');
   const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
   const [categoryFilter, setCategoryFilter] = useState<number | 'all'>('all');
+  const SNAPSHOT_KEY = 'wyck_pro_snapshot_v1';
+  const PAGE_SIZE = 200;
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     const saved = localStorage.getItem('wyck_watchlist');
@@ -40,22 +43,51 @@ export default function ProPlanPage() {
     });
   }
 
+  useEffect(() => {
+    setPage(1);
+  }, [search, categoryFilter, sortCol, sortDir]);
+
+  function loadSnapshot(): TokenEntry[] | null {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = localStorage.getItem(SNAPSHOT_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function saveSnapshot(data: TokenEntry[]) {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(data));
+    } catch {}
+  }
+
+  const [dexTick, setDexTick] = useState(0);
+
+  useEffect(() => {
+    const snap = loadSnapshot();
+    if (snap?.length) setTokens(snap);
+  }, []);
+
   function loadData() {
     if (!hasAccess) return;
-    setLoadingData(true);
     setLoadError('');
     setDexReady(false);
     fetchAllCategories()
       .then(async (data) => {
         setTokens(data);
-        await prefetchDexDataBatch(data.map((t) => t.CA));
+        setLoadingData(false);
+        await prefetchDexDataBatch(data.map((t) => t.CA), () => setDexTick((v) => v + 1));
         setDexReady(true);
+        saveSnapshot(data);
       })
-      .catch((e) => setLoadError(e.message))
-      .finally(() => setLoadingData(false));
+      .catch((e) => setLoadError(e.message));
   }
 
   useEffect(() => {
+    setLoadingData(true);
     loadData();
   }, [hasAccess]);
 
@@ -114,9 +146,12 @@ export default function ProPlanPage() {
     : liqFilteredTokens;
 
   const sortedTokens = [
-    ...baseSorted.filter((t) => watchlist.has(t.CA)),
-    ...baseSorted.filter((t) => !watchlist.has(t.CA)),
-  ];
+      ...baseSorted.filter((t) => watchlist.has(t.CA)),
+      ...baseSorted.filter((t) => !watchlist.has(t.CA)),
+    ];
+
+  const totalPages = Math.max(1, Math.ceil(sortedTokens.length / PAGE_SIZE));
+  const pagedTokens = sortedTokens.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const headers: { col: SortCol; label: string }[] = [
     { col: 'marketCap', label: 'Market Cap' },
@@ -160,96 +195,128 @@ export default function ProPlanPage() {
       {loadingData && <p className="text-slate-400">Loading data...</p>}
       {loadError && <p className="text-red-400">{loadError}</p>}
       {!loadingData && !loadError && (
-        <div className="overflow-x-auto rounded-xl border border-slate-800">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-slate-900 text-blue-400">
-                <th className="text-left p-3 whitespace-nowrap">Token</th>
-                <th className="text-left p-3 whitespace-nowrap">CA</th>
-                {headers.map((h) => (
-                  <th
-                    key={h.col}
-                    onClick={() => handleSort(h.col)}
-                    className={`text-left p-3 whitespace-nowrap cursor-pointer select-none ${
-                      sortCol === h.col ? 'text-white' : ''
-                    }`}
-                  >
-                    {h.label}
-                  </th>
-                ))}
-                <th className="text-left p-3 whitespace-nowrap">Latest entries</th>
-                <th className="text-left p-3 whitespace-nowrap">Category</th>
-                <th className="text-left p-3 whitespace-nowrap">Watchlist</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedTokens.map((t) => {
-                const dex = dexReady ? getCachedDexData(t.CA) : null;
-                const change24h = dex?.h24;
-                const snapshot =
-                  dex?.priceUsd != null && t.latestPrice
-                    ? ((dex.priceUsd - t.latestPrice) / t.latestPrice) * 100
-                    : null;
+        <>
+          <div className="overflow-x-auto rounded-xl border border-slate-800">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-900 text-blue-400">
+                  <th className="text-left p-3 whitespace-nowrap"></th>
+                  <th className="text-left p-3 whitespace-nowrap">Token</th>
+                  <th className="text-left p-3 whitespace-nowrap">CA</th>
+                  {headers.map((h) => (
+                    <th
+                      key={h.col}
+                      onClick={() => handleSort(h.col)}
+                      className={`text-left p-3 whitespace-nowrap cursor-pointer select-none ${
+                        sortCol === h.col ? 'text-white' : ''
+                      }`}
+                    >
+                      {h.label}
+                    </th>
+                  ))}
+                  <th className="text-left p-3 whitespace-nowrap">Latest entries</th>
+                  <th className="text-left p-3 whitespace-nowrap">Category</th>
+                  <th className="text-left p-3 whitespace-nowrap">Watchlist</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pagedTokens.map((t) => {
+                  const dex = getCachedDexData(t.CA);
+                  const change24h = dex?.h24;
+                  const snapshot =
+                    dex?.priceUsd != null && t.latestPrice
+                      ? ((dex.priceUsd - t.latestPrice) / t.latestPrice) * 100
+                      : null;
 
-                return (
-                  <tr key={t.CA} className="border-t border-slate-800">
-                    <td
-                      className="p-3 font-semibold whitespace-nowrap cursor-pointer text-blue-400 hover:text-blue-300 underline decoration-dotted"
-                      onClick={() => setChartToken({ category: t.category, ca: t.CA, symbol: t.symbol })}
-                    >
-                      {t.symbol}
-                    </td>
-                    <td className="p-3 whitespace-nowrap">
-                      <a
-                        href={`https://dexscreener.com/base/${t.CA}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-mono text-xs text-blue-400 hover:underline"
+                  return (
+                    <tr key={t.CA} className="border-t border-slate-800">
+                      <td className="p-3">
+                        {dex?.imageUrl ? (
+                          <img src={dex.imageUrl} alt={t.symbol} className="w-6 h-6 rounded object-cover" />
+                        ) : (
+                          <div className="w-6 h-6 rounded bg-slate-800" />
+                        )}
+                      </td>
+                      <td
+                        className="p-3 font-semibold whitespace-nowrap cursor-pointer text-blue-400 hover:text-blue-300 underline decoration-dotted"
+                        onClick={() => setChartToken({ category: t.category, ca: t.CA, symbol: t.symbol })}
                       >
-                        {t.CA.slice(0, 6)}...{t.CA.slice(-4)}
-                      </a>
-                    </td>
-                    <td className="p-3 whitespace-nowrap">{dex?.marketCap == null ? 'N/A' : formatCap(dex.marketCap)}</td>
-                    <td className="p-3 whitespace-nowrap">{dex?.liq == null ? 'N/A' : formatCap(dex.liq)}</td>
-                    <td className="p-3 whitespace-nowrap">{dex?.vol24h == null ? 'N/A' : formatCap(dex.vol24h)}</td>
-                    <td className="p-3 whitespace-nowrap">
-                      <ScoreBadge scoreDisplay={t.latestScoreDisplay} score={t.latestScore} />
-                    </td>
-                    <td
-                      className={`p-3 whitespace-nowrap ${
-                        change24h == null ? 'text-slate-500' : change24h >= 0 ? 'text-green-400' : 'text-red-400'
-                      }`}
-                    >
-                      {change24h == null ? 'N/A' : `${change24h >= 0 ? '+' : ''}${change24h.toFixed(1)}%`}
-                    </td>
-                    <td
-                      className={`p-3 whitespace-nowrap ${
-                        snapshot == null ? 'text-slate-500' : snapshot >= 0 ? 'text-green-400' : 'text-red-400'
-                      }`}
-                    >
-                      {snapshot == null ? 'N/A' : `${snapshot >= 0 ? '+' : ''}${snapshot.toFixed(0)}%`}
-                    </td>
-                    <td className="p-3">
-                      <HistoryStrip last7={t.last7} />
-                    </td>
-                    <td className="p-3 whitespace-nowrap text-slate-400 text-xs">
-                      {CATEGORY_LABELS[t.category] ?? t.category}
-                    </td>
-                    <td className="p-3 whitespace-nowrap">
-                      <button
-                        onClick={() => toggleWatchlist(t.CA)}
-                        className={`text-lg ${watchlist.has(t.CA) ? 'text-yellow-400' : 'text-slate-600 hover:text-slate-400'}`}
-                        aria-label="Toggle watchlist"
+                        {t.symbol}
+                      </td>
+                      <td className="p-3 whitespace-nowrap">
+                        <a
+                          href={`https://dexscreener.com/base/${t.CA}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-mono text-xs text-blue-400 hover:underline"
+                        >
+                          {t.CA.slice(0, 6)}...{t.CA.slice(-4)}
+                        </a>
+                      </td>
+                      <td className="p-3 whitespace-nowrap">{dex?.marketCap == null ? 'N/A' : formatCap(dex.marketCap)}</td>
+                      <td className="p-3 whitespace-nowrap">{dex?.liq == null ? 'N/A' : formatCap(dex.liq)}</td>
+                      <td className="p-3 whitespace-nowrap">{dex?.vol24h == null ? 'N/A' : formatCap(dex.vol24h)}</td>
+                      <td className="p-3 whitespace-nowrap">
+                        <ScoreBadge scoreDisplay={t.latestScoreDisplay} score={t.latestScore} />
+                      </td>
+                      <td
+                        className={`p-3 whitespace-nowrap ${
+                          change24h == null ? 'text-slate-500' : change24h >= 0 ? 'text-green-400' : 'text-red-400'
+                        }`}
                       >
-                        ★
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                        {change24h == null ? 'N/A' : `${change24h >= 0 ? '+' : ''}${change24h.toFixed(1)}%`}
+                      </td>
+                      <td
+                        className={`p-3 whitespace-nowrap ${
+                          snapshot == null ? 'text-slate-500' : snapshot >= 0 ? 'text-green-400' : 'text-red-400'
+                        }`}
+                      >
+                        {snapshot == null ? 'N/A' : `${snapshot >= 0 ? '+' : ''}${snapshot.toFixed(0)}%`}
+                      </td>
+                      <td className="p-3">
+                        <HistoryStrip last7={t.last7} />
+                      </td>
+                      <td className="p-3 whitespace-nowrap text-slate-400 text-xs">
+                        {CATEGORY_LABELS[t.category] ?? t.category}
+                      </td>
+                      <td className="p-3 whitespace-nowrap">
+                        <button
+                          onClick={() => toggleWatchlist(t.CA)}
+                          className={`text-lg ${watchlist.has(t.CA) ? 'text-yellow-400' : 'text-slate-600 hover:text-slate-400'}`}
+                          aria-label="Toggle watchlist"
+                        >
+                          ★
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-4">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-3 py-1.5 text-sm rounded-lg bg-slate-900 border border-slate-800 text-blue-400 hover:text-blue-300 hover:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-slate-400">
+                Page {page} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="px-3 py-1.5 text-sm rounded-lg bg-slate-900 border border-slate-800 text-blue-400 hover:text-blue-300 hover:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
       )}
       {chartToken && (
         <PriceChartModal
