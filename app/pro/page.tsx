@@ -9,6 +9,7 @@ import { HistoryStrip } from '@/components/HistoryStrip';
 import { PriceChartModal } from '@/components/PriceChartModal';
 import { fetchAllCategories, TokenEntry, CATEGORY_LABELS } from '@/lib/tokenApi';
 import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
+import { fetchGithubStats, GithubStats } from '@/lib/githubApi';
 
 type SortCol = 'marketCap' | 'liq' | 'vol24h' | 'score' | 'change24h' | 'snapshot' | null;
 
@@ -18,7 +19,7 @@ export default function ProPlanPage() {
   const [loadError, setLoadError] = useState('');
   const [loadingData, setLoadingData] = useState(false);
   const [dexReady, setDexReady] = useState(false);
-  const [sortCol, setSortCol] = useState<SortCol>('marketCap');
+  const [sortCol, setSortCol] = useState<SortCol>('vol24h');
   const [sortDir, setSortDir] = useState<1 | -1>(-1);
   const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string } | null>(null);
   const [search, setSearch] = useState('');
@@ -27,6 +28,11 @@ export default function ProPlanPage() {
   const SNAPSHOT_KEY = 'wyck_pro_snapshot_v1';
   const PAGE_SIZE = 200;
   const [page, setPage] = useState(1);
+  const [githubStats, setGithubStats] = useState<Record<string, GithubStats>>({});
+
+  useEffect(() => {
+    fetchGithubStats().then(setGithubStats);
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem('wyck_watchlist');
@@ -164,7 +170,7 @@ export default function ProPlanPage() {
 
   return (
     <div className="w-full px-4 py-6">
-      <h2 className="text-2xl font-bold text-blue-400 mb-4">Pro Plan - WYCKSCORE Token Tracker</h2>
+      <h2 className="text-2xl font-bold text-blue-400 mb-4">WYCK Pro - Whale Tracker</h2>
       <div className="flex items-center gap-3 mb-4">
         <input
           type="text"
@@ -214,9 +220,9 @@ export default function ProPlanPage() {
                       {h.label}
                     </th>
                   ))}
-                  <th className="text-left p-3 whitespace-nowrap">Latest entries</th>
-                  <th className="text-left p-3 whitespace-nowrap">Category</th>
-                  <th className="text-left p-3 whitespace-nowrap">Watchlist</th>
+                  <th className="text-left p-3 whitespace-nowrap">Github Star/Fork</th>
+                  <th className="text-left p-3 whitespace-nowrap">Commits & Repos</th>
+                  <th className="text-left p-3 whitespace-nowrap">Contributions (30days)</th>
                 </tr>
               </thead>
               <tbody>
@@ -273,9 +279,30 @@ export default function ProPlanPage() {
                       >
                         {snapshot == null ? 'N/A' : `${snapshot >= 0 ? '+' : ''}${snapshot.toFixed(0)}%`}
                       </td>
-                      <td className="p-3">
-                        <HistoryStrip last7={t.last7} />
-                      </td>
+                      {(() => {
+                        const gh = githubStats[t.CA];
+                        if (!gh) return (
+                          <>
+                            <td className="p-3 text-slate-600 text-xs">-</td>
+                            <td className="p-3 text-slate-600 text-xs">-</td>
+                            <td className="p-3 text-slate-600 text-xs">-</td>
+                          </>
+                        );
+                        return (
+                          <>
+                            <td className="p-3 whitespace-nowrap text-xs">
+                              <span className="text-yellow-400">★{gh.stars}</span>{' '}
+                              <span className="text-slate-400">⑂{gh.forks}</span>
+                            </td>
+                            <td className="p-3 whitespace-nowrap text-xs text-slate-300">
+                              {gh.commits} commits / {gh.repoCount} repos
+                            </td>
+                            <td className="p-3 whitespace-nowrap text-xs text-slate-300">
+                              {gh.totalContributions}
+                            </td>
+                          </>
+                        );
+                      })()}
                       <td className="p-3 whitespace-nowrap text-slate-400 text-xs">
                         {CATEGORY_LABELS[t.category] ?? t.category}
                       </td>

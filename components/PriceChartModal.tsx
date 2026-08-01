@@ -206,13 +206,13 @@ function isSpringPoint(idx: number) {
             <line x1={pad.left} y1={t.y} x2={width - pad.right} y2={t.y} className="stroke-slate-800" />
           </g>
         ))}
-        {[0, Math.floor((points.length - 1) / 2), points.length - 1].map((idx) => {
+        {[...new Set([0, Math.floor((points.length - 1) / 2), points.length - 1])].map((idx, i) => {
           const p = points[idx];
           if (!p) return null;
           const isLatest = idx === points.length - 1;
           return (
             <text
-              key={`date-${idx}`}
+              key={`date-${i}`}
               x={p.x}
               y={height - 12}
               textAnchor={isLatest ? 'end' : idx === 0 ? 'start' : 'middle'}
