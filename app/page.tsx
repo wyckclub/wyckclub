@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getConnectedWalletsCount, getChartViews, getTotalTokens } from '@/lib/stats';
+import Image from 'next/image';
 
 export default async function Home() {
   const [totalTokens, totalConnects, totalChartViews] = await Promise.all([
@@ -11,7 +12,10 @@ export default async function Home() {
   return (
     <main className="max-w-5xl mx-auto p-6 space-y-16">
       <section className="text-center py-16 space-y-6">
-        <h1 className="text-5xl font-extrabold text-blue-500">WYCKSCORE</h1>
+      <h1 className="flex items-center justify-center gap-3 text-5xl font-extrabold text-blue-500">
+        <Image src="/w.png" alt="WYCKSCORE" width={48} height={48} />
+        WYCKSCORE
+      </h1>
         <p className="text-slate-400 max-w-2xl mx-auto text-lg">
           24/7 token tracking on the Base network. WyckClub scans and surfaces tokens accumulated by
           strong players using Wyckoff-style patterns, before the crowd notices.

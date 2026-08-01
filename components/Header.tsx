@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
+import Image from 'next/image';
 
 const navItems = [
   { href: '/', label: 'Home' },
@@ -39,7 +40,13 @@ export function Header() {
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center font-bold text-xl">W</div>
+            <Image
+              src="/w.png"
+              alt="WYCKSCORE"
+              width={32}
+              height={32}
+              className="rounded-full"
+            />
             <span className="text-xl font-bold tracking-wide">WYCKSCORE</span>
           </Link>
           <nav className="hidden md:flex gap-6">

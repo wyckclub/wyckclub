@@ -135,6 +135,24 @@ function ChartSVG({ entries, livePrice }: { entries: PriceHistoryEntry[]; livePr
       }
     : null;
 
+function isSpringPoint(idx: number) {
+  const p = points[idx];
+  const prev = points[idx - 1];
+  const prev2 = points[idx - 2];
+
+  const springCondition =
+    !!(p && prev && prev2 &&
+    p.score != null && prev.score != null &&
+    p.price != null && prev2.price != null &&
+    p.score - prev.score > 3 &&
+    p.price < prev2.price);
+
+  const whaleCount = [idx - 1, idx - 2, idx - 3].filter((i) => starredIndices.has(i)).length;
+  const whaleStreakCondition = starredIndices.has(idx) && whaleCount >= 2;
+
+  return springCondition || whaleStreakCondition;
+}
+
   function segmentColorClass(currentScore: number, prevScores: number[]) {
       if (prevScores.length < 3) return 'stroke-blue-400';
       if (currentScore <= 2) return 'stroke-blue-400'; // điểm sau phải > 2 score
@@ -224,11 +242,32 @@ function ChartSVG({ entries, livePrice }: { entries: PriceHistoryEntry[]; livePr
             avg != null && avg > 0 && p.score != null && p.score > 5 && p.score > avg * 3;
 
           const scoreColorClass = (p.score ?? 0) > 8 || isTripleAvg ? 'fill-yellow-400' : 'fill-slate-300';
+          const label = `${starredIndices.has(i) ? '🐋' : ''}${p.scoreDisplay ?? '-'}`;
+          const spring = isSpringPoint(i);
+
+          const charWidth = starredIndices.has(i) ? 14 + (label.length - 1) * 7.5 : label.length * 7.5;
+          const boxW = charWidth + 8;
+          const boxH = 18;
 
           return (
-            <text key={i} x={p.x} y={y} textAnchor="middle" className={`${scoreColorClass} text-sm font-bold`}>
-              {starredIndices.has(i) ? '🐋' : ''}{p.scoreDisplay ?? '-'}
-            </text>
+            <g key={i}>
+              {spring && (
+                <rect
+                  x={p.x - boxW / 2}
+                  y={y - boxH + 4}
+                  width={boxW}
+                  height={boxH}
+                  rx={4}
+                  fill="#363603"
+                  fillOpacity={0.55}
+                  stroke="#ffde3ad3"
+                  strokeWidth={2}
+                />
+              )}
+              <text x={p.x} y={y} textAnchor="middle" className={`${scoreColorClass} text-sm font-bold`}>
+                {label}
+              </text>
+            </g>
           );
         })}
         {livePoint && (
