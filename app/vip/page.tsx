@@ -286,7 +286,7 @@ export default function VipPlanPage() {
 
   return (
     <div className="w-full px-4 py-6">
-      <h2 className="text-2xl font-bold text-blue-400 mb-4">Vip Plan - Wallet Holdings</h2>
+      <h2 className="text-2xl font-bold text-blue-400 mb-4">Portfolio - Wallet Holdings</h2>
       {loadError && <p className="text-red-400">{loadError}</p>}
       {balanceError && <p className="text-yellow-400 text-sm mb-2">{balanceError}</p>}
       {holdingsLoading && <p className="text-slate-400">Tracking Your Wallet...</p>}

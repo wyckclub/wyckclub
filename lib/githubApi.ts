@@ -8,7 +8,7 @@ export interface GithubStats {
 }
 
 let cache: { data: Record<string, GithubStats>; timestamp: number } | null = null;
-const TTL = 10 * 60 * 1000;
+const TTL = 1 * 60 * 1000;
 
 export async function fetchGithubStats(): Promise<Record<string, GithubStats>> {
   if (cache && Date.now() - cache.timestamp < TTL) return cache.data;
