@@ -50,13 +50,6 @@ export function Header() {
             />
             <span className="text-xl font-bold tracking-wide">WYCKSCORE</span>
           </Link>
-          <a   href={`https://bankr.bot/terminal/trade?in=ETH&out=${GATE_TOKEN_ADDRESS}&chain=base`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm font-bold text-blue-400 hover:text-blue-300"
-          >
-            $WYCK
-          </a>
           <nav className="hidden md:flex gap-6">
             {navItems.map((item) => (
             <Link
@@ -71,6 +64,13 @@ export function Header() {
             </Link>
             ))}
           </nav>
+          <a   href={`https://bankr.bot/terminal/trade?in=ETH&out=${GATE_TOKEN_ADDRESS}&chain=base`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-bold text-blue-400 hover:text-blue-300"
+          >
+            $WYCK token
+          </a>          
         </div>
         <div className="flex items-center gap-3">
           <ConnectButton chainStatus="icon" showBalance={false} />
