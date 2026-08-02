@@ -8,10 +8,10 @@ import { useAccount } from 'wagmi';
 import Image from 'next/image';
 
 const navItems = [
-  { href: '/', label: 'Home' },
-  { href: '/pro', label: 'Pro (Free)' },
-  { href: '/vip', label: 'Vip (Free)' },
-  { href: '/guide', label: 'Guide' },
+  { href: '/', label: 'Home', suffix: '' },
+  { href: '/pro', label: 'Pro', suffix: '(Free Beta)' },
+  { href: '/vip', label: 'Portfolio', suffix: '(Free Beta)' },
+  { href: '/guide', label: 'Guide', suffix: '' },
 ];
 
 export function Header() {
@@ -51,15 +51,16 @@ export function Header() {
           </Link>
           <nav className="hidden md:flex gap-6">
             {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`text-sm font-medium transition-colors ${
-                  pathname === item.href ? 'text-blue-400' : 'text-slate-400 hover:text-blue-300'
-                }`}
-              >
-                {item.label}
-              </Link>
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`text-sm font-bold transition-colors ${
+                pathname === item.href ? 'text-blue-400' : 'text-slate-400 hover:text-blue-300'
+              }`}
+            >
+              {item.label}
+              {item.suffix && <span className="ml-1 text-[10px] font-normal align-middle">{item.suffix}</span>}
+            </Link>
             ))}
           </nav>
         </div>
@@ -78,15 +79,16 @@ export function Header() {
       {menuOpen && (
         <nav className="md:hidden mt-3 flex flex-col gap-1 border-t border-slate-800 pt-3">
           {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`text-sm font-medium px-2 py-2 rounded-lg transition-colors ${
-                pathname === item.href ? 'text-blue-400 bg-slate-900' : 'text-slate-400 hover:text-blue-300'
-              }`}
-            >
-              {item.label}
-            </Link>
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`text-sm font-bold px-2 py-2 rounded-lg transition-colors ${
+              pathname === item.href ? 'text-blue-400 bg-slate-900' : 'text-slate-400 hover:text-blue-300'
+            }`}
+          >
+            {item.label}
+            {item.suffix && <span className="ml-1 text-[10px] font-normal align-middle">{item.suffix}</span>}
+          </Link>
           ))}
         </nav>
       )}

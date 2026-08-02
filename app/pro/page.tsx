@@ -288,6 +288,13 @@ export default function ProPlanPage() {
                             <td className="p-3 text-slate-600 text-xs">-</td>
                           </>
                         );
+                        if (gh.error) return (
+                          <>
+                            <td className="p-3 text-red-400/70 text-xs" colSpan={3}>
+                              GitHub check failed ({gh.username})
+                            </td>
+                          </>
+                        );
                         return (
                           <>
                             <td className="p-3 whitespace-nowrap text-xs">

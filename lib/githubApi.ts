@@ -5,6 +5,7 @@ export interface GithubStats {
   stars: number;
   forks: number;
   repoCount: number;
+  error?: boolean;
 }
 
 let cache: { data: Record<string, GithubStats>; timestamp: number } | null = null;

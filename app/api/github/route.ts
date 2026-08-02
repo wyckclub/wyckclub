@@ -1,5 +1,5 @@
 // app/api/github/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { Redis } from '@upstash/redis';
 
 const redis = new Redis({
@@ -14,33 +14,43 @@ interface GithubStats {
   stars: number;
   forks: number;
   repoCount: number;
+  error?: boolean;
 }
 
 const CACHE_KEY = 'wyck:github:stats';
-const CACHE_TTL_SECONDS = 6 * 60 * 60;
-const BATCH_SIZE = 50;
+const CACHE_TTL_SECONDS = 1 * 60 * 60;
+const BATCH_SIZE = 15;
 
 function sanitizeAlias(i: number) {
   return `u${i}`;
 }
 
-async function fetchBatch(usernames: string[]): Promise<Record<string, GithubStats | null>> {
+async function fetchBatch(usernames: string[], retries = 2): Promise<Record<string, GithubStats | null>> {
   const to = new Date();
   const from = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
 
   const fields = usernames
     .map(
       (login, i) => `
-    ${sanitizeAlias(i)}: user(login: ${JSON.stringify(login)}) {
-      contributionsCollection(from: "${from.toISOString()}", to: "${to.toISOString()}") {
-        totalCommitContributions
-        contributionCalendar { totalContributions }
-      }
-      repositories(ownerAffiliations: OWNER, first: 100, orderBy: {field: STARGAZERS, direction: DESC}, isFork: false) {
-        totalCount
-        nodes { stargazerCount forkCount }
-      }
-    }`
+      ${sanitizeAlias(i)}: repositoryOwner(login: ${JSON.stringify(login)}) {
+        __typename
+        ... on User {
+          contributionsCollection(from: "${from.toISOString()}", to: "${to.toISOString()}") {
+            totalCommitContributions
+            contributionCalendar { totalContributions }
+          }
+          repositories(ownerAffiliations: OWNER, first: 30, orderBy: {field: STARGAZERS, direction: DESC}, isFork: false) {
+            totalCount
+            nodes { stargazerCount forkCount }
+          }
+        }
+        ... on Organization {
+          repositories(first: 30, orderBy: {field: STARGAZERS, direction: DESC}, isFork: false) {
+            totalCount
+            nodes { stargazerCount forkCount }
+          }
+        }
+      }`
     )
     .join('\n');
 
@@ -53,8 +63,20 @@ async function fetchBatch(usernames: string[]): Promise<Record<string, GithubSta
     body: JSON.stringify({ query: `query { ${fields} }` }),
   });
 
-  if (!res.ok) throw new Error(`GitHub GraphQL error: ${res.status}`);
+  if (res.status === 504 && retries > 0) {
+    await new Promise((r) => setTimeout(r, 1000));
+    return fetchBatch(usernames, retries - 1);
+  }
+
   const json = await res.json();
+
+  // Log lỗi thật ra thay vì im lặng throw
+  if (json.errors) {
+    console.error('GitHub GraphQL errors:', JSON.stringify(json.errors, null, 2));
+  }
+  if (!res.ok && !json.data) {
+    throw new Error(`GitHub GraphQL error: ${res.status}`);
+  }
 
   const out: Record<string, GithubStats | null> = {};
   usernames.forEach((login, i) => {
@@ -66,8 +88,8 @@ async function fetchBatch(usernames: string[]): Promise<Record<string, GithubSta
     const nodes = u.repositories?.nodes || [];
     out[login] = {
       username: login,
-      totalContributions: u.contributionsCollection.contributionCalendar.totalContributions,
-      commits: u.contributionsCollection.totalCommitContributions,
+      totalContributions: u.contributionsCollection?.contributionCalendar.totalContributions ?? 0,
+      commits: u.contributionsCollection?.totalCommitContributions ?? 0,
       stars: nodes.reduce((s: number, r: any) => s + (r.stargazerCount || 0), 0),
       forks: nodes.reduce((s: number, r: any) => s + (r.forkCount || 0), 0),
       repoCount: u.repositories?.totalCount ?? 0,
@@ -76,9 +98,13 @@ async function fetchBatch(usernames: string[]): Promise<Record<string, GithubSta
   return out;
 }
 
-export async function GET() {
-  const cached = await redis.get<Record<string, GithubStats>>(CACHE_KEY);
-  if (cached) return NextResponse.json(cached);
+export async function GET(req: NextRequest) {
+  const bypass = process.env.NODE_ENV !== 'production' || req.nextUrl.searchParams.get('force') === '1';
+
+  if (!bypass) {
+    const cached = await redis.get<Record<string, GithubStats>>(CACHE_KEY);
+    if (cached) return NextResponse.json(cached);
+  }
 
   const res = await fetch('https://wyck.live/github/getgit.php', { cache: 'no-store' });
   if (!res.ok) return NextResponse.json({ error: 'getgit.php error' }, { status: 502 });
@@ -95,13 +121,14 @@ export async function GET() {
       Object.assign(statsByUsername, result);
     }
   } catch (e) {
+    console.error('fetchBatch error:', e);
     return NextResponse.json({ error: 'GitHub API error' }, { status: 502 });
   }
 
   const result: Record<string, GithubStats> = {};
   caToUsername.forEach(([ca, v]) => {
     const stats = statsByUsername[v.github2];
-    if (stats) result[ca] = stats;
+    result[ca] = stats ?? ({ username: v.github2, error: true } as any);
   });
 
   await redis.set(CACHE_KEY, result, { ex: CACHE_TTL_SECONDS });
