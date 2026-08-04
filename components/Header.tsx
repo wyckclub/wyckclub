@@ -63,14 +63,7 @@ export function Header() {
               {item.suffix && <span className="ml-1 text-[10px] font-normal align-middle">{item.suffix}</span>}
             </Link>
             ))}
-          </nav>
-          <a   href={`https://bankr.bot/terminal/trade?in=ETH&out=${GATE_TOKEN_ADDRESS}&chain=base`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm font-bold text-blue-400 hover:text-blue-300"
-          >
-            $WYCK token
-          </a>          
+          </nav>          
         </div>
         <div className="flex items-center gap-3">
           <ConnectButton chainStatus="icon" showBalance={false} />
