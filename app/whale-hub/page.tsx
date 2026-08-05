@@ -1,6 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { PriceChartModal } from '@/components/PriceChartModal';
+import { prefetchDexDataBatch, getCachedDexData } from '@/lib/dexData';
+import { formatCap } from '@/lib/format';
 
 interface Notification {
   id: string;
@@ -22,6 +25,16 @@ const LEVEL_STYLE: Record<Notification['level'], string> = {
   super: 'border-green-600/50 text-green-500 bg-green-500/30',
 };
 
+function getEmphasisStyle(n: Notification): string {
+  const styles: Record<Notification['level'], string> = {
+    inflow: 'border-slate-400/0 bg-slate-500/20 text-slate-200',
+    medium: 'border-yellow-400/0 bg-yellow-500/20 text-yellow-300/60',
+    strong: 'border-green-400/0 bg-green-400/20 text-green-300',
+    super: 'border-green-500/0 bg-green-600/30 text-green-400',
+  };
+  return styles[n.level];
+}
+
 function dayLabel(ts: string) {
   return new Date(ts).toLocaleDateString('en-US', {
     timeZone: 'UTC',
@@ -42,10 +55,33 @@ function timeLabel(ts: string) {
   );
 }
 
+function renderMessage(n: Notification) {
+  const emphasis = getEmphasisStyle(n);
+  const target = `${n.levelLabel} ${n.current}`;
+  const idx = n.message.indexOf(target);
+
+  if (idx === -1) return n.message;
+
+  const before = n.message.slice(0, idx);
+  const after = n.message.slice(idx + target.length);
+
+  return (
+    <>
+      {before}
+      <span className={`inline-flex items-center px-1.5 py-0.5 rounded border mx-0.5 ${emphasis}`}>
+        {target}
+      </span>
+      {after}
+    </>
+  );
+}
+
 export default function WhaleHubPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string } | null>(null);
+  const [dexTick, setDexTick] = useState(0);
 
   function load() {
     setLoading(true);
@@ -58,9 +94,14 @@ export default function WhaleHubPage() {
 
   useEffect(() => {
     load();
-    const id = setInterval(load, 60000);
+    const id = setInterval(load, 300000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (!notifications.length) return;
+    prefetchDexDataBatch(notifications.map((n) => n.ca)).then(() => setDexTick((v) => v + 1));
+  }, [notifications]);
 
   const groups = notifications.reduce<Record<string, Notification[]>>((acc, n) => {
     const key = dayLabel(n.timestamp);
@@ -92,10 +133,14 @@ export default function WhaleHubPage() {
               </span>
             </div>
             <div className="space-y-3 border-l border-slate-800 pl-4">
-            {items.map((n) => (
+            {items.map((n) => {
+              const dex = getCachedDexData(n.ca);
+              const change24h = dex?.h24;
+
+              return (
               <div key={n.id} className={`rounded-lg border p-3 ${LEVEL_STYLE[n.level]}`}>
                 <div className="flex items-start gap-3">
-                  <div className="shrink-0 pt-0.5">
+                  <div className="shrink-0 pt-0.5 flex flex-col items-center gap-1.5">
                     <img
                       src={`https://dd.dexscreener.com/ds-data/tokens/base/${n.ca}.png`}
                       alt={n.symbol}
@@ -104,6 +149,12 @@ export default function WhaleHubPage() {
                         e.currentTarget.style.display = 'none';
                       }}
                     />
+                    <button
+                      onClick={() => setChartToken({ category: n.category, ca: n.ca, symbol: n.symbol })}
+                      className="text-[12px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-blue-400 hover:text-blue-300 whitespace-nowrap"
+                    >
+                      View Chart
+                    </button>
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -117,24 +168,49 @@ export default function WhaleHubPage() {
                       <span className="text-[10px] opacity-70">{timeLabel(n.timestamp)}</span>
                     </div>
 
-                    <p className="text-sm text-slate-100">{n.message}</p>
+                    <p className="text-sm text-slate-100">{renderMessage(n)}</p>
 
-                    <a
-                      href={`https://dexscreener.com/base/${n.ca}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[11px] font-mono text-blue-400 hover:underline"
-                    >
-                      {n.ca.slice(0, 6)}...{n.ca.slice(-4)}
-                    </a>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                      <a
+                        href={`https://dexscreener.com/base/${n.ca}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] font-mono text-blue-400 hover:underline"
+                      >
+                        Dexscreener ↗
+                      </a>
+                      <span className="text-[11px] text-slate-400">
+                        MC: {dex?.marketCap == null ? 'N/A' : formatCap(dex.marketCap)}
+                      </span>
+                      <span className="text-[11px] text-slate-400">
+                        Vol 24h: {dex?.vol24h == null ? 'N/A' : formatCap(dex.vol24h)}
+                      </span>
+                      <span
+                        className={`text-[11px] ${
+                          change24h == null ? 'text-slate-400' : change24h >= 0 ? 'text-green-400' : 'text-red-400'
+                        }`}
+                      >
+                        24h: {change24h == null ? 'N/A' : `${change24h >= 0 ? '+' : ''}${change24h.toFixed(1)}%`}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
             </div>
           </div>
         ))}
       </div>
+
+      {chartToken && (
+        <PriceChartModal
+          category={chartToken.category}
+          ca={chartToken.ca}
+          symbol={chartToken.symbol}
+          onClose={() => setChartToken(null)}
+        />
+      )}
     </div>
   );
 }

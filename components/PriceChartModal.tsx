@@ -59,7 +59,7 @@ export function PriceChartModal({ category, ca, symbol, onClose }: Props) {
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 max-w-5xl w-[90%]">
+      <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 max-w-7xl w-[90%]">
         <div className="flex justify-between items-center mb-3 text-blue-400 text-sm">
           <span className="text-base">
             Powered by{' '}
@@ -101,7 +101,7 @@ export function PriceChartModal({ category, ca, symbol, onClose }: Props) {
 }
 
 function ChartSVG({ entries, livePrice }: { entries: PriceHistoryEntry[]; livePrice: number | null }) {
-  const width = 960;
+  const width = 1200;
   const height = 520;
   const pad = { left: 64, right: 16, top: 30, bottom: 46 };
 

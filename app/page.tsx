@@ -29,10 +29,10 @@ export default async function Home() {
             Open Pro App
           </Link>
           <Link
-            href="/vip"
+            href="/whale-hub"
             className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-blue-400 font-semibold rounded-xl border border-slate-700 transition-all"
           >
-            Portfolio
+            Whale Hub
           </Link>
           <Link
             href="/guide"
