@@ -17,8 +17,8 @@ export default async function Home() {
         WYCKSCORE
       </h1>
         <p className="text-slate-400 max-w-2xl mx-auto text-lg">
-          24/7 token tracking on the Base network. Wyck.Pro scans and surfaces tokens accumulated by
-          strong players using Wyckoff-style patterns, before the crowd notices.
+          🐋 Smart Money Tracking tool 🐋
+          Scanning 300+ popular tokens on BASE.
         </p>
 
         <div className="flex flex-wrap justify-center gap-4 pt-4">
@@ -32,7 +32,7 @@ export default async function Home() {
             href="/vip"
             className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-blue-400 font-semibold rounded-xl border border-slate-700 transition-all"
           >
-            Vip App
+            Portfolio
           </Link>
           <Link
             href="/guide"
@@ -57,7 +57,6 @@ export default async function Home() {
         <FeatureCard title="Actionable Signals" desc="A live scoring system ranks tokens so you focus only on the strongest setups." />
       </section>
 
-      {/* PHẦN THỐNG KÊ ĐÃ ĐƯỢC THÊM TIÊU ĐỀ */}
       <section className="space-y-6">
         <h2 className="text-3xl font-bold text-center text-white">Statistics</h2>
         <div className="grid md:grid-cols-3 gap-6">
@@ -68,8 +67,8 @@ export default async function Home() {
       </section>
 
       <section className="grid md:grid-cols-2 gap-6">
-        <PlanCard name="Pro Plan" requirement="WYCK tokens" desc="Unlock the full token tracker table, combining data from all monitored categories." />
-        <PlanCard name="Vip Plan" requirement="WYCK tokens" desc="Premium features." />
+        <PlanCard name="Pro Plan" requirement="WYCK" desc="Unlock the full token tracker table, combining data from all monitored categories." />
+        <PlanCard name="Vip Plan" requirement="WYCK" desc="Premium features." />
       </section>
     </main>
   );

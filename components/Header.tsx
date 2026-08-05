@@ -11,7 +11,8 @@ import { GATE_TOKEN_ADDRESS } from '@/lib/tokenGate';
 const navItems = [
   { href: '/', label: 'Home', suffix: '' },
   { href: '/pro', label: 'Pro', suffix: '(Free Beta)' },
-  { href: '/vip', label: 'Portfolio', suffix: '(Free Beta)' },
+  { href: '/whale-hub', label: 'Whale Hub', suffix: '(Beta)' },
+  { href: '/vip', label: 'Portfolio', suffix: '(Beta)' },
   { href: '/guide', label: 'Guide', suffix: '' },
 ];
 
