@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { PriceChartModal } from '@/components/PriceChartModal';
 import { prefetchDexDataBatch, getCachedDexData } from '@/lib/dexData';
-import { formatCap } from '@/lib/format';
+import { formatCap, formatPriceShort } from '@/lib/format';
 
 interface Notification {
   id: string;
@@ -16,6 +16,8 @@ interface Notification {
   previous: string;
   message: string;
   timestamp: string;
+  top10: number | null;
+  prevTop10: number | null;
 }
 
 const LEVEL_STYLE: Record<Notification['level'], string> = {
@@ -24,6 +26,55 @@ const LEVEL_STYLE: Record<Notification['level'], string> = {
   strong: 'border-green-300/30 text-green-400/70 bg-green-300/10',
   super: 'border-green-600/50 text-green-500 bg-green-500/30',
 };
+
+function relativeTime(ts: string) {
+  const diffMs = Date.now() - new Date(ts).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  const remHours = hours % 24;
+  return remHours > 0 ? `${days}d ${remHours}h ago` : `${days}d ago`;
+}
+
+function ShareIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <path d="m8.6 10.5 6.8-3.9" />
+      <path d="m8.6 13.5 6.8 3.9" />
+    </svg>
+  );
+}
+
+function buildShareText(n: Notification, priceUsd: number | null, marketCap: number | null) {
+  const price = priceUsd == null ? 'N/A' : formatPriceShort(priceUsd);
+  const cap = marketCap == null ? 'N/A' : formatCap(marketCap);
+
+  const whaleLine =
+    n.top10 != null && n.prevTop10 != null && n.top10 !== n.prevTop10
+      ? `\n🐋Whale Accumulation Index: ${n.top10 - n.prevTop10 > 0 ? '+' : ''}${n.top10 - n.prevTop10} (${n.prevTop10}→${n.top10})`
+      : '';
+
+  return `$${n.symbol} just triggered a SmartMoney signal on #Based:
+
+👉WyckScore: ${n.levelLabel} SmartMoney ${n.current}${whaleLine}
+
+At Price: ${price} - MaketCap: ${cap}
+Powered by wyck.pro/whale-hub
+
+#BaseEcosystem #BuildOnBase #Memecoin #BaseMeme`;
+}
+
+function handleShare(n: Notification, priceUsd: number | null, marketCap: number | null) {
+  const text = buildShareText(n, priceUsd, marketCap);
+  const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
 
 function getEmphasisStyle(n: Notification): string {
   const styles: Record<Notification['level'], string> = {
@@ -165,10 +216,33 @@ export default function WhaleHubPage() {
                         </span>
                         <span className="text-xs font-bold uppercase tracking-wide">{n.levelLabel} SmartMoney</span>
                       </div>
-                      <span className="text-[10px] opacity-70">{timeLabel(n.timestamp)}</span>
+                      
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-[10px] opacity-70 flex items-center gap-2">
+                          {timeLabel(n.timestamp)}
+                          <button
+                            onClick={() => handleShare(n, dex?.priceUsd ?? null, dex?.marketCap ?? null)}
+                            className="text-slate-400 hover:text-blue-400"
+                            aria-label="Share"
+                          >
+                            <ShareIcon />
+                          </button>
+                        </span>
+                        <span className="text-[10px] font-bold opacity-90">{relativeTime(n.timestamp)}</span>
+                      </div>
+
                     </div>
 
                     <p className="text-sm text-slate-100">{renderMessage(n)}</p>
+                    {n.top10 != null && n.prevTop10 != null && n.top10 !== n.prevTop10 && (() => {
+                      const diff = n.top10 - n.prevTop10;
+                      const isUp = diff > 0;
+                      return (
+                        <p className={`text-xs mt-0.5 ${isUp ? 'text-green-400' : 'text-red-400'}`}>
+                          Whale Accumulation Index: {isUp ? '+' : ''}{diff} ({n.prevTop10}→{n.top10})
+                        </p>
+                      );
+                    })()}
 
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                       <a

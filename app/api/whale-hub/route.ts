@@ -58,6 +58,8 @@ interface Notification {
   previous: string;
   message: string;
   timestamp: string;
+  top10: number | null;
+  prevTop10: number | null;
 }
 
 function computeLevel(
@@ -105,6 +107,8 @@ export async function GET(req: NextRequest) {
     sig: string;
     scoreWithWhale: string;
     prevWhale: string;
+    top10: number | null;
+    prevTop10: number | null;
   };
   const candidates: Candidate[] = [];
 
@@ -127,7 +131,11 @@ export async function GET(req: NextRequest) {
       const scoreWithWhale = getWhaleStarredScore(latest.display, last7);
       const prevWhale = prevEntry.topwhale === 'y' ? `🐋${prevEntry.display}` : prevEntry.display;
 
-      candidates.push({ ca, cat, symbol: token.symbol, level, sig, scoreWithWhale, prevWhale });
+      candidates.push({
+        ca, cat, symbol: token.symbol, level, sig, scoreWithWhale, prevWhale,
+        top10: latest.top10 ?? null,
+        prevTop10: prevEntry.top10 ?? null,
+      });
     }
   }
 
@@ -138,7 +146,7 @@ export async function GET(req: NextRequest) {
 
     for (const c of candidates) {
       const vol24h = volMap[c.ca] ?? 0;
-      if (vol24h < MIN_VOL24H) continue; // bỏ qua token thanh khoản/vol quá thấp
+      if (vol24h < MIN_VOL24H) continue;
 
       const levelLabel = LEVEL_LABELS[c.level];
       const notif: Notification = {
@@ -150,6 +158,8 @@ export async function GET(req: NextRequest) {
         levelLabel,
         current: c.scoreWithWhale,
         previous: c.prevWhale,
+        top10: c.top10,
+        prevTop10: c.prevTop10,
         message: `$${c.symbol} just triggered a SmartMoney signal: ${levelLabel} ${c.scoreWithWhale} (previous ${c.prevWhale})`,
         timestamp: new Date().toISOString(),
       };
