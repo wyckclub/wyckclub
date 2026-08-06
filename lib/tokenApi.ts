@@ -24,6 +24,7 @@ interface RawEntry {
   hasBuyNow: boolean;
   display: string;
   topwhale?: string;
+  top10?: number;
   timestamp?: string;
 }
 
@@ -97,6 +98,7 @@ export interface PriceHistoryEntry {
   score: number | null;
   scoreDisplay: string | null;
   topwhale?: string;
+  top10?: number;
   timestamp?: string;
 }
 
@@ -111,6 +113,7 @@ export async function fetchTokenHistory(category: number, ca: string): Promise<P
     score: e.score,
     scoreDisplay: e.display,
     topwhale: e.topwhale,
+    top10: e.top10,
     timestamp: e.timestamp,
   }));
 }

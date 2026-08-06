@@ -17,6 +17,7 @@ export function PriceChartModal({ category, ca, symbol, onClose }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [livePrice, setLivePrice] = useState<number | null>(null);
+  const [showTop10, setShowTop10] = useState(false);
 
   useEffect(() => {
     fetch('/api/stats/track', {
@@ -85,7 +86,20 @@ export function PriceChartModal({ category, ca, symbol, onClose }: Props) {
               )}
             </span>
           )}
+            
+            <button
+              onClick={() => setShowTop10((v) => !v)}
+              className={`text-xs px-2 py-1 rounded border ${
+                showTop10
+                  ? 'border-purple-400 text-purple-300 bg-purple-500/10'
+                  : 'border-slate-700 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {showTop10 ? 'Hide' : 'Show'} Whale Accumulation Index
+            </button>
+
             <button onClick={onClose} className="text-slate-400 hover:text-white">✕</button>
+            
           </div>
         </div>
         {loading && <div className="text-center py-10 opacity-60">Loading...</div>}
@@ -93,14 +107,14 @@ export function PriceChartModal({ category, ca, symbol, onClose }: Props) {
         {!loading && !error && (
           entries.length < 2
             ? <div className="text-center py-10 opacity-60">Not enough price data to draw a chart</div>
-            : <ChartSVG entries={entries} livePrice={livePrice} />
+            : <ChartSVG entries={entries} livePrice={livePrice} showTop10={showTop10} />
         )}
       </div>
     </div>
   );
 }
 
-function ChartSVG({ entries, livePrice }: { entries: PriceHistoryEntry[]; livePrice: number | null }) {
+function ChartSVG({ entries, livePrice, showTop10 }: { entries: PriceHistoryEntry[]; livePrice: number | null; showTop10: boolean }) {
   const width = 1200;
   const height = 520;
   const pad = { left: 64, right: 16, top: 30, bottom: 46 };
@@ -231,8 +245,7 @@ function isSpringPoint(idx: number) {
           </circle>
         ))}
         {points.map((p, i) => {
-          const above = i % 2 === 0;
-          const y = above ? p.y - 8 : p.y + 14;
+          const y = p.y - 8; // luôn hiển thị trên point
 
           const prevScores = [points[i - 1]?.score, points[i - 2]?.score, points[i - 3]?.score].filter(
             (s): s is number => s != null
@@ -267,6 +280,24 @@ function isSpringPoint(idx: number) {
               <text x={p.x} y={y} textAnchor="middle" className={`${scoreColorClass} text-sm font-bold`}>
                 {label}
               </text>
+              {showTop10 && p.top10 != null && (
+                <>
+                  <rect
+                    x={p.x - (String(p.top10).length * 7 + 10) / 2}
+                    y={p.y + 6}
+                    width={String(p.top10).length * 7 + 10}
+                    height={16}
+                    rx={4}
+                    fill="#05253b"
+                    fillOpacity={1}
+                    stroke="#1b043100"
+                    strokeWidth={1}
+                  />
+                  <text x={p.x} y={p.y + 17} textAnchor="middle" className="fill-blue-500 text-[11px] font-semibold">
+                    {p.top10}
+                  </text>
+                </>
+              )}
             </g>
           );
         })}
