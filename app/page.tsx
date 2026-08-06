@@ -67,8 +67,8 @@ export default async function Home() {
       </section>
 
       <section className="grid md:grid-cols-2 gap-6">
-        <PlanCard name="Pro Plan" requirement="WYCK" desc="Unlock the full token tracker table, combining data from all monitored categories." />
-        <PlanCard name="Vip Plan" requirement="WYCK" desc="Premium features." />
+        <PlanCard name="Pro Tracker" requirement="WYCK" desc="Unlock the full token tracker table, combining data from all monitored categories." />
+        <PlanCard name="VIP Plan" requirement="WYCK" desc="Premium features." />
       </section>
     </main>
   );
