@@ -75,17 +75,17 @@ export function PriceChartModal({ category, ca, symbol, onClose }: Props) {
             . Token: <span className="font-bold">{symbol}</span>
           </span>
           <div className="flex items-center gap-4">
-          {livePrice != null && (
-            <span className={`flex items-center gap-1.5 font-mono ${isUp ? 'text-green-400' : 'text-red-400'}`}>
-              <span className={`w-2 h-2 rounded-full animate-pulse ${isUp ? 'bg-green-400' : 'bg-red-400'}`} />
-              Live: {formatPriceShort(livePrice)}
-              {e0Price != null && e0Price > 0 && (
-                <span>
-                  ({isUp ? '+' : ''}{(((livePrice - e0Price) / e0Price) * 100).toFixed(1)}%)
-                </span>
-              )}
-            </span>
-          )}
+            {livePrice != null && (
+              <span className={`flex items-center gap-1.5 font-mono ${isUp ? 'text-green-400' : 'text-red-400'}`}>
+                <span className={`w-2 h-2 rounded-full animate-pulse ${isUp ? 'bg-green-400' : 'bg-red-400'}`} />
+                Live: {formatPriceShort(livePrice)}
+                {e0Price != null && e0Price > 0 && (
+                  <span>
+                    ({isUp ? '+' : ''}{(((livePrice - e0Price) / e0Price) * 100).toFixed(1)}%)
+                  </span>
+                )}
+              </span>
+            )}
             
             <button
               onClick={() => setShowTop10((v) => !v)}
@@ -99,7 +99,6 @@ export function PriceChartModal({ category, ca, symbol, onClose }: Props) {
             </button>
 
             <button onClick={onClose} className="text-slate-400 hover:text-white">✕</button>
-            
           </div>
         </div>
         {loading && <div className="text-center py-10 opacity-60">Loading...</div>}
@@ -149,53 +148,56 @@ function ChartSVG({ entries, livePrice, showTop10 }: { entries: PriceHistoryEntr
       }
     : null;
 
-function isSpringPoint(idx: number) {
-  const p = points[idx];
-  const prev = points[idx - 1];
-  const prev2 = points[idx - 2];
-
-  const springCondition =
-    !!(p && prev && prev2 &&
-    p.score != null && prev.score != null &&
-    p.price != null && prev2.price != null &&
-    p.score - prev.score > 3 &&
-    p.price < prev2.price);
-
-  const whaleCount = [idx - 1, idx - 2, idx - 3].filter((i) => starredIndices.has(i)).length;
-  const whaleStreakCondition = starredIndices.has(idx) && whaleCount >= 2;
-
-  return springCondition || whaleStreakCondition;
-}
-
   function segmentColorClass(currentScore: number, prevScores: number[]) {
-      if (prevScores.length < 3) return 'stroke-blue-400';
-      if (currentScore <= 2) return 'stroke-blue-400';
+    if (prevScores.length < 3) return 'stroke-blue-400';
+    if (currentScore <= 2) return 'stroke-blue-400';
 
-      const avg = (prevScores[0] + prevScores[1] + prevScores[2]) / 3;
-      const aboveAvg = currentScore - avg;
+    const avg = (prevScores[0] + prevScores[1] + prevScores[2]) / 3;
+    const aboveAvg = currentScore - avg;
 
-      if (aboveAvg > 3) return 'stroke-green-700';
-      if (aboveAvg > 0) return 'stroke-green-300/50';
-      return 'stroke-blue-400';
+    if (aboveAvg > 3) return 'stroke-green-700';
+    if (aboveAvg > 0) return 'stroke-green-300/50';
+    return 'stroke-blue-400';
+  }
+
+  // Calculate starredIndices before rendering elements
+  const starredIndices = new Set<number>();
+  const segments = points.slice(1).map((p, idx) => {
+    const i = idx + 1;
+    const prev = points[i - 1];
+    const prevScores = [points[i - 1]?.score, points[i - 2]?.score, points[i - 3]?.score].filter(
+      (s): s is number => s != null
+    );
+    const colorClass = p.score == null ? 'stroke-blue-400' : segmentColorClass(p.score, prevScores);
+    
+    // Fixed color class check to match actual stroke outputs
+    if ((colorClass === 'stroke-green-700' || colorClass === 'stroke-green-300/50') && p.topwhale === 'y') {
+      starredIndices.add(i);
     }
-
-    const starredIndices = new Set<number>();
-    const segments = points.slice(1).map((p, idx) => {
-      const i = idx + 1;
-      const prev = points[i - 1];
-      const prevScores = [points[i - 1]?.score, points[i - 2]?.score, points[i - 3]?.score].filter(
-        (s): s is number => s != null
-      );
-      const colorClass = p.score == null ? 'stroke-blue-400' : segmentColorClass(p.score, prevScores);
-      if ((colorClass === 'stroke-green-600' || colorClass === 'stroke-green-300') && p.topwhale === 'y') {
-        starredIndices.add(i);
-      }
-      return { x1: prev.x, y1: prev.y, x2: p.x, y2: p.y, colorClass };
-    });
+    return { x1: prev.x, y1: prev.y, x2: p.x, y2: p.y, colorClass };
+  });
 
   if (livePoint) {
     const last = points[points.length - 1];
     segments.push({ x1: last.x, y1: last.y, x2: livePoint.x, y2: livePoint.y, colorClass: 'stroke-blue-400' });
+  }
+
+  function isSpringPoint(idx: number) {
+    const p = points[idx];
+    const prev = points[idx - 1];
+    const prev2 = points[idx - 2];
+
+    const springCondition =
+      !!(p && prev && prev2 &&
+      p.score != null && prev.score != null &&
+      p.price != null && prev2.price != null &&
+      p.score - prev.score > 3 &&
+      p.price < prev2.price);
+
+    const whaleCount = [idx - 1, idx - 2, idx - 3].filter((i) => starredIndices.has(i)).length;
+    const whaleStreakCondition = starredIndices.has(idx) && whaleCount >= 2;
+
+    return springCondition || whaleStreakCondition;
   }
 
   const tickCount = 4;
