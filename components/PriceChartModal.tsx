@@ -169,13 +169,13 @@ function isSpringPoint(idx: number) {
 
   function segmentColorClass(currentScore: number, prevScores: number[]) {
       if (prevScores.length < 3) return 'stroke-blue-400';
-      if (currentScore <= 2) return 'stroke-blue-400'; // điểm sau phải > 2 score
+      if (currentScore <= 2) return 'stroke-blue-400';
 
       const avg = (prevScores[0] + prevScores[1] + prevScores[2]) / 3;
       const aboveAvg = currentScore - avg;
 
-      if (aboveAvg > 3) return 'stroke-green-600'; // xanh lá đậm
-      if (aboveAvg > 0) return 'stroke-green-300'; // xanh lá nhạt
+      if (aboveAvg > 3) return 'stroke-green-700';
+      if (aboveAvg > 0) return 'stroke-green-300/50';
       return 'stroke-blue-400';
     }
 
@@ -237,15 +237,20 @@ function isSpringPoint(idx: number) {
           );
         })}
         {segments.map((s, i) => (
-                  <line key={i} x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} className={s.colorClass} strokeWidth={1.5} />
-                ))}
+          <line
+            key={i}
+            x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
+            className={s.colorClass}
+            strokeWidth={s.colorClass.startsWith('stroke-green') ? 2.5 : 1.5}
+          />
+        ))}
         {points.map((p, i) => (
           <circle key={i} cx={p.x} cy={p.y} r={3} className="fill-blue-400">
             <title>{p.date}: {formatPriceShort(p.price)} (Score {p.scoreDisplay ?? '-'})</title>
           </circle>
         ))}
         {points.map((p, i) => {
-          const y = p.y - 8; // luôn hiển thị trên point
+          const y = p.y - 8;
 
           const prevScores = [points[i - 1]?.score, points[i - 2]?.score, points[i - 3]?.score].filter(
             (s): s is number => s != null

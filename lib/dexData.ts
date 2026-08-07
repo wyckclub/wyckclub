@@ -6,6 +6,8 @@ export interface DexData {
   marketCap: number | null;
   twitter: string | null;
   imageUrl: string | null;
+  symbol: string | null;
+  name: string | null;
 }
 
 const TTL = 2 * 60 * 1000;
@@ -88,6 +90,8 @@ export async function prefetchDexDataBatch(
             marketCap: marketCap == null ? null : Number(marketCap),
             twitter: extractTwitter(pair),
             imageUrl: pair?.info?.imageUrl ?? null,
+            symbol: pair?.baseToken?.symbol ?? null,
+            name: pair?.baseToken?.name ?? null,
           },
           timestamp: Date.now(),
         });

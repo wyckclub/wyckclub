@@ -51,27 +51,29 @@ function ShareIcon() {
   );
 }
 
-function buildShareText(n: Notification, priceUsd: number | null, marketCap: number | null) {
-  const price = priceUsd == null ? 'N/A' : formatPriceShort(priceUsd);
-  const cap = marketCap == null ? 'N/A' : formatCap(marketCap);
+function buildShareText(n: Notification, dex: ReturnType<typeof getCachedDexData>) {
+  const symbol = dex?.symbol ?? n.symbol;
+  const nameTag = dex?.name ? ` (${dex.name})` : '';
+  const price = dex?.priceUsd == null ? 'N/A' : formatPriceShort(dex.priceUsd);
+  const cap = dex?.marketCap == null ? 'N/A' : formatCap(dex.marketCap);
+  const twitterPart = dex?.twitter ? `@${dex.twitter} - ` : '';
 
   const whaleLine =
     n.top10 != null && n.prevTop10 != null && n.top10 !== n.prevTop10
       ? `\n🐋Whale Accumulation Index: ${n.top10 - n.prevTop10 > 0 ? '+' : ''}${n.top10 - n.prevTop10} (${n.prevTop10}→${n.top10})`
       : '';
 
-  return `$${n.symbol} just triggered a SmartMoney signal on #Based:
+  return `$${symbol}${nameTag} just triggered a SmartMoney signal on Base:
 
-👉WyckScore: ${n.levelLabel} SmartMoney ${n.current}${whaleLine}
+👉WyckScore: ${n.levelLabel} ${n.current}${whaleLine}
 
-At Price: ${price} - MaketCap: ${cap}
-Powered by wyck.pro/whale-hub
-
-#BaseEcosystem #BuildOnBase #Memecoin #BaseMeme`;
+${twitterPart}At Price: ${price} - MaketCap: ${cap}
+CA: ${n.ca}
+Powered by wyck.pro/whale-hub`;
 }
 
-function handleShare(n: Notification, priceUsd: number | null, marketCap: number | null) {
-  const text = buildShareText(n, priceUsd, marketCap);
+function handleShare(n: Notification, dex: ReturnType<typeof getCachedDexData>) {
+  const text = buildShareText(n, dex);
   const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank', 'noopener,noreferrer');
 }
@@ -221,7 +223,7 @@ export default function WhaleHubPage() {
                         <span className="text-[10px] opacity-70 flex items-center gap-2">
                           {timeLabel(n.timestamp)}
                           <button
-                            onClick={() => handleShare(n, dex?.priceUsd ?? null, dex?.marketCap ?? null)}
+                            onClick={() => handleShare(n, dex)}
                             className="text-slate-400 hover:text-blue-400"
                             aria-label="Share"
                           >
