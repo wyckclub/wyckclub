@@ -116,6 +116,35 @@ export default function GuidePage() {
         </div>
       </section>
 
+      {/* VERIFY BADGE */}
+      <section className="space-y-4">
+        <h2 className="text-xl font-bold text-blue-300">Verify Badge (Robinhood Tracker)</h2>
+        <p className="text-slate-400 text-sm">
+          Shown in the "Verify" column of the Robinhood Tracker, indicating whether a token has been verified on the Robinhood network.
+        </p>
+        <div className="relative w-full max-w-sm overflow-hidden rounded-xl border border-slate-800">
+          <Image
+            src="/verified.png"
+            alt="Verify Badge"
+            width={400}
+            height={200}
+            className="w-full h-auto object-cover"
+          />
+        </div>
+        <div className="space-y-3">
+          <GuideItem
+            colorDot="bg-sky-500"
+            title="✅ Verified"
+            desc="Token has been officially verified on the Robinhood network."
+          />
+          <GuideItem
+            colorDot="bg-slate-500"
+            title="❌ Not Verified"
+            desc="Token has not been verified — trade with extra caution."
+          />
+        </div>
+      </section>
+
       {/* SMARTMONEY SIGNAL LEVELS */}
       <section className="space-y-4">
         <h2 className="text-xl font-bold text-blue-300">SmartMoney Signal Levels</h2>
