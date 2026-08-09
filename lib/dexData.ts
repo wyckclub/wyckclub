@@ -62,6 +62,8 @@ export async function prefetchDexDataBatch(
   });
   if (!need.length) return;
 
+  const failedCas: string[] = [];
+
   const BATCH_SIZE = 30;
   for (let i = 0; i < need.length; i += BATCH_SIZE) {
     const chunk = need.slice(i, i + BATCH_SIZE);
@@ -77,6 +79,10 @@ export async function prefetchDexDataBatch(
           (p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase() && p.chainId === chainId
         );
         const pair = caPairs[0] || pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase());
+        if (!pair) {
+          failedCas.push(ca);
+          return;
+        }
         const h24 = pair?.priceChange?.h24;
         const priceUsd = pair?.priceUsd;
         const vol24h = caPairs.reduce((s: number, p: any) => s + (Number(p.volume?.h24) || 0), 0);
@@ -98,11 +104,52 @@ export async function prefetchDexDataBatch(
         });
       });
     } catch {
-      // skip error
+      failedCas.push(...chunk);
     }
     saveToStorage();
     onBatch?.();
     if (i + BATCH_SIZE < need.length) await new Promise((r) => setTimeout(r, 300));
+  }
+
+  for (const ca of failedCas) {
+    try {
+      const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${ca}`);
+      if (!res.ok) continue;
+      const json = await res.json();
+      const pairs = json.pairs || [];
+      const caPairs = pairs.filter(
+        (p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase() && p.chainId === chainId
+      );
+      const pair = caPairs[0] || pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase());
+      if (!pair) continue;
+      const h24 = pair?.priceChange?.h24;
+      const priceUsd = pair?.priceUsd;
+      const vol24h = caPairs.reduce((s: number, p: any) => s + (Number(p.volume?.h24) || 0), 0);
+      const liq = caPairs.reduce((s: number, p: any) => s + (Number(p.liquidity?.usd) || 0), 0);
+      const marketCap = pair?.marketCap ?? pair?.fdv;
+      cache.set(ca, {
+        data: {
+          h24: h24 == null ? null : Number(h24),
+          priceUsd: priceUsd == null ? null : Number(priceUsd),
+          vol24h: caPairs.length ? vol24h : null,
+          liq: caPairs.length ? liq : null,
+          marketCap: marketCap == null ? null : Number(marketCap),
+          twitter: extractTwitter(pair),
+          imageUrl: pair?.info?.imageUrl ?? null,
+          symbol: pair?.baseToken?.symbol ?? null,
+          name: pair?.baseToken?.name ?? null,
+        },
+        timestamp: Date.now(),
+      });
+    } catch {
+      // bỏ qua, giữ null cho token này
+    }
+    await new Promise((r) => setTimeout(r, 150));
+  }
+
+  if (failedCas.length) {
+    saveToStorage();
+    onBatch?.();
   }
 }
 
