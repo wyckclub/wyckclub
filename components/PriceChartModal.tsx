@@ -10,6 +10,7 @@ interface Props {
   ca: string;
   symbol: string;
   onClose: () => void;
+  chainId?: string;
 }
 
 export function PriceChartModal({ category, ca, symbol, onClose }: Props) {

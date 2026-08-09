@@ -59,6 +59,7 @@ function GuideIcon() {
 const navItems = [
   { href: '/', label: 'Home', suffix: '', icon: HomeIcon },
   { href: '/pro', label: 'Pro Tracker', suffix: '(Free Beta)', icon: ProIcon },
+  { href: '/robinhood', label: 'Robinhood Tracker', suffix: '(Beta)', icon: ProIcon },
   { href: '/whale-hub', label: 'Whale Hub', suffix: '(Beta)', icon: WhaleIcon },
   { href: '/vip', label: 'Portfolio', suffix: '(Beta)', icon: PortfolioIcon },
   { href: '/guide', label: 'Guide', suffix: '', icon: GuideIcon },

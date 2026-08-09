@@ -52,7 +52,8 @@ function extractTwitter(pair: any): string | null {
 
 export async function prefetchDexDataBatch(
   caList: string[],
-  onBatch?: () => void
+  onBatch?: () => void,
+  chainId: string = 'base'
 ) {
   const now = Date.now();
   const need = [...new Set(caList)].filter((ca) => {
@@ -73,7 +74,7 @@ export async function prefetchDexDataBatch(
       const pairs = json.pairs || [];
       chunk.forEach((ca) => {
         const caPairs = pairs.filter(
-          (p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase() && p.chainId === 'base'
+          (p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase() && p.chainId === chainId
         );
         const pair = caPairs[0] || pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase());
         const h24 = pair?.priceChange?.h24;
@@ -105,12 +106,12 @@ export async function prefetchDexDataBatch(
   }
 }
 
-export async function fetchLivePrice(ca: string): Promise<number | null> {
+export async function fetchLivePrice(ca: string, chainId: string = 'base'): Promise<number | null> {
   try {
     const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${ca}`).then((r) => r.json());
     const pairs = res.pairs || [];
     const caPairs = pairs.filter(
-      (p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase() && p.chainId === 'base'
+      (p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase() && p.chainId === chainId
     );
     const pair = caPairs[0] || pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase());
     const priceUsd = pair?.priceUsd;

@@ -103,9 +103,12 @@ export interface PriceHistoryEntry {
 }
 
 export async function fetchTokenHistory(category: number, ca: string): Promise<PriceHistoryEntry[]> {
-  let entry = rawCache.get(category);
-  if (!entry || Date.now() - entry.timestamp >= RAW_TTL) entry = { data: await fetchCategoryRaw(category), timestamp: Date.now() };
-  const token = entry.data[ca];
+  const raw = category === ROBINHOOD_CATEGORY ? await fetchRobinhoodRaw() : (
+    (rawCache.get(category) && Date.now() - rawCache.get(category)!.timestamp < RAW_TTL)
+      ? rawCache.get(category)!.data
+      : await fetchCategoryRaw(category)
+  );
+  const token = raw[ca];
   if (!token) return [];
   return [...token.entries].reverse().map((e) => ({
     date: `#${e.entry}`,
@@ -124,4 +127,25 @@ export interface HistoryEntry {
   score: number;
   scoreDisplay: string;
   topwhale?: string;
+}
+
+export const ROBINHOOD_CATEGORY = 5;
+CATEGORY_LABELS[ROBINHOOD_CATEGORY] = 'Robinhood';
+
+let robinRawCache: { data: RawCategoryData; timestamp: number } | null = null;
+
+async function fetchRobinhoodRaw(): Promise<RawCategoryData> {
+  if (robinRawCache && Date.now() - robinRawCache.timestamp < RAW_TTL) return robinRawCache.data;
+  const res = await fetch('/api/scores/robinhood', { cache: 'no-store' });
+  if (!res.ok) throw new Error('ERROR robinhood');
+  const data: RawCategoryData = await res.json();
+  robinRawCache = { data, timestamp: Date.now() };
+  return data;
+}
+
+export async function fetchRobinhoodTokens(): Promise<TokenEntry[]> {
+  const raw = await fetchRobinhoodRaw();
+  return Object.entries(raw)
+    .map(([ca, token]) => toTokenEntry(ca, token, ROBINHOOD_CATEGORY))
+    .sort((a, b) => b.latestScore - a.latestScore);
 }
