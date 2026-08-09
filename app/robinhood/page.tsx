@@ -8,6 +8,7 @@ import { ScoreBadge } from '@/components/ScoreBadge';
 import { PriceChartModal } from '@/components/PriceChartModal';
 import { fetchRobinhoodTokens, TokenEntry } from '@/lib/tokenApi';
 import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
+import { VerifyBadge } from '@/components/VerifyBadge';
 
 type SortCol = 'marketCap' | 'liq' | 'vol24h' | 'score' | 'change24h' | 'snapshot' | null;
 
@@ -187,6 +188,7 @@ export default function RobinhoodTrackerPage() {
                 <tr className="bg-slate-900 text-blue-400">
                   <th className="text-left p-3 whitespace-nowrap"></th>
                   <th className="text-left p-3 whitespace-nowrap">Token</th>
+                  <th className="text-left p-3 whitespace-nowrap">Verify</th>
                   <th className="text-left p-3 whitespace-nowrap">CA</th>
                   {headers.map((h) => (
                     <th
@@ -224,6 +226,9 @@ export default function RobinhoodTrackerPage() {
                         onClick={() => setChartToken({ category: t.category, ca: t.CA, symbol: t.symbol })}
                       >
                         {t.symbol}
+                      </td>
+                      <td className="p-3">
+                        <VerifyBadge verified={t.verified} className="w-5 h-5" />
                       </td>
                       <td className="p-3 whitespace-nowrap">
                         <a

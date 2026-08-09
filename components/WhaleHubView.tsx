@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { PriceChartModal } from '@/components/PriceChartModal';
 import { prefetchDexDataBatch, getCachedDexData } from '@/lib/dexData';
 import { formatCap, formatPriceShort } from '@/lib/format';
+import { VerifyBadge } from '@/components/VerifyBadge';
 
 type Chain = 'base' | 'robinhood';
 
@@ -21,6 +22,7 @@ interface Notification {
   timestamp: string;
   top10: number | null;
   prevTop10: number | null;
+  verified: boolean | null;
 }
 
 const LEVEL_STYLE: Record<Notification['level'], string> = {
@@ -134,9 +136,14 @@ function buildShareText(n: Notification, dex: ReturnType<typeof getCachedDexData
       ? `\n🐋Whale Accumulation Index: ${n.top10 - n.prevTop10 > 0 ? '+' : ''}${n.top10 - n.prevTop10} (${n.prevTop10}→${n.top10})`
       : '';
 
+  const verifyLine =
+    chain === 'robinhood' && n.verified != null
+      ? `\n${n.verified ? '✅ Verify' : '❌ Not Verify'}`
+      : '';
+
   return `$${symbol}${nameTag} just triggered a SmartMoney signal on ${networkLabel}:
 
-👉WyckScore: ${n.levelLabel} ${n.current}${whaleLine}
+👉WyckScore: ${n.levelLabel} ${n.current}${whaleLine}${verifyLine}
 
 ${twitterPart}At Price: ${price} - MaketCap: ${cap}
 CA: ${n.ca}
@@ -288,10 +295,13 @@ export function WhaleHubView({ chain }: { chain: Chain }) {
                     <div className="flex flex-wrap items-center justify-between gap-y-1 mb-1">
                     <div className="flex items-center gap-2 flex-wrap">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider border ${LEVEL_STYLE[n.level]}`}>
-                          {n.symbol}
+                        {n.symbol}
                         </span>
+                        {chain === 'robinhood' && n.verified != null && (
+                        <VerifyBadge verified={n.verified} className="w-5 h-5" />
+                        )}
                         <span className="text-xs font-bold uppercase tracking-wide">{n.levelLabel} SmartMoney</span>
-                      </div>
+                    </div>
                       
                       <div className="flex flex-col items-end gap-1">
                         <span className="text-[10px] opacity-70 flex items-center gap-2">

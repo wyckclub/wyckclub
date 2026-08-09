@@ -15,6 +15,7 @@ export interface TokenEntry {
   latestScore: number;
   latestScoreDisplay: string;
   last7: HistoryEntry[];
+  verified: boolean;
 }
 
 interface RawEntry {
@@ -26,11 +27,13 @@ interface RawEntry {
   topwhale?: string;
   top10?: number;
   timestamp?: string;
+  verified?: boolean;
 }
 
 interface RawToken {
   symbol: string;
   entries: RawEntry[];
+  verified?: boolean;
 }
 
 type RawCategoryData = Record<string, RawToken>;
@@ -72,6 +75,7 @@ function toTokenEntry(ca: string, raw: RawToken, category: number): TokenEntry {
     latestScore: latest?.score ?? 0,
     latestScoreDisplay: latest?.display ?? '0',
     last7,
+    verified: raw.verified ?? false,
   };
 }
 
