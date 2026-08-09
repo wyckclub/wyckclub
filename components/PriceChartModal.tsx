@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { fetchTokenHistory, PriceHistoryEntry } from '@/lib/tokenApi';
 import { fetchLivePrice } from '@/lib/dexData';
 import { formatPriceShort, formatDateShort } from '@/lib/format';
@@ -60,9 +60,16 @@ export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base
     <div
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 max-w-7xl w-[90%]">
-        <div className="flex justify-between items-center mb-3 text-blue-400 text-sm">
+      >
+      <div className="relative bg-slate-900 border border-slate-700 rounded-lg p-4 max-w-7xl w-[90%]">
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 text-slate-400 hover:text-white bg-slate-900/80 rounded-full w-7 h-7 flex items-center justify-center"
+          aria-label="Close"
+        >
+          ✕
+        </button>
+        <div className="flex flex-wrap justify-between items-center gap-y-2 mb-3 pr-8 text-blue-400 text-sm">
           <span className="text-base">
             Powered by{' '}
             <a
@@ -75,7 +82,7 @@ export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base
             </a>
             . Token: <span className="font-bold">{symbol}</span>
           </span>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             {livePrice != null && (
               <span className={`flex items-center gap-1.5 font-mono ${isUp ? 'text-green-400' : 'text-red-400'}`}>
                 <span className={`w-2 h-2 rounded-full animate-pulse ${isUp ? 'bg-green-400' : 'bg-red-400'}`} />
@@ -87,7 +94,7 @@ export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base
                 )}
               </span>
             )}
-            
+
             <button
               onClick={() => setShowTop10((v) => !v)}
               className={`text-xs px-2 py-1 rounded border ${
@@ -98,8 +105,6 @@ export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base
             >
               {showTop10 ? 'Hide' : 'Show'} Whale Accumulation Index
             </button>
-
-            <button onClick={onClose} className="text-slate-400 hover:text-white">✕</button>
           </div>
         </div>
         {loading && <div className="text-center py-10 opacity-60">Loading...</div>}
@@ -115,6 +120,14 @@ export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base
 }
 
 function ChartSVG({ entries, livePrice, showTop10 }: { entries: PriceHistoryEntry[]; livePrice: number | null; showTop10: boolean }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+    }
+  }, [entries, livePrice]);
+
   const width = 1200;
   const height = 520;
   const pad = { left: 64, right: 16, top: 30, bottom: 46 };
@@ -211,7 +224,7 @@ function ChartSVG({ entries, livePrice, showTop10 }: { entries: PriceHistoryEntr
   const liveColorClass = isUp ? 'fill-green-400' : 'fill-red-400';
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto" ref={scrollRef}>
       <svg viewBox={`0 0 ${width} ${height}`} style={{ width: `${width}px`, height: 'auto' }}>
         {yTicks.map((t, i) => (
           <g key={i}>

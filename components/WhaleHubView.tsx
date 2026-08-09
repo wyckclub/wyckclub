@@ -285,8 +285,8 @@ export function WhaleHubView({ chain }: { chain: Chain }) {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-y-1 mb-1">
+                    <div className="flex items-center gap-2 flex-wrap">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider border ${LEVEL_STYLE[n.level]}`}>
                           {n.symbol}
                         </span>
