@@ -22,7 +22,7 @@ export async function getChartViews(): Promise<number> {
   return v ?? 0;
 }
 
-const CATEGORY_URLS = [
+const BASE_CATEGORY_URLS = [
   process.env.WYCK_CLAW_URL,
   process.env.WYCK_C3_URL,
   process.env.WYCK_CLAW2_URL,
@@ -34,9 +34,17 @@ const CATEGORY_URLS = [
   process.env.WYCK_5NEW_URL,
 ].filter((u): u is string => !!u);
 
-export async function getTotalTokens(): Promise<number> {
+const ROBINHOOD_CATEGORY_URLS = [
+  process.env.WYCK_ROBIN_URL,
+  process.env.WYCK_ROBIN1_URL,
+  process.env.WYCK_ROBIN2_URL,
+  process.env.WYCK_ROBIN3_URL,
+  process.env.WYCK_ROBIN4_URL,
+].filter((u): u is string => !!u);
+
+async function countTokensFromUrls(urls: string[]): Promise<number> {
   const results = await Promise.all(
-    CATEGORY_URLS.map(async (url) => {
+    urls.map(async (url) => {
       try {
         const res = await fetch(url, { next: { revalidate: 60 } });
         if (!res.ok) return {};
@@ -47,4 +55,17 @@ export async function getTotalTokens(): Promise<number> {
     })
   );
   return Object.keys(Object.assign({}, ...results)).length;
+}
+
+export async function getBaseTotalTokens(): Promise<number> {
+  return countTokensFromUrls(BASE_CATEGORY_URLS);
+}
+
+export async function getRobinhoodTotalTokens(): Promise<number> {
+  return countTokensFromUrls(ROBINHOOD_CATEGORY_URLS);
+}
+
+export async function getTotalTokens(): Promise<number> {
+  const [base, robinhood] = await Promise.all([getBaseTotalTokens(), getRobinhoodTotalTokens()]);
+  return base + robinhood;
 }

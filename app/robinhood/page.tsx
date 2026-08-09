@@ -296,10 +296,11 @@ export default function RobinhoodTrackerPage() {
       )}
       {chartToken && (
         <PriceChartModal
-          category={chartToken.category}
-          ca={chartToken.ca}
-          symbol={chartToken.symbol}
-          onClose={() => setChartToken(null)}
+        category={chartToken.category}
+        ca={chartToken.ca}
+        symbol={chartToken.symbol}
+        onClose={() => setChartToken(null)}
+        chainId="robinhood"
         />
       )}
     </div>

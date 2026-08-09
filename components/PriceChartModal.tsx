@@ -13,7 +13,7 @@ interface Props {
   chainId?: string;
 }
 
-export function PriceChartModal({ category, ca, symbol, onClose }: Props) {
+export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base' }: Props) {
   const [entries, setEntries] = useState<PriceHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -41,7 +41,7 @@ export function PriceChartModal({ category, ca, symbol, onClose }: Props) {
   useEffect(() => {
     let active = true;
     function poll() {
-      fetchLivePrice(ca).then((p) => {
+      fetchLivePrice(ca, chainId).then((p) => {
         if (active) setLivePrice(p);
       });
     }
@@ -51,7 +51,7 @@ export function PriceChartModal({ category, ca, symbol, onClose }: Props) {
       active = false;
       clearInterval(id);
     };
-  }, [ca]);
+  }, [ca, chainId]);
 
   const e0Price = entries[entries.length - 1]?.price ?? null;
   const isUp = livePrice != null && e0Price != null ? livePrice >= e0Price : true;

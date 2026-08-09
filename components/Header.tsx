@@ -17,10 +17,40 @@ function HomeIcon() {
   );
 }
 
-function ProIcon() {
+function BaseIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-      <path d="M13 2 3 14h7l-1 8 11-14h-7l1-6Z" />
+    <svg viewBox="0 0 400 400" className="w-4 h-4 rounded-[3px] overflow-hidden">
+      <rect width="400" height="400" fill="#FFFFFF" />
+      <rect x="80" y="80" width="240" height="240" rx="28" ry="28" fill="#0052FF" />
+    </svg>
+  );
+}
+
+function RobinhoodIcon() {
+  return (
+    <svg viewBox="0 0 400 400" className="w-4 h-4 rounded-[3px] overflow-hidden">
+      <rect width="400" height="400" fill="#ccff00" />
+      <g fill="#211d19">
+        <path d="M 185 133.5 
+                 L 170.5 148 
+                 C 142 176.5, 131 220, 131 245 
+                 C 131 260, 120 300, 106 321 
+                 L 115 321 
+                 C 137 280, 149 220, 172 172 
+                 Z" />
+        <path d="M 249 80 
+                 C 275 80, 294 100, 294 130 
+                 C 294 150, 280 178, 252 206 
+                 L 252 145 
+                 L 237 130 
+                 L 185 122 
+                 Z" />
+        <path d="M 238 145 
+                 L 238 215 
+                 L 150 272 
+                 C 175 235, 205 185, 238 145 
+                 Z" />
+      </g>
     </svg>
   );
 }
@@ -58,8 +88,8 @@ function GuideIcon() {
 
 const navItems = [
   { href: '/', label: 'Home', suffix: '', icon: HomeIcon },
-  { href: '/pro', label: 'Pro Tracker', suffix: '(Free Beta)', icon: ProIcon },
-  { href: '/robinhood', label: 'Robinhood Tracker', suffix: '(Beta)', icon: ProIcon },
+  { href: '/pro', label: 'BASE Tracker', suffix: '(Free Beta)', icon: BaseIcon },
+  { href: '/robinhood', label: 'Robinhood Tracker', suffix: '(Beta)', icon: RobinhoodIcon },
   { href: '/whale-hub', label: 'Whale Hub', suffix: '(Beta)', icon: WhaleIcon },
   { href: '/vip', label: 'Portfolio', suffix: '(Beta)', icon: PortfolioIcon },
   { href: '/guide', label: 'Guide', suffix: '', icon: GuideIcon },

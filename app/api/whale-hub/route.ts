@@ -7,12 +7,12 @@ const redis = new Redis({
   token: process.env.REDIS_KV_REST_API_TOKEN!,
 });
 
-const NOTIF_HASH_KEY = 'wyck:whalehub:notifications_by_ca';
-const LASTSEEN_KEY = 'wyck:whalehub:lastseen';
-const MAX_NOTIFS = 300;
+const MAX_NOTIFS = 50;
 const MIN_VOL24H = 1000;
 
-async function fetchVol24hMap(caList: string[]): Promise<Record<string, number>> {
+const ROBINHOOD_CATEGORY = 5;
+
+async function fetchVol24hMap(caList: string[], chainId: string): Promise<Record<string, number>> {
   const out: Record<string, number> = {};
   const BATCH_SIZE = 30;
   for (let i = 0; i < caList.length; i += BATCH_SIZE) {
@@ -26,7 +26,7 @@ async function fetchVol24hMap(caList: string[]): Promise<Record<string, number>>
       const pairs = json.pairs || [];
       chunk.forEach((ca) => {
         const caPairs = pairs.filter(
-          (p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase() && p.chainId === 'base'
+          (p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase() && p.chainId === chainId
         );
         const vol24h = caPairs.reduce((s: number, p: any) => s + (Number(p.volume?.h24) || 0), 0);
         out[ca] = caPairs.length ? vol24h : 0;
@@ -83,18 +83,33 @@ function computeLevel(
 
 export async function GET(req: NextRequest) {
   const origin = req.nextUrl.origin;
+  const chain = req.nextUrl.searchParams.get('chain') === 'robinhood' ? 'robinhood' : 'base';
 
-  const categories = await Promise.all(
-    [1, 2, 3, 4].map(async (cat) => {
-      try {
-        const res = await fetch(`${origin}/api/scores/${cat}`, { cache: 'no-store' });
-        if (!res.ok) return { cat, data: {} as Record<string, any> };
-        return { cat, data: (await res.json()) as Record<string, any> };
-      } catch {
-        return { cat, data: {} as Record<string, any> };
-      }
-    })
-  );
+  const NOTIF_HASH_KEY = `wyck:whalehub:notifications_by_ca:${chain}`;
+  const LASTSEEN_KEY = `wyck:whalehub:lastseen:${chain}`;
+
+  const categories =
+    chain === 'robinhood'
+      ? await (async () => {
+          try {
+            const res = await fetch(`${origin}/api/scores/robinhood`, { cache: 'no-store' });
+            if (!res.ok) return [{ cat: ROBINHOOD_CATEGORY, data: {} as Record<string, any> }];
+            return [{ cat: ROBINHOOD_CATEGORY, data: (await res.json()) as Record<string, any> }];
+          } catch {
+            return [{ cat: ROBINHOOD_CATEGORY, data: {} as Record<string, any> }];
+          }
+        })()
+      : await Promise.all(
+          [1, 2, 3, 4].map(async (cat) => {
+            try {
+              const res = await fetch(`${origin}/api/scores/${cat}`, { cache: 'no-store' });
+              if (!res.ok) return { cat, data: {} as Record<string, any> };
+              return { cat, data: (await res.json()) as Record<string, any> };
+            } catch {
+              return { cat, data: {} as Record<string, any> };
+            }
+          })
+        );
 
   const lastSeen = (await redis.hgetall<Record<string, string>>(LASTSEEN_KEY)) || {};
   const seenUpdates: Record<string, string> = {};
@@ -142,7 +157,7 @@ export async function GET(req: NextRequest) {
   const notifUpdates: Record<string, string> = {};
 
   if (candidates.length) {
-    const volMap = await fetchVol24hMap(candidates.map((c) => c.ca));
+    const volMap = await fetchVol24hMap(candidates.map((c) => c.ca), chain);
 
     for (const c of candidates) {
       const vol24h = volMap[c.ca] ?? 0;
