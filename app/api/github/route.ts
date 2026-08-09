@@ -70,7 +70,6 @@ async function fetchBatch(usernames: string[], retries = 2): Promise<Record<stri
 
   const json = await res.json();
 
-  // Log lỗi thật ra thay vì im lặng throw
   if (json.errors) {
     console.error('GitHub GraphQL errors:', JSON.stringify(json.errors, null, 2));
   }

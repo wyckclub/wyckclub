@@ -160,7 +160,6 @@ function ChartSVG({ entries, livePrice, showTop10 }: { entries: PriceHistoryEntr
     return 'stroke-blue-400';
   }
 
-  // Calculate starredIndices before rendering elements
   const starredIndices = new Set<number>();
   const segments = points.slice(1).map((p, idx) => {
     const i = idx + 1;
@@ -170,7 +169,6 @@ function ChartSVG({ entries, livePrice, showTop10 }: { entries: PriceHistoryEntr
     );
     const colorClass = p.score == null ? 'stroke-blue-400' : segmentColorClass(p.score, prevScores);
     
-    // Fixed color class check to match actual stroke outputs
     if ((colorClass === 'stroke-green-700' || colorClass === 'stroke-green-300/50') && p.topwhale === 'y') {
       starredIndices.add(i);
     }
