@@ -20,12 +20,12 @@ export default function RobinhoodTrackerPage() {
   const [dexReady, setDexReady] = useState(false);
   const [sortCol, setSortCol] = useState<SortCol>('vol24h');
   const [sortDir, setSortDir] = useState<1 | -1>(-1);
-  const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string } | null>(null);
   const [search, setSearch] = useState('');
   const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
   const SNAPSHOT_KEY = 'wyck_robinhood_snapshot_v1';
   const PAGE_SIZE = 200;
   const [page, setPage] = useState(1);
+  const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string; verified: boolean } | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('wyck_robinhood_watchlist');
@@ -222,10 +222,11 @@ export default function RobinhoodTrackerPage() {
                         )}
                       </td>
                       <td
-                        className="p-3 font-semibold whitespace-nowrap cursor-pointer text-blue-400 hover:text-blue-300 underline decoration-dotted"
-                        onClick={() => setChartToken({ category: t.category, ca: t.CA, symbol: t.symbol })}
+                        className="p-3 font-semibold whitespace-nowrap cursor-pointer text-blue-400 hover:text-blue-300"
+                        onClick={() => setChartToken({ category: t.category, ca: t.CA, symbol: t.symbol, verified: t.verified })}
                       >
-                        {t.symbol}
+                        <div className="underline decoration-dotted">{t.symbol}</div>
+                        {dex?.name && <div className="text-[12px] font-normal text-slate-500 no-underline">{dex.name}</div>}
                       </td>
                       <td className="p-3">
                         <VerifyBadge verified={t.verified} className="w-5 h-5" />
@@ -301,11 +302,12 @@ export default function RobinhoodTrackerPage() {
       )}
       {chartToken && (
         <PriceChartModal
-        category={chartToken.category}
-        ca={chartToken.ca}
-        symbol={chartToken.symbol}
-        onClose={() => setChartToken(null)}
-        chainId="robinhood"
+          category={chartToken.category}
+          ca={chartToken.ca}
+          symbol={chartToken.symbol}
+          onClose={() => setChartToken(null)}
+          chainId="robinhood"
+          verified={chartToken.verified}
         />
       )}
     </div>

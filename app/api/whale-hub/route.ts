@@ -12,8 +12,8 @@ const MIN_VOL24H = 1000;
 
 const ROBINHOOD_CATEGORY = 5;
 
-async function fetchVol24hMap(caList: string[], chainId: string): Promise<Record<string, number>> {
-  const out: Record<string, number> = {};
+async function fetchMarketDataMap(caList: string[], chainId: string): Promise<Record<string, { vol24h: number; liq: number }>> {
+  const out: Record<string, { vol24h: number; liq: number }> = {};
   const BATCH_SIZE = 30;
   for (let i = 0; i < caList.length; i += BATCH_SIZE) {
     const chunk = caList.slice(i, i + BATCH_SIZE);
@@ -29,10 +29,11 @@ async function fetchVol24hMap(caList: string[], chainId: string): Promise<Record
           (p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase() && p.chainId === chainId
         );
         const vol24h = caPairs.reduce((s: number, p: any) => s + (Number(p.volume?.h24) || 0), 0);
-        out[ca] = caPairs.length ? vol24h : 0;
+        const liq = caPairs.reduce((s: number, p: any) => s + (Number(p.liquidity?.usd) || 0), 0);
+        out[ca] = { vol24h: caPairs.length ? vol24h : 0, liq: caPairs.length ? liq : 0 };
       });
     } catch {
-      // skip vol = 0
+      // skip -> mặc định vol=0, liq=0
     }
   }
   return out;
@@ -128,6 +129,8 @@ export async function GET(req: NextRequest) {
     verified: boolean | null;
   };
   const candidates: Candidate[] = [];
+  const MIN_LIQ = 20000;
+  const MIN_SCORE = 4;
 
   for (const { cat, data } of categories) {
     for (const [ca, token] of Object.entries<any>(data)) {
@@ -143,6 +146,7 @@ export async function GET(req: NextRequest) {
       const last7 = entries.slice(0, 7).map((e: any) => ({ score: e.score, topwhale: e.topwhale }));
       const level = computeLevel(latest.score, latest.display, last7);
       if (!level) continue;
+      if (latest.score <= MIN_SCORE) continue;
 
       const prevEntry = entries[1];
       const scoreWithWhale = getWhaleStarredScore(latest.display, last7);
@@ -160,11 +164,12 @@ export async function GET(req: NextRequest) {
   const notifUpdates: Record<string, string> = {};
 
   if (candidates.length) {
-    const volMap = await fetchVol24hMap(candidates.map((c) => c.ca), chain);
+    const marketMap = await fetchMarketDataMap(candidates.map((c) => c.ca), chain);
 
     for (const c of candidates) {
-      const vol24h = volMap[c.ca] ?? 0;
-      if (vol24h < MIN_VOL24H) continue;
+      const md = marketMap[c.ca] ?? { vol24h: 0, liq: 0 };
+      if (md.vol24h < MIN_VOL24H) continue;
+      if (md.liq < MIN_LIQ) continue;
 
       const levelLabel = LEVEL_LABELS[c.level];
       const notif: Notification = {

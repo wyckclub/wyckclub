@@ -5,6 +5,7 @@ export interface DexData {
   liq: number | null;
   marketCap: number | null;
   twitter: string | null;
+  website: string | null;
   imageUrl: string | null;
   symbol: string | null;
   name: string | null;
@@ -96,6 +97,7 @@ export async function prefetchDexDataBatch(
             liq: caPairs.length ? liq : null,
             marketCap: marketCap == null ? null : Number(marketCap),
             twitter: extractTwitter(pair),
+            website: pair?.info?.websites?.[0]?.url ?? null,
             imageUrl: pair?.info?.imageUrl ?? null,
             symbol: pair?.baseToken?.symbol ?? null,
             name: pair?.baseToken?.name ?? null,
@@ -135,6 +137,7 @@ export async function prefetchDexDataBatch(
           liq: caPairs.length ? liq : null,
           marketCap: marketCap == null ? null : Number(marketCap),
           twitter: extractTwitter(pair),
+          website: pair?.info?.websites?.[0]?.url ?? null,
           imageUrl: pair?.info?.imageUrl ?? null,
           symbol: pair?.baseToken?.symbol ?? null,
           name: pair?.baseToken?.name ?? null,

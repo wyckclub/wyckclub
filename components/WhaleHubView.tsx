@@ -138,7 +138,7 @@ function buildShareText(n: Notification, dex: ReturnType<typeof getCachedDexData
 
   const verifyLine =
     chain === 'robinhood' && n.verified != null
-      ? `\n${n.verified ? '✅ Verify' : '❌ Not Verify'}`
+      ? `\n${n.verified ? '✅ Verified' : '❌ Not Verified'}`
       : '';
 
   return `$${symbol}${nameTag} just triggered a SmartMoney signal on ${networkLabel}:
@@ -211,8 +211,8 @@ export function WhaleHubView({ chain }: { chain: Chain }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string } | null>(null);
   const [dexTick, setDexTick] = useState(0);
+  const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string; verified: boolean | null } | null>(null);
 
   function load() {
     setLoading(true);
@@ -284,7 +284,7 @@ export function WhaleHubView({ chain }: { chain: Chain }) {
                       }}
                     />
                     <button
-                      onClick={() => setChartToken({ category: n.category, ca: n.ca, symbol: n.symbol })}
+                      onClick={() => setChartToken({ category: n.category, ca: n.ca, symbol: n.symbol, verified: n.verified })}
                       className="text-[12px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-blue-400 hover:text-blue-300 whitespace-nowrap"
                     >
                       View Chart
@@ -370,6 +370,7 @@ export function WhaleHubView({ chain }: { chain: Chain }) {
           symbol={chartToken.symbol}
           onClose={() => setChartToken(null)}
           chainId={chain}
+          verified={chartToken.verified}
         />
       )}
     </div>

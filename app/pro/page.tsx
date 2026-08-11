@@ -244,10 +244,11 @@ export default function ProPlanPage() {
                         )}
                       </td>
                       <td
-                        className="p-3 font-semibold whitespace-nowrap cursor-pointer text-blue-400 hover:text-blue-300 underline decoration-dotted"
+                        className="p-3 font-semibold whitespace-nowrap cursor-pointer text-blue-400 hover:text-blue-300"
                         onClick={() => setChartToken({ category: t.category, ca: t.CA, symbol: t.symbol })}
                       >
-                        {t.symbol}
+                        <div className="underline decoration-dotted">{t.symbol}</div>
+                        {dex?.name && <div className="text-[12px] font-normal text-slate-500 no-underline">{dex.name}</div>}
                       </td>
                       <td className="p-3 whitespace-nowrap">
                         <a
