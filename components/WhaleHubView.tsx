@@ -146,8 +146,7 @@ function buildShareText(n: Notification, dex: ReturnType<typeof getCachedDexData
 👉WyckScore: ${n.levelLabel} ${n.current}${whaleLine}${verifyLine}
 
 ${twitterPart}At Price: ${price} - MaketCap: ${cap}
-CA: ${n.ca}
-Powered by wyck.pro/whale-hub`;
+CA: ${n.ca}`;
 }
 
 function handleShare(n: Notification, dex: ReturnType<typeof getCachedDexData>, chain: Chain) {
