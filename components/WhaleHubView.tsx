@@ -98,7 +98,7 @@ function ChainSelector({ chain }: { chain: Chain }) {
   return (
     <div className="flex items-center gap-2 mb-6">
       <Link
-        href="/whale-hub"
+        href="/whale-hub/base"
         className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-bold transition-colors ${
           chain === 'base'
             ? 'border-blue-500 bg-blue-500/10 text-blue-300'
@@ -109,7 +109,7 @@ function ChainSelector({ chain }: { chain: Chain }) {
         Base
       </Link>
       <Link
-        href="/whale-hub/robinhood"
+        href="/whale-hub"
         className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-bold transition-colors ${
           chain === 'robinhood'
             ? 'border-[#ccff00] bg-[#ccff00]/10 text-[#ccff00]'

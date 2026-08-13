@@ -2,6 +2,6 @@
 
 import { WhaleHubView } from '@/components/WhaleHubView';
 
-export default function WhaleHubBasePage() {
-  return <WhaleHubView chain="base" />;
+export default function WhaleHubRootPage() {
+  return <WhaleHubView chain="robinhood" />;
 }

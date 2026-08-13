@@ -2,7 +2,7 @@
 
 import { useAccount, useBalance } from 'wagmi';
 
-export const GATE_TOKEN_ADDRESS = '0x12F6880c05342f11cFc9AEedF55ce87501721ba3';
+export const GATE_TOKEN_ADDRESS = '0xloading';
 
 export const PRO_THRESHOLD = 1_000_000;
 export const VIP_THRESHOLD = 1_500_000;

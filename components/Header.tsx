@@ -86,12 +86,22 @@ function GuideIcon() {
   );
 }
 
+function TokenIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v10M9 9.5c0-1.1 1.34-2 3-2s3 .9 3 2-1.34 2-3 2-3 .9-3 2 1.34 2 3 2 3-.9 3-2" />
+    </svg>
+  );
+}
+
 const navItems = [
   { href: '/', label: 'Home', suffix: '', icon: HomeIcon },
-  { href: '/pro', label: 'BASE Tracker', suffix: '(Free Beta)', icon: BaseIcon },
+  { href: '/pro', label: 'BASE Tracker', suffix: '(Beta)', icon: BaseIcon },
   { href: '/robinhood', label: 'Robinhood Tracker', suffix: '(Beta)', icon: RobinhoodIcon },
-  { href: '/whale-hub', label: 'Whale Hub', suffix: '(Beta)', icon: WhaleIcon },
-  { href: '/vip', label: 'Portfolio', suffix: '(Beta)', icon: PortfolioIcon },
+  { href: '/whale-hub', label: 'Whale Hub', suffix: '', icon: WhaleIcon },
+  { href: '/portfolio', label: 'Portfolio', suffix: '', icon: PortfolioIcon },
+  { href: '/token', label: 'Token', suffix: '', icon: TokenIcon },
   { href: '/guide', label: 'Guide', suffix: '', icon: GuideIcon },
 ];
 
