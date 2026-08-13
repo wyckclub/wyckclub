@@ -101,7 +101,6 @@ const navItems = [
   { href: '/robinhood', label: 'Robinhood Tracker', suffix: '(Beta)', icon: RobinhoodIcon },
   { href: '/whale-hub', label: 'Whale Hub', suffix: '', icon: WhaleIcon },
   { href: '/portfolio', label: 'Portfolio', suffix: '', icon: PortfolioIcon },
-  { href: '/token', label: 'Token', suffix: '', icon: TokenIcon },
   { href: '/guide', label: 'Guide', suffix: '', icon: GuideIcon },
 ];
 
