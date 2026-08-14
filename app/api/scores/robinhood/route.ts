@@ -5,6 +5,9 @@ const NOT_VERIFIED_URLS = [
   process.env.WYCK_ROBIN2_URL,
   process.env.WYCK_ROBIN3_URL,
   process.env.WYCK_ROBIN4_URL,
+  process.env.WYCK_ROBIN2A_URL,
+  process.env.WYCK_ROBIN3A_URL,
+  process.env.WYCK_ROBIN4A_URL,
 ].filter((u): u is string => !!u);
 
 const VERIFIED_URLS = [
