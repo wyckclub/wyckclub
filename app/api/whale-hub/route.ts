@@ -130,7 +130,7 @@ export async function GET(req: NextRequest) {
   };
   const candidates: Candidate[] = [];
   const MIN_LIQ = 20000;
-  const MIN_SCORE = 4;
+  const MIN_SCORE = 3;
 
   for (const { cat, data } of categories) {
     for (const [ca, token] of Object.entries<any>(data)) {

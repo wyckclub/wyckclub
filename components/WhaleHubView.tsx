@@ -6,6 +6,9 @@ import { PriceChartModal } from '@/components/PriceChartModal';
 import { prefetchDexDataBatch, getCachedDexData } from '@/lib/dexData';
 import { formatCap, formatPriceShort } from '@/lib/format';
 import { VerifyBadge } from '@/components/VerifyBadge';
+import { WhaleHubPotentialPanel } from '@/components/WhaleHubPotentialPanel';
+import { useTokenGate, VIP_THRESHOLD } from '@/lib/tokenGate';
+import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
 
 type Chain = 'base' | 'robinhood';
 
@@ -207,6 +210,7 @@ function renderMessage(n: Notification) {
 }
 
 export function WhaleHubView({ chain }: { chain: Chain }) {
+  const { isConnected, isLoading, amount, hasAccess } = useTokenGate(VIP_THRESHOLD);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -239,8 +243,27 @@ export function WhaleHubView({ chain }: { chain: Chain }) {
     return acc;
   }, {});
 
+  // ⬇️ Gate check đặt SAU tất cả hooks
+  if (!isConnected) {
+    return <GateMessage title="Connect your wallet" message="Connect your wallet to check Whale Hub access." />;
+  }
+  if (isLoading) {
+    return <GateMessage title="Checking balance..." message="" />;
+  }
+  if (!hasAccess) {
+    return (
+      <GateMessage
+        title="Whale Hub Locked"
+        message={`You need at least ${VIP_THRESHOLD.toLocaleString()} tokens. Your balance: ${amount.toLocaleString()}.`}
+        showBuyPrompt
+      />
+    );
+  }
+
   return (
-    <div className="w-full px-4 py-6 max-w-3xl mx-auto">
+    <div className="w-full px-4 py-6 max-w-6xl mx-auto">
+      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="flex-1 min-w-0">
       <ChainSelector chain={chain} />
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-blue-400">
@@ -362,6 +385,14 @@ export function WhaleHubView({ chain }: { chain: Chain }) {
         ))}
       </div>
 
+      </div>
+
+      <WhaleHubPotentialPanel
+        chain={chain}
+        onOpenChart={(t) => setChartToken({ ...t, verified: null })}
+      />
+      </div>
+
       {chartToken && (
         <PriceChartModal
           category={chartToken.category}
@@ -372,6 +403,18 @@ export function WhaleHubView({ chain }: { chain: Chain }) {
           verified={chartToken.verified}
         />
       )}
+    </div>
+  );
+}
+
+function GateMessage({ title, message, showBuyPrompt }: { title: string; message: string; showBuyPrompt?: boolean }) {
+  return (
+    <div className="min-h-[60vh] flex items-center justify-center p-6">
+      <div className="max-w-md text-center space-y-3">
+        <h1 className="text-2xl font-bold text-blue-400">{title}</h1>
+        <p className="text-slate-400">{message}</p>
+        {showBuyPrompt && <BuyTokenPrompt />}
+      </div>
     </div>
   );
 }

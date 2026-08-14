@@ -71,7 +71,7 @@ export function getChartScoreTextColorClass(
   return latestScore > 8 || isTripleAvg ? 'text-yellow-400' : 'text-slate-300';
 }
 
-function isWhaleStarred(last7: { score: number; topwhale?: string }[], idx: number): boolean {
+export function isWhaleStarredAt(last7: { score: number; topwhale?: string }[], idx: number): boolean {
   const current = last7[idx];
   if (!current || current.topwhale !== 'y') return false;
   const prevScores = [last7[idx + 1]?.score, last7[idx + 2]?.score, last7[idx + 3]?.score].filter(
@@ -83,12 +83,34 @@ function isWhaleStarred(last7: { score: number; topwhale?: string }[], idx: numb
   return current.score - avg > 0;
 }
 
+export function isSpringPointAt(
+  last7: { score: number; price: number | null; topwhale?: string }[],
+  idx: number
+): boolean {
+  const p = last7[idx];
+  const prev = last7[idx + 1];
+  const prev2 = last7[idx + 2];
+
+  const springCondition = !!(
+    p && prev && prev2 &&
+    p.score != null && prev.score != null &&
+    p.price != null && prev2.price != null &&
+    p.score - prev.score > 3 &&
+    p.price < prev2.price
+  );
+
+  const whaleCount = [idx + 1, idx + 2, idx + 3].filter((i) => isWhaleStarredAt(last7, i)).length;
+  const whaleStreakCondition = isWhaleStarredAt(last7, idx) && whaleCount >= 2;
+
+  return springCondition || whaleStreakCondition;
+}
+
 export function hasWhaleAtE0E1(
   last7: { score: number; topwhale?: string }[],
   requireScoreGte: boolean
 ) {
   if (!last7 || last7.length < 2) return false;
-  if (!isWhaleStarred(last7, 0) || !isWhaleStarred(last7, 1)) return false;
+  if (!isWhaleStarredAt(last7, 0) || !isWhaleStarredAt(last7, 1)) return false;
   if (requireScoreGte && last7[0].score < last7[1].score) return false;
   return true;
 }
