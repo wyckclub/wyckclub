@@ -215,6 +215,7 @@ export function WhaleHubView({ chain }: { chain: Chain }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [dexTick, setDexTick] = useState(0);
+  const [potentialRefreshKey, setPotentialRefreshKey] = useState(0);
   const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string; verified: boolean | null } | null>(null);
 
   function load() {
@@ -224,6 +225,7 @@ export function WhaleHubView({ chain }: { chain: Chain }) {
       .then((data) => setNotifications(Array.isArray(data) ? data : []))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
+    setPotentialRefreshKey((v) => v + 1);
   }
 
   useEffect(() => {
@@ -243,7 +245,6 @@ export function WhaleHubView({ chain }: { chain: Chain }) {
     return acc;
   }, {});
 
-  // ⬇️ Gate check đặt SAU tất cả hooks
   if (!isConnected) {
     return <GateMessage title="Connect your wallet" message="Connect your wallet to check Whale Hub access." />;
   }
@@ -389,7 +390,8 @@ export function WhaleHubView({ chain }: { chain: Chain }) {
 
       <WhaleHubPotentialPanel
         chain={chain}
-        onOpenChart={(t) => setChartToken({ ...t, verified: null })}
+        refreshKey={potentialRefreshKey}
+        onOpenChart={(t) => setChartToken(t)}
       />
       </div>
 

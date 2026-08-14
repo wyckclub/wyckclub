@@ -49,6 +49,7 @@ interface Item {
   whale: boolean;
   spring: boolean;
   yellow: boolean;
+  verified: boolean | null;
   liq?: number;
   marketCap?: number | null;
   imageUrl?: string | null;
@@ -126,6 +127,7 @@ export async function GET(req: NextRequest) {
         whale: whaleE0,
         spring: springE0,
         yellow: yellowE0,
+        verified: token.verified ?? null,
       });
     }
   }

@@ -13,17 +13,18 @@ interface Item {
   whale: boolean;
   spring: boolean;
   yellow: boolean;
+  verified: boolean | null;
   liq: number;
   marketCap: number | null;
   imageUrl: string | null;
 }
 
-function Row({ item, onOpenChart }: { item: Item; onOpenChart: (t: { category: number; ca: string; symbol: string }) => void }) {
+function Row({ item, onOpenChart }: { item: Item; onOpenChart: (t: { category: number; ca: string; symbol: string; verified: boolean | null }) => void }) {
   const scoreColor = item.yellow ? 'text-yellow-400' : 'text-slate-300';
   const label = `${item.whale ? '🐋' : ''}${item.scoreDisplay}`;
   return (
     <button
-      onClick={() => onOpenChart({ category: item.category, ca: item.ca, symbol: item.symbol })}
+      onClick={() => onOpenChart({ category: item.category, ca: item.ca, symbol: item.symbol, verified: item.verified })}
       className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-slate-800 text-left"
     >
       {item.imageUrl ? (
@@ -48,10 +49,12 @@ function Row({ item, onOpenChart }: { item: Item; onOpenChart: (t: { category: n
 
 export function WhaleHubPotentialPanel({
   chain,
+  refreshKey,
   onOpenChart,
 }: {
   chain: Chain;
-  onOpenChart: (t: { category: number; ca: string; symbol: string }) => void;
+  refreshKey: number;
+  onOpenChart: (t: { category: number; ca: string; symbol: string; verified: boolean | null }) => void;
 }) {
   const [tier1, setTier1] = useState<Item[]>([]);
   const [tier2, setTier2] = useState<Item[]>([]);
@@ -67,7 +70,7 @@ export function WhaleHubPotentialPanel({
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [chain]);
+  }, [chain, refreshKey]);
 
   return (
     <div className="w-full lg:w-80 shrink-0 space-y-6">

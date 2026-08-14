@@ -9,6 +9,8 @@ const NOT_VERIFIED_URLS = [
 
 const VERIFIED_URLS = [
   process.env.WYCK_ROBIN5_URL,
+  process.env.WYCK_ROBIN6_URL,
+  process.env.WYCK_ROBIN7_URL,
 ].filter((u): u is string => !!u);
 
 async function fetchGroup(urls: string[], verified: boolean): Promise<Record<string, any>> {
