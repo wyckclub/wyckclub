@@ -112,7 +112,9 @@ export async function fetchTokenHistory(category: number, ca: string): Promise<P
       ? rawCache.get(category)!.data
       : await fetchCategoryRaw(category)
   );
-  const token = raw[ca];
+  const key = Object.keys(raw).find((k) => k.toLowerCase() === ca.toLowerCase());
+  const token = key ? raw[key] : undefined;
+
   if (!token) return [];
   return [...token.entries].reverse().map((e) => ({
     date: `#${e.entry}`,
