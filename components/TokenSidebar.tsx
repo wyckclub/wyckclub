@@ -48,6 +48,9 @@ export function TokenSidebar({ chain }: { chain: Chain }) {
   const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
   const [dexTick, setDexTick] = useState(0);
   const [loading, setLoading] = useState(true);
+  type SortBy = 'az' | 'score' | 'volume' | 'marketcap';
+  const [sortBy, setSortBy] = useState<SortBy>('az');
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
 
   const watchKey = `${WATCHLIST_KEY_PREFIX}${chain}`;
 
@@ -114,19 +117,32 @@ export function TokenSidebar({ chain }: { chain: Chain }) {
     return tokens.map((t) => ({ ca: t.CA, symbol: t.symbol, category: t.category, score: t.latestScore, scoreDisplay: t.latestScoreDisplay, verified: t.verified }));
   }, [tab, tokens, newTokens, potential, watchlist]);
 
-  const filteredRows = useMemo(() => {
-    const base = [...rows].sort((a, b) => a.symbol.localeCompare(b.symbol));
+    const filteredRows = useMemo(() => {
+    const base = [...rows].sort((a, b) => {
+        if (sortBy === 'score') return b.score - a.score;
+        if (sortBy === 'volume') {
+        const va = getCachedDexData(a.ca)?.vol24h ?? -Infinity;
+        const vb = getCachedDexData(b.ca)?.vol24h ?? -Infinity;
+        return vb - va;
+        }
+        if (sortBy === 'marketcap') {
+        const ma = getCachedDexData(a.ca)?.marketCap ?? -Infinity;
+        const mb = getCachedDexData(b.ca)?.marketCap ?? -Infinity;
+        return mb - ma;
+        }
+        return a.symbol.localeCompare(b.symbol);
+    });
     const q = search.trim().toLowerCase();
     if (!q) return base;
     return base.filter((r) => {
-      const dex = getCachedDexData(r.ca);
-      return (
+        const dex = getCachedDexData(r.ca);
+        return (
         r.symbol.toLowerCase().includes(q) ||
         r.ca.toLowerCase().includes(q) ||
         (dex?.name ?? '').toLowerCase().includes(q)
-      );
+        );
     });
-  }, [rows, search, dexTick]);
+    }, [rows, search, dexTick, sortBy]);
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'star', label: '★' },
@@ -163,12 +179,42 @@ export function TokenSidebar({ chain }: { chain: Chain }) {
         ))}
       </div>
 
-        <div className="flex items-center px-2.5 py-1.5 border-b border-slate-800 text-[10px] font-bold text-slate-500 uppercase tracking-wide shrink-0">
-        <span className="flex-1 pl-9">Token</span>
-        <span className="w-12 text-right leading-tight">
-            Vol 24h<br />Chage 24h
-        </span>
-        <span className="w-8 text-right">Score</span>
+        <div className="flex items-center px-2.5 py-1.5 border-b border-slate-800 text-[11px] font-bold text-slate-500 tracking-wide shrink-0 relative">
+            <div className="flex-1 pl-9 relative">
+                <button
+                onClick={() => setSortMenuOpen((v) => !v)}
+                className="flex items-center gap-1 hover:text-slate-300"
+                >
+                Sort by
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-2.5 h-2.5">
+                    <path d="m6 9 6 6 6-6" />
+                </svg>
+                </button>
+                {sortMenuOpen && (
+                <div className="absolute top-full left-0 mt-1 z-20 bg-slate-950 border border-slate-800 rounded-lg overflow-hidden w-40 normal-case">
+                    {([
+                    { key: 'az', label: 'A-Z' },
+                    { key: 'score', label: 'WYCKSCORE' },
+                    { key: 'volume', label: 'Volume' },
+                    { key: 'marketcap', label: 'Market Cap' },
+                    ] as { key: SortBy; label: string }[]).map((opt) => (
+                    <button
+                        key={opt.key}
+                        onClick={() => { setSortBy(opt.key); setSortMenuOpen(false); }}
+                        className={`block w-full text-left px-3 py-2 text-[11px] font-semibold hover:bg-slate-800 ${
+                        sortBy === opt.key ? 'text-blue-400' : 'text-slate-300'
+                        }`}
+                    >
+                        {opt.label}
+                    </button>
+                    ))}
+                </div>
+                )}
+            </div>
+            <span className="w-10 text-left text-[10px] leading-tight">
+                24h Vol<br />Change
+            </span>
+            <span className="w-8 text-right">Score</span>
         </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -200,13 +246,13 @@ export function TokenSidebar({ chain }: { chain: Chain }) {
 
               <div className="min-w-0 flex-1">
                 <div className="text-[11px] font-bold text-blue-400 truncate">{r.symbol}</div>
-                <div className="text-[10px] text-slate-500 truncate">{dex?.marketCap == null ? 'N/A' : formatCap(dex.marketCap)}</div>
+                <div className="text-[11px] text-slate-400 truncate">{dex?.marketCap == null ? 'N/A' : formatCap(dex.marketCap)}</div>
               </div>
 
               <div className="text-right shrink-0 w-14">
-                <div className="text-[10px] text-slate-400">{dex?.vol24h == null ? 'N/A' : formatCap(dex.vol24h)}</div>
+                <div className="text-[11px] font-bold text-slate-400">{dex?.vol24h == null ? 'N/A' : formatCap(dex.vol24h)}</div>
                 <div className={`text-[10px] font-semibold ${change24h == null ? 'text-slate-500' : change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {change24h == null ? 'N/A' : `${change24h >= 0 ? '+' : ''}${change24h.toFixed(1)}%`}
+                  {change24h == null ? 'N/A' : `${change24h >= 0 ? '+' : ''}${change24h.toFixed(0)}%`}
                 </div>
               </div>
 

@@ -19,7 +19,7 @@ export function TokenInfoPanel({
   info, ca, symbol, verified,
 }: { info: FullPairInfo | null; ca: string; chainId: string; symbol: string; verified?: boolean | null }) {
   if (!info) {
-    return <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-slate-500 text-sm">Đang tải dữ liệu Dexscreener...</div>;
+    return <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-slate-500 text-sm">Dex loading...</div>;
   }
   const created = info.pairCreatedAt ? new Date(info.pairCreatedAt) : null;
 
@@ -42,7 +42,7 @@ export function TokenInfoPanel({
 
       <div className="flex items-center gap-3 text-xs">
         {info.website && <a href={info.website} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Website</a>}
-        {info.twitter && <a href={`https://x.com/${info.twitter}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">X/Twitter</a>}
+        {info.twitter && <a href={`https://x.com/${info.twitter}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">X (Twitter)</a>}
         {info.telegram && <a href={info.telegram} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Telegram</a>}
         <a href={info.url} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:underline ml-auto">Dexscreener ↗</a>
       </div>
