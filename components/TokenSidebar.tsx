@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { fetchAllCategories, fetchRobinhoodTokens, fetchRobinhoodNewTokens, TokenEntry } from '@/lib/tokenApi';
 import { prefetchDexDataBatch, getCachedDexData } from '@/lib/dexData';
 import { formatCap } from '@/lib/format';
 import { ScoreBadge } from '@/components/ScoreBadge';
+import { useRouter, usePathname } from 'next/navigation';
 
 type Chain = 'base' | 'robinhood';
 type Tab = 'star' | 'all' | 'potential' | 'new';
@@ -36,8 +36,10 @@ function StarIcon({ filled }: { filled: boolean }) {
 
 const WATCHLIST_KEY_PREFIX = 'wyck_sidebar_star_';
 
-export function TokenSidebar({ chain, activeCa }: { chain: Chain; activeCa?: string }) {
+export function TokenSidebar({ chain }: { chain: Chain }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const activeCa = pathname?.split('/').pop();
   const [tab, setTab] = useState<Tab>('all');
   const [search, setSearch] = useState('');
   const [tokens, setTokens] = useState<TokenEntry[]>([]);
