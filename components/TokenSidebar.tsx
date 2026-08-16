@@ -1,20 +1,17 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { fetchAllCategories, fetchRobinhoodTokens, fetchRobinhoodNewTokens, TokenEntry } from '@/lib/tokenApi';
-import { prefetchDexDataBatch, getCachedDexData } from '@/lib/dexData';
+import { useMemo, useState } from 'react';
+import { getCachedDexData } from '@/lib/dexData';
 import { formatCap } from '@/lib/format';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { useRouter, usePathname } from 'next/navigation';
+import { useTokenData } from '@/components/TokenDataContext';
 
 type Chain = 'base' | 'robinhood';
 type Tab = 'star' | 'all' | 'potential' | 'new';
 
 interface Row {
   ca: string; symbol: string; category: number; score: number; scoreDisplay: string; verified: boolean;
-}
-interface PotentialItem {
-  ca: string; symbol: string; category: number; score: number; scoreDisplay: string; verified: boolean | null;
 }
 
 function SearchIcon() {
@@ -42,22 +39,17 @@ export function TokenSidebar({ chain }: { chain: Chain }) {
   const activeCa = pathname?.split('/').pop();
   const [tab, setTab] = useState<Tab>('all');
   const [search, setSearch] = useState('');
-  const [tokens, setTokens] = useState<TokenEntry[]>([]);
-  const [newTokens, setNewTokens] = useState<TokenEntry[]>([]);
-  const [potential, setPotential] = useState<PotentialItem[]>([]);
-  const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
-  const [dexTick, setDexTick] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const { tokens, newTokens, potential, dexTick, loading } = useTokenData();
+  const [watchlist, setWatchlist] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    const saved = localStorage.getItem(`${WATCHLIST_KEY_PREFIX}${chain}`);
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
   type SortBy = 'az' | 'score' | 'volume' | 'marketcap';
-  const [sortBy, setSortBy] = useState<SortBy>('az');
+  const [sortBy, setSortBy] = useState<SortBy>('volume');
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
 
   const watchKey = `${WATCHLIST_KEY_PREFIX}${chain}`;
-
-  useEffect(() => {
-    const saved = localStorage.getItem(watchKey);
-    setWatchlist(saved ? new Set(JSON.parse(saved)) : new Set());
-  }, [watchKey]);
 
   function toggleStar(ca: string) {
     setWatchlist((prev) => {
@@ -68,39 +60,6 @@ export function TokenSidebar({ chain }: { chain: Chain }) {
       return next;
     });
   }
-
-    useEffect(() => {
-        let active = true;
-        function load() {
-            setLoading(true);
-            const loadAll = chain === 'robinhood' ? fetchRobinhoodTokens() : fetchAllCategories();
-            const loadNew = chain === 'robinhood'
-            ? fetchRobinhoodNewTokens()
-            : loadAll.then((list) => list.filter((t) => t.category === 4));
-
-            Promise.all([
-            loadAll,
-            loadNew,
-            fetch(`/api/whale-hub/potential?chain=${chain}`).then((r) => r.json()).catch(() => ({ tier1: [], tier2: [] })),
-            ])
-            .then(([all, news, pot]) => {
-                if (!active) return;
-                setTokens(all);
-                setNewTokens(news as TokenEntry[]);
-                setPotential([...(pot.tier1 || []), ...(pot.tier2 || [])]);
-                const allCas = [
-                ...all.map((t: TokenEntry) => t.CA),
-                ...(pot.tier1 || []).map((t: PotentialItem) => t.ca),
-                ...(pot.tier2 || []).map((t: PotentialItem) => t.ca),
-                ];
-                prefetchDexDataBatch(allCas, () => setDexTick((v) => v + 1), chain);
-            })
-            .finally(() => { if (active) setLoading(false); });
-        }
-        load();
-        const id = setInterval(load, 300000);
-        return () => { active = false; clearInterval(id); };
-    }, [chain]);
 
   const rows: Row[] = useMemo(() => {
     if (tab === 'star') {

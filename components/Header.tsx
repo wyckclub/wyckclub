@@ -97,7 +97,7 @@ function TokenIcon() {
 
 const navItems = [
   { href: '/', label: 'Home', suffix: '', icon: HomeIcon },
-  { href: '/pro', label: 'BASE Tracker', suffix: '(Beta)', icon: BaseIcon },
+  { href: '/base', label: 'BASE Tracker', suffix: '(Beta)', icon: BaseIcon },
   { href: '/robinhood', label: 'Robinhood Tracker', suffix: '(Beta)', icon: RobinhoodIcon },
   { href: '/whale-hub', label: 'Whale Hub', suffix: '', icon: WhaleIcon },
   { href: '/portfolio', label: 'Portfolio', suffix: '', icon: PortfolioIcon },

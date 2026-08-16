@@ -2,30 +2,26 @@
 
 import { useEffect, useState } from 'react';
 import { useTokenGate, PRO_THRESHOLD } from '@/lib/tokenGate';
-import { prefetchDexDataBatch, getCachedDexData } from '@/lib/dexData';
+import { getCachedDexData } from '@/lib/dexData';
 import { formatCap } from '@/lib/format';
 import { ScoreBadge } from '@/components/ScoreBadge';
-import { HistoryStrip } from '@/components/HistoryStrip';
 import { PriceChartModal } from '@/components/PriceChartModal';
-import { fetchAllCategories, TokenEntry, CATEGORY_LABELS } from '@/lib/tokenApi';
+import { TokenEntry, CATEGORY_LABELS } from '@/lib/tokenApi';
 import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
 import { fetchGithubStats, GithubStats } from '@/lib/githubApi';
+import { useTokenData } from '@/components/TokenDataContext';
 
 type SortCol = 'marketCap' | 'liq' | 'vol24h' | 'score' | 'change24h' | 'snapshot' | null;
 
-export default function ProPlanPage() {
+export default function BaseTrackerPage() {
   const { isConnected, isLoading, amount, hasAccess } = useTokenGate(PRO_THRESHOLD);
-  const [tokens, setTokens] = useState<TokenEntry[]>([]);
-  const [loadError, setLoadError] = useState('');
-  const [loadingData, setLoadingData] = useState(false);
-  const [dexReady, setDexReady] = useState(false);
-  const [sortCol, setSortCol] = useState<SortCol>('vol24h');
+  const { tokens, loading: loadingData, dexReady, dexTick, refresh: loadData } = useTokenData();
+  const [sortCol, setSortCol] = useState<SortCol>('snapshot');
   const [sortDir, setSortDir] = useState<1 | -1>(-1);
   const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string } | null>(null);
   const [search, setSearch] = useState('');
   const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
   const [categoryFilter, setCategoryFilter] = useState<number | 'all'>('all');
-  const SNAPSHOT_KEY = 'wyck_pro_snapshot_v1';
   const PAGE_SIZE = 200;
   const [page, setPage] = useState(1);
   const [githubStats, setGithubStats] = useState<Record<string, GithubStats>>({});
@@ -52,50 +48,6 @@ export default function ProPlanPage() {
   useEffect(() => {
     setPage(1);
   }, [search, categoryFilter, sortCol, sortDir]);
-
-  function loadSnapshot(): TokenEntry[] | null {
-    if (typeof window === 'undefined') return null;
-    try {
-      const raw = localStorage.getItem(SNAPSHOT_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  }
-
-  function saveSnapshot(data: TokenEntry[]) {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(data));
-    } catch {}
-  }
-
-  const [dexTick, setDexTick] = useState(0);
-
-  useEffect(() => {
-    const snap = loadSnapshot();
-    if (snap?.length) setTokens(snap);
-  }, []);
-
-  function loadData() {
-    if (!hasAccess) return;
-    setLoadError('');
-    setDexReady(false);
-    fetchAllCategories()
-      .then(async (data) => {
-        setTokens(data);
-        setLoadingData(false);
-        await prefetchDexDataBatch(data.map((t) => t.CA), () => setDexTick((v) => v + 1));
-        setDexReady(true);
-        saveSnapshot(data);
-      })
-      .catch((e) => setLoadError(e.message));
-  }
-
-  useEffect(() => {
-    setLoadingData(true);
-    loadData();
-  }, [hasAccess]);
 
   if (!isConnected) return <GateMessage title="Connect your wallet" message="Connect your wallet to check Pro Plan access." />;
   if (isLoading) return <GateMessage title="Checking balance..." message="" />;
@@ -169,7 +121,7 @@ export default function ProPlanPage() {
   ];
 
   return (
-    <div className="w-full px-4 py-6">
+    <div className="flex-1 min-w-0 h-full overflow-y-auto px-4 py-3">
       <h2 className="text-2xl font-bold text-blue-400 mb-4">WYCK Pro - Whale Tracker</h2>
       <div className="flex items-center gap-3 mb-4">
         <input
@@ -199,8 +151,7 @@ export default function ProPlanPage() {
         </button>
       </div>
       {loadingData && <p className="text-slate-400">Loading data...</p>}
-      {loadError && <p className="text-red-400">{loadError}</p>}
-      {!loadingData && !loadError && (
+      {!loadingData && (
         <>
           <div className="overflow-x-auto rounded-xl border border-slate-800">
             <table className="w-full text-sm">
