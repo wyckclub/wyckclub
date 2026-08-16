@@ -153,3 +153,21 @@ export async function fetchRobinhoodTokens(): Promise<TokenEntry[]> {
     .map(([ca, token]) => toTokenEntry(ca, token, ROBINHOOD_CATEGORY))
     .sort((a, b) => b.latestScore - a.latestScore);
 }
+
+let robinNewRawCache: { data: RawCategoryData; timestamp: number } | null = null;
+
+async function fetchRobinhoodNewRaw(): Promise<RawCategoryData> {
+  if (robinNewRawCache && Date.now() - robinNewRawCache.timestamp < RAW_TTL) return robinNewRawCache.data;
+  const res = await fetch('/api/scores/robinhood-new', { cache: 'no-store' });
+  if (!res.ok) throw new Error('ERROR robinhood-new');
+  const data: RawCategoryData = await res.json();
+  robinNewRawCache = { data, timestamp: Date.now() };
+  return data;
+}
+
+export async function fetchRobinhoodNewTokens(): Promise<TokenEntry[]> {
+  const raw = await fetchRobinhoodNewRaw();
+  return Object.entries(raw)
+    .map(([ca, token]) => toTokenEntry(ca, token, ROBINHOOD_CATEGORY))
+    .sort((a, b) => b.latestScore - a.latestScore);
+}

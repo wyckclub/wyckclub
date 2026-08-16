@@ -11,6 +11,31 @@ export interface DexData {
   name: string | null;
 }
 
+export interface FullPairInfo {
+  pairAddress: string;
+  dexId: string;
+  url: string;
+  priceUsd: number | null;
+  marketCap: number | null;
+  fdv: number | null;
+  liq: number | null;
+  pairCreatedAt: number | null;
+  imageUrl: string | null;
+  symbol: string | null;
+  name: string | null;
+  twitter: string | null;
+  telegram: string | null;
+  website: string | null;
+  priceChange: { m5: number | null; h1: number | null; h6: number | null; h24: number | null };
+  volume: { m5: number | null; h1: number | null; h6: number | null; h24: number | null };
+  txns: {
+    m5: { buys: number; sells: number };
+    h1: { buys: number; sells: number };
+    h6: { buys: number; sells: number };
+    h24: { buys: number; sells: number };
+  };
+}
+
 const TTL = 2 * 60 * 1000;
 const STORAGE_KEY = 'wyck_dex_cache_v1';
 const cache = new Map<string, { data: DexData; timestamp: number }>();
@@ -166,6 +191,63 @@ export async function fetchLivePrice(ca: string, chainId: string = 'base'): Prom
     const pair = caPairs[0] || pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase());
     const priceUsd = pair?.priceUsd;
     return priceUsd == null ? null : Number(priceUsd);
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchFullTokenPairInfo(ca: string, chainId: string = 'base'): Promise<FullPairInfo | null> {
+  try {
+    const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${ca}`);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const pairs = json.pairs || [];
+    const caPairs = pairs.filter(
+      (p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase() && p.chainId === chainId
+    );
+    const pair =
+      [...caPairs].sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0] ||
+      pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase());
+    if (!pair) return null;
+
+    const socials = pair.info?.socials || [];
+    const tw = socials.find((s: any) => s.type === 'twitter');
+    const tg = socials.find((s: any) => s.type === 'telegram');
+
+    return {
+      pairAddress: pair.pairAddress,
+      dexId: pair.dexId,
+      url: pair.url,
+      priceUsd: pair.priceUsd == null ? null : Number(pair.priceUsd),
+      marketCap: pair.marketCap ?? pair.fdv ?? null,
+      fdv: pair.fdv ?? null,
+      liq: pair.liquidity?.usd ?? null,
+      pairCreatedAt: pair.pairCreatedAt ?? null,
+      imageUrl: pair.info?.imageUrl ?? null,
+      symbol: pair.baseToken?.symbol ?? null,
+      name: pair.baseToken?.name ?? null,
+      twitter: tw?.url?.match(/(?:x|twitter)\.com\/([^/?]+)/i)?.[1] ?? null,
+      telegram: tg?.url ?? null,
+      website: pair.info?.websites?.[0]?.url ?? null,
+      priceChange: {
+        m5: pair.priceChange?.m5 ?? null,
+        h1: pair.priceChange?.h1 ?? null,
+        h6: pair.priceChange?.h6 ?? null,
+        h24: pair.priceChange?.h24 ?? null,
+      },
+      volume: {
+        m5: pair.volume?.m5 ?? null,
+        h1: pair.volume?.h1 ?? null,
+        h6: pair.volume?.h6 ?? null,
+        h24: pair.volume?.h24 ?? null,
+      },
+      txns: {
+        m5: { buys: pair.txns?.m5?.buys ?? 0, sells: pair.txns?.m5?.sells ?? 0 },
+        h1: { buys: pair.txns?.h1?.buys ?? 0, sells: pair.txns?.h1?.sells ?? 0 },
+        h6: { buys: pair.txns?.h6?.buys ?? 0, sells: pair.txns?.h6?.sells ?? 0 },
+        h24: { buys: pair.txns?.h24?.buys ?? 0, sells: pair.txns?.h24?.sells ?? 0 },
+      },
+    };
   } catch {
     return null;
   }

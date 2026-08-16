@@ -132,7 +132,7 @@ function buildShareText(n: Notification, dex: ReturnType<typeof getCachedDexData
   const price = dex?.priceUsd == null ? 'N/A' : formatPriceShort(dex.priceUsd);
   const cap = dex?.marketCap == null ? 'N/A' : formatCap(dex.marketCap);
   const twitterPart = dex?.twitter ? `@${dex.twitter} - ` : '';
-  const networkLabel = chain === 'robinhood' ? '#Robinhood' : '#Based';
+  const networkLabel = chain === 'robinhood' ? 'robinhood' : 'base';
 
   const whaleLine =
     n.top10 != null && n.prevTop10 != null && n.top10 !== n.prevTop10
@@ -144,12 +144,13 @@ function buildShareText(n: Notification, dex: ReturnType<typeof getCachedDexData
       ? `\n${n.verified ? '✅ Verified' : '❌ Not Verified'}`
       : '';
 
-  return `$${symbol}${nameTag} just triggered a SmartMoney signal on ${networkLabel}:
+  return `$${symbol}${nameTag} just triggered a SmartMoney signal on #${networkLabel}:
 
 👉WyckScore: ${n.levelLabel} ${n.current}${whaleLine}${verifyLine}
 
 ${twitterPart}At Price: ${price} - MaketCap: ${cap}
-CA: ${n.ca}`;
+
+CA: wyck.pro/${networkLabel}/${n.ca}`;
 }
 
 function handleShare(n: Notification, dex: ReturnType<typeof getCachedDexData>, chain: Chain) {

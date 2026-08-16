@@ -27,12 +27,10 @@ export function formatDateShort(timestamp: string | null | undefined) {
   if (!timestamp) return '';
   const d = new Date(timestamp);
   if (isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('en-US', {
-    timeZone: 'UTC',
-    month: '2-digit',
-    day: '2-digit',
-    year: 'numeric',
-  });
+  const day = d.getUTCDate();
+  const month = d.toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short' });
+  const year = String(d.getUTCFullYear()).slice(-2);
+  return `${day} ${month}'${year}`;
 }
 
 export function getWhaleStarredScore(latestScoreDisplay: string, last7: { score: number; topwhale?: string }[]) {
