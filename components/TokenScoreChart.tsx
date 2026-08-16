@@ -36,7 +36,7 @@ export function TokenScoreChart({
   return (
     <div className={`bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col ${className}`}>
       <div className="flex items-center justify-between mb-2 shrink-0">
-        <span className="text-sm font-bold text-blue-400">WYCKSCORE</span>
+        <span className="text-sm font-bold text-blue-400">WYCKSCORE Chart</span>
         <button
           onClick={() => setShowTop10((v) => !v)}
           className={`text-xs px-2 py-1 rounded border ${

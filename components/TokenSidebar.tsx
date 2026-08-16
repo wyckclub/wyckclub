@@ -31,35 +31,16 @@ function StarIcon({ filled }: { filled: boolean }) {
   );
 }
 
-const WATCHLIST_KEY_PREFIX = 'wyck_sidebar_star_';
-
 export function TokenSidebar({ chain }: { chain: Chain }) {
   const router = useRouter();
   const pathname = usePathname();
   const activeCa = pathname?.split('/').pop();
   const [tab, setTab] = useState<Tab>('all');
   const [search, setSearch] = useState('');
-  const { tokens, newTokens, potential, dexTick, loading } = useTokenData();
-  const [watchlist, setWatchlist] = useState<Set<string>>(() => {
-    if (typeof window === 'undefined') return new Set();
-    const saved = localStorage.getItem(`${WATCHLIST_KEY_PREFIX}${chain}`);
-    return saved ? new Set(JSON.parse(saved)) : new Set();
-  });
+  const { tokens, newTokens, potential, dexTick, loading, watchlist, toggleWatchlist: toggleStar } = useTokenData();
   type SortBy = 'az' | 'score' | 'volume' | 'marketcap';
   const [sortBy, setSortBy] = useState<SortBy>('volume');
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
-
-  const watchKey = `${WATCHLIST_KEY_PREFIX}${chain}`;
-
-  function toggleStar(ca: string) {
-    setWatchlist((prev) => {
-      const next = new Set(prev);
-      if (next.has(ca)) next.delete(ca);
-      else next.add(ca);
-      localStorage.setItem(watchKey, JSON.stringify([...next]));
-      return next;
-    });
-  }
 
   const rows: Row[] = useMemo(() => {
     if (tab === 'star') {

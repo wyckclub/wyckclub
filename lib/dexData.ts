@@ -170,7 +170,7 @@ export async function prefetchDexDataBatch(
         timestamp: Date.now(),
       });
     } catch {
-      // bỏ qua, giữ null cho token này
+      // Skip
     }
     await new Promise((r) => setTimeout(r, 150));
   }

@@ -150,7 +150,8 @@ function buildShareText(n: Notification, dex: ReturnType<typeof getCachedDexData
 
 ${twitterPart}At Price: ${price} - MaketCap: ${cap}
 
-CA: wyck.pro/${networkLabel}/${n.ca}`;
+Check the latest WYCK update here:
+wyck.pro/${networkLabel}/${n.ca}`;
 }
 
 function handleShare(n: Notification, dex: ReturnType<typeof getCachedDexData>, chain: Chain) {

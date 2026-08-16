@@ -147,7 +147,7 @@ export function ChartSVG({
   entries, livePrice, showTop10, fit = false,
 }: { entries: PriceHistoryEntry[]; livePrice: number | null; showTop10: boolean; fit?: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const s = fit ? 1.6 : 1; // hệ số phóng to chữ/marker khi hiển thị fit
+  const s = fit ? 1.5 : 1;
 
   useEffect(() => {
     if (!fit && scrollRef.current) {
@@ -157,7 +157,7 @@ export function ChartSVG({
 
   const width = 1200;
   const height = 520;
-  const pad = { left: 64, right: 16, top: 30, bottom: 46 };
+  const pad = { left: 90, right: 16, top: 30, bottom: 46 };
 
   const hasLive = livePrice != null && livePrice > 0;
   const totalCount = entries.length + (hasLive ? 1 : 0);
@@ -244,16 +244,27 @@ export function ChartSVG({
   const isUp = livePoint && e0Price != null ? livePoint.price >= e0Price : true;
   const liveColorClass = isUp ? 'fill-green-400' : 'fill-red-400';
 
-  return (
-    <div className={fit ? 'w-full h-full' : 'overflow-x-auto'} ref={scrollRef}>
-    <svg
-      viewBox={`0 0 ${width} ${height}`}
-      preserveAspectRatio={fit ? 'none' : 'xMidYMid meet'}
-      style={fit ? { width: '100%', height: '100%' } : { width: `${width}px`, height: 'auto' }}
+return (
+    <div 
+      className={
+        fit 
+          ? 'w-full h-full flex items-center justify-center' 
+          : 'overflow-x-auto flex justify-center items-center w-full'
+      } 
+      ref={scrollRef}
     >
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio={fit ? 'none' : 'xMidYMid meet'}
+        style={
+          fit 
+            ? { width: '98%', height: '100%', display: 'block' } 
+            : { width: `${width}px`, height: 'auto', display: 'block', margin: '0 auto' }
+        }
+      >
         {yTicks.map((t, i) => (
           <g key={i}>
-            <text x={pad.left - 8} y={t.y} textAnchor="end" dominantBaseline="middle" className="fill-slate-500" style={{ fontSize: 10 * s }}>
+            <text x={pad.left - 1} y={t.y} textAnchor="end" dominantBaseline="middle" className="fill-slate-500" style={{ fontSize: 10 * s }}>
               {formatPriceShort(t.price)}
             </text>
             <line x1={pad.left} y1={t.y} x2={width - pad.right} y2={t.y} className="stroke-slate-800" />

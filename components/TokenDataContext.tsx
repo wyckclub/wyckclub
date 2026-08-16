@@ -23,9 +23,13 @@ interface TokenDataState {
   loading: boolean;
   dexReady: boolean;
   refresh: () => void;
+  watchlist: Set<string>;
+  toggleWatchlist: (ca: string) => void;
 }
 
 const TokenDataContext = createContext<TokenDataState | null>(null);
+
+const WATCHLIST_KEY_PREFIX = 'wyck_sidebar_star_';
 
 export function TokenDataProvider({ chain, children }: { chain: Chain; children: React.ReactNode }) {
   const [tokens, setTokens] = useState<TokenEntry[]>([]);
@@ -34,6 +38,24 @@ export function TokenDataProvider({ chain, children }: { chain: Chain; children:
   const [dexTick, setDexTick] = useState(0);
   const [loading, setLoading] = useState(true);
   const [dexReady, setDexReady] = useState(false);
+  const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
+
+  const watchKey = `${WATCHLIST_KEY_PREFIX}${chain}`;
+
+  useEffect(() => {
+    const saved = localStorage.getItem(watchKey);
+    setWatchlist(saved ? new Set(JSON.parse(saved)) : new Set());
+  }, [watchKey]);
+
+  const toggleWatchlist = useCallback((ca: string) => {
+    setWatchlist((prev) => {
+      const next = new Set(prev);
+      if (next.has(ca)) next.delete(ca);
+      else next.add(ca);
+      localStorage.setItem(watchKey, JSON.stringify([...next]));
+      return next;
+    });
+  }, [watchKey]);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -72,7 +94,7 @@ export function TokenDataProvider({ chain, children }: { chain: Chain; children:
   }, [load]);
 
   return (
-    <TokenDataContext.Provider value={{ tokens, newTokens, potential, dexTick, loading, dexReady, refresh: load }}>
+    <TokenDataContext.Provider value={{ tokens, newTokens, potential, dexTick, loading, dexReady, refresh: load, watchlist, toggleWatchlist }}>
       {children}
     </TokenDataContext.Provider>
   );

@@ -15,29 +15,13 @@ type SortCol = 'marketCap' | 'liq' | 'vol24h' | 'score' | 'change24h' | 'snapsho
 
 export default function RobinhoodTrackerPage() {
   const { isConnected, isLoading, amount, hasAccess } = useTokenGate(PRO_THRESHOLD);
-  const { tokens, loading: loadingData, dexReady, dexTick, refresh: loadData } = useTokenData();
+  const { tokens, loading: loadingData, dexReady, refresh: loadData, watchlist, toggleWatchlist } = useTokenData();
   const [sortCol, setSortCol] = useState<SortCol>('snapshot');
   const [sortDir, setSortDir] = useState<1 | -1>(-1);
   const [search, setSearch] = useState('');
-  const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
   const PAGE_SIZE = 200;
   const [page, setPage] = useState(1);
   const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string; verified: boolean } | null>(null);
-
-  useEffect(() => {
-    const saved = localStorage.getItem('wyck_robinhood_watchlist');
-    if (saved) setWatchlist(new Set(JSON.parse(saved)));
-  }, []);
-
-  function toggleWatchlist(ca: string) {
-    setWatchlist((prev) => {
-      const next = new Set(prev);
-      if (next.has(ca)) next.delete(ca);
-      else next.add(ca);
-      localStorage.setItem('wyck_robinhood_watchlist', JSON.stringify([...next]));
-      return next;
-    });
-  }
 
   useEffect(() => {
     setPage(1);
@@ -95,10 +79,7 @@ export default function RobinhoodTrackerPage() {
     ? [...liqFilteredTokens].sort((a, b) => (getSortValue(a, sortCol) - getSortValue(b, sortCol)) * sortDir)
     : liqFilteredTokens;
 
-  const sortedTokens = [
-    ...baseSorted.filter((t) => watchlist.has(t.CA)),
-    ...baseSorted.filter((t) => !watchlist.has(t.CA)),
-  ];
+  const sortedTokens = baseSorted;
 
   const totalPages = Math.max(1, Math.ceil(sortedTokens.length / PAGE_SIZE));
   const pagedTokens = sortedTokens.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);

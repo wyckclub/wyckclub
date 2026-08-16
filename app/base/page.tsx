@@ -15,12 +15,11 @@ type SortCol = 'marketCap' | 'liq' | 'vol24h' | 'score' | 'change24h' | 'snapsho
 
 export default function BaseTrackerPage() {
   const { isConnected, isLoading, amount, hasAccess } = useTokenGate(PRO_THRESHOLD);
-  const { tokens, loading: loadingData, dexReady, dexTick, refresh: loadData } = useTokenData();
+  const { tokens, loading: loadingData, dexReady, refresh: loadData, watchlist, toggleWatchlist } = useTokenData();
   const [sortCol, setSortCol] = useState<SortCol>('snapshot');
   const [sortDir, setSortDir] = useState<1 | -1>(-1);
   const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string } | null>(null);
   const [search, setSearch] = useState('');
-  const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
   const [categoryFilter, setCategoryFilter] = useState<number | 'all'>('all');
   const PAGE_SIZE = 200;
   const [page, setPage] = useState(1);
@@ -29,21 +28,6 @@ export default function BaseTrackerPage() {
   useEffect(() => {
     fetchGithubStats().then(setGithubStats);
   }, []);
-
-  useEffect(() => {
-    const saved = localStorage.getItem('wyck_watchlist');
-    if (saved) setWatchlist(new Set(JSON.parse(saved)));
-  }, []);
-
-  function toggleWatchlist(ca: string) {
-    setWatchlist((prev) => {
-      const next = new Set(prev);
-      if (next.has(ca)) next.delete(ca);
-      else next.add(ca);
-      localStorage.setItem('wyck_watchlist', JSON.stringify([...next]));
-      return next;
-    });
-  }
 
   useEffect(() => {
     setPage(1);
@@ -103,10 +87,7 @@ export default function BaseTrackerPage() {
     ? [...liqFilteredTokens].sort((a, b) => (getSortValue(a, sortCol) - getSortValue(b, sortCol)) * sortDir)
     : liqFilteredTokens;
 
-  const sortedTokens = [
-      ...baseSorted.filter((t) => watchlist.has(t.CA)),
-      ...baseSorted.filter((t) => !watchlist.has(t.CA)),
-    ];
+  const sortedTokens = baseSorted;
 
   const totalPages = Math.max(1, Math.ceil(sortedTokens.length / PAGE_SIZE));
   const pagedTokens = sortedTokens.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -171,9 +152,15 @@ export default function BaseTrackerPage() {
                       {h.label}
                     </th>
                   ))}
-                  <th className="text-left p-3 whitespace-nowrap">Github Star/Fork</th>
-                  <th className="text-left p-3 whitespace-nowrap">Commits & Repos</th>
-                  <th className="text-left p-3 whitespace-nowrap">Contributions (30days)</th>
+                    <th className="text-left p-3 whitespace-nowrap">
+                    Github Star<br />Fork
+                    </th>
+                    <th className="text-left p-3 whitespace-nowrap">
+                    Commits<br />& Repos
+                    </th>
+                    <th className="text-left p-3 whitespace-nowrap">
+                    Contributions<br />(30days)
+                    </th>
                 </tr>
               </thead>
               <tbody>
@@ -250,11 +237,13 @@ export default function BaseTrackerPage() {
                         return (
                           <>
                             <td className="p-3 whitespace-nowrap text-xs">
-                              <span className="text-yellow-400">★{gh.stars}</span>{' '}
-                              <span className="text-slate-400">⑂{gh.forks}</span>
+                            <div className="text-yellow-400">★ {gh.stars}</div>
+                            <div className="text-slate-400">⑂ {gh.forks}</div>
                             </td>
+
                             <td className="p-3 whitespace-nowrap text-xs text-slate-300">
-                              {gh.commits} commits / {gh.repoCount} repos
+                            <div>{gh.commits} commits</div>
+                            <div>{gh.repoCount} repos</div>
                             </td>
                             <td className="p-3 whitespace-nowrap text-xs text-slate-300">
                               {gh.totalContributions}
