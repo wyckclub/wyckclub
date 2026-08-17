@@ -44,16 +44,22 @@ async function fetchDexInfo(caList: string[], chainId: string) {
   return out;
 }
 
+function stripDots(s: string | null | undefined): string {
+  if (!s) return '';
+  return s.replace(/\./g, '');
+}
+
 function buildPostText(chain: string, items: any[]) {
   const blocks = items.map((it) => {
-    const nameTag = it.name ? ` (${it.name})` : '';
+    const symbol = stripDots(it.symbol);
+    const nameTag = it.name ? ` (${stripDots(it.name)})` : '';
     const verifyTag = chain === 'robinhood' && it.verified != null ? (it.verified ? ' ✅ Verified' : ' ❌ Not Verified') : '';
     const whaleLine = it.top10 != null && it.prevTop10 != null && it.top10 !== it.prevTop10
       ? `\n🐋Whale Accumulation Index: ${it.top10 - it.prevTop10 > 0 ? '+' : ''}${it.top10 - it.prevTop10} (${it.prevTop10}→${it.top10})`
       : '';
-    return `$${it.symbol}${nameTag}${verifyTag}\n👉WyckScore: ${it.levelLabel} ${it.current}${whaleLine}\nAt Price: ${formatPriceShort(it.priceUsd)} - MaketCap: ${formatCap(it.marketCap)}\nCA: ${it.ca}`;
+    return `${symbol}${nameTag}${verifyTag}\n👉WyckScore: ${it.levelLabel} ${it.current}${whaleLine}\nAt Price: ${formatPriceShort(it.priceUsd)} - MaketCap: ${formatCap(it.marketCap)}\nCA: ${it.ca}`;
   });
-  const footer = `Check the latest WYCK update here:\nwyck.pro/${chain}`;
+  const footer = `Check the latest WYCK update on #${chain} tracker`;
 
   let n = items.length;
   while (n > 0) {
