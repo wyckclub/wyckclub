@@ -13,14 +13,23 @@ function buildAuthHeader(method: string, url: string) {
     oauth_token: process.env.X_ACCESS_TOKEN!,
     oauth_version: '1.0',
   };
+
   const baseString = [
     method.toUpperCase(),
     pct(url),
-    pct(Object.keys(oauth).sort().map((k) => `${pct(k)}=${pct(oauth[k])}`).join('&')),
+    pct(
+      Object.keys(oauth)
+        .sort()
+        .map((k) => `${pct(k)}=${pct(oauth[k])}`)
+        .join('&')
+    ),
   ].join('&');
+
   const signingKey = `${pct(process.env.X_API_SECRET!)}&${pct(process.env.X_ACCESS_TOKEN_SECRET!)}`;
   const signature = crypto.createHmac('sha1', signingKey).update(baseString).digest('base64');
+
   const all: Record<string, string> = { ...oauth, oauth_signature: signature };
+
   return 'OAuth ' + Object.keys(all).sort().map((k) => `${pct(k)}="${pct(all[k])}"`).join(', ');
 }
 
@@ -30,6 +39,46 @@ export async function postTweet(text: string): Promise<{ ok: boolean; id?: strin
     method: 'POST',
     headers: { Authorization: buildAuthHeader('POST', url), 'Content-Type': 'application/json' },
     body: JSON.stringify({ text }),
+  });
+  const json = await res.json();
+  if (!res.ok) return { ok: false, error: JSON.stringify(json) };
+  return { ok: true, id: json.data?.id };
+}
+
+export async function uploadMedia(imageBuffer: Buffer): Promise<{ ok: boolean; mediaId?: string; error?: string }> {
+  const url = 'https://upload.twitter.com/1.1/media/upload.json';
+  const boundary = '----wyckBoundary' + crypto.randomBytes(8).toString('hex');
+
+  const body = Buffer.concat([
+    Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="media"; filename="chart.png"\r\nContent-Type: image/png\r\n\r\n`
+    ),
+    imageBuffer,
+    Buffer.from(`\r\n--${boundary}--\r\n`),
+  ]);
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: buildAuthHeader('POST', url),
+      'Content-Type': `multipart/form-data; boundary=${boundary}`,
+    },
+    body,
+  });
+  const json = await res.json();
+  if (!res.ok) return { ok: false, error: JSON.stringify(json) };
+  return { ok: true, mediaId: json.media_id_string };
+}
+
+export async function postTweetWithMedia(
+  text: string,
+  mediaIds: string[]
+): Promise<{ ok: boolean; id?: string; error?: string }> {
+  const url = 'https://api.twitter.com/2/tweets';
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: buildAuthHeader('POST', url), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, media: { media_ids: mediaIds } }),
   });
   const json = await res.json();
   if (!res.ok) return { ok: false, error: JSON.stringify(json) };
