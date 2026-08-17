@@ -10,6 +10,7 @@ import { TokenEntry, CATEGORY_LABELS } from '@/lib/tokenApi';
 import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
 import { fetchGithubStats, GithubStats } from '@/lib/githubApi';
 import { useTokenData } from '@/components/TokenDataContext';
+import Link from 'next/link';
 
 type SortCol = 'marketCap' | 'liq' | 'vol24h' | 'score' | 'change24h' | 'snapshot' | null;
 
@@ -181,12 +182,11 @@ export default function BaseTrackerPage() {
                           <div className="w-6 h-6 rounded bg-slate-800" />
                         )}
                       </td>
-                      <td
-                        className="p-3 font-semibold whitespace-nowrap cursor-pointer text-blue-400 hover:text-blue-300"
-                        onClick={() => setChartToken({ category: t.category, ca: t.CA, symbol: t.symbol })}
-                      >
-                        <div className="underline decoration-dotted">{t.symbol}</div>
-                        {dex?.name && <div className="text-[12px] font-normal text-slate-500 no-underline">{dex.name}</div>}
+                      <td className="p-3 font-semibold whitespace-nowrap">
+                        <Link href={`/base/${t.CA}`} className="text-blue-400 hover:text-blue-300">
+                          <div className="underline decoration-dotted">{t.symbol}</div>
+                          {dex?.name && <div className="text-[12px] font-normal text-slate-500 no-underline">{dex.name}</div>}
+                        </Link>
                       </td>
                       <td className="p-3 whitespace-nowrap">
                         <a

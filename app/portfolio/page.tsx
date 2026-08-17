@@ -10,6 +10,7 @@ import { PriceChartModal } from '@/components/PriceChartModal';
 import { VerifyBadge } from '@/components/VerifyBadge';
 import { formatCap } from '@/lib/format';
 import { base, robinhood } from '@/app/config';
+import Link from 'next/link';
 
 const erc20Abi = [
   { name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: 'account', type: 'address' }], outputs: [{ name: '', type: 'uint256' }] },
@@ -286,6 +287,7 @@ export default function PortfolioPage() {
 function HoldingsTable({
   title,
   icon,
+  chainKey,
   dexscreenerSlug,
   loading,
   error,
@@ -345,11 +347,10 @@ function HoldingsTable({
                         <div className="w-6 h-6 rounded bg-slate-800" />
                       )}
                     </td>
-                    <td
-                      className="p-3 font-semibold whitespace-nowrap cursor-pointer text-blue-400 hover:text-blue-300 underline decoration-dotted"
-                      onClick={() => onOpenChart(t)}
-                    >
-                      {t.symbol}
+                    <td className="p-3 font-semibold whitespace-nowrap">
+                      <Link href={`/${chainKey}/${t.CA}`} className="text-blue-400 hover:text-blue-300 underline decoration-dotted">
+                        {t.symbol}
+                      </Link>
                     </td>
                     {showVerify && (
                       <td className="p-3">
