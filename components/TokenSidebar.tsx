@@ -31,7 +31,7 @@ function StarIcon({ filled }: { filled: boolean }) {
   );
 }
 
-export function TokenSidebar({ chain }: { chain: Chain }) {
+export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () => void }) {
   const router = useRouter();
   const pathname = usePathname();
   const activeCa = pathname?.split('/').pop();
@@ -169,7 +169,7 @@ export function TokenSidebar({ chain }: { chain: Chain }) {
           return (
             <div
               key={r.ca}
-              onClick={() => router.push(`/${chain}/${r.ca}`)}
+                onClick={() => { router.push(`/${chain}/${r.ca}`); onSelect?.(); }}
               className={`flex items-center gap-2 px-2.5 py-2 border-b border-slate-800/60 cursor-pointer hover:bg-slate-800/60 ${
                 isActive ? 'bg-slate-800' : ''
               }`}

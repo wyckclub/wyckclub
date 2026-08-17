@@ -35,18 +35,18 @@ export function TokenDetailContent({ chain, ca }: { chain: Chain; ca: string }) 
 
   return (
     <>
-      <div className="flex-1 min-w-0 flex flex-col gap-3 h-full">
-        <div className="flex-1 min-h-0 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col gap-3 lg:h-full">
+        <div className="h-[42vh] lg:flex-1 lg:min-h-0 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
           {dexscreenerUrl ? (
             <iframe src={dexscreenerUrl} className="w-full h-full" title="Dexscreener chart" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-slate-500 text-sm">Loading chart...</div>
           )}
         </div>
-        <TokenScoreChart category={category} ca={ca} chainId={chain} className="flex-1 min-h-0" />
+        <TokenScoreChart category={category} ca={ca} chainId={chain} className="h-[42vh] lg:flex-1 lg:min-h-0" />
       </div>
 
-      <div className="lg:w-96 shrink-0 overflow-y-auto space-y-3">
+      <div className="lg:w-96 shrink-0 lg:overflow-y-auto space-y-3">
         <TokenSwapPanel chainId={chain} ca={ca} />
         <TokenInfoPanel info={pairInfo} ca={ca} chainId={chain} symbol={symbol} verified={token?.verified} />
       </div>

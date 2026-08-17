@@ -147,7 +147,7 @@ export function ChartSVG({
   entries, livePrice, showTop10, fit = false,
 }: { entries: PriceHistoryEntry[]; livePrice: number | null; showTop10: boolean; fit?: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const s = fit ? 1.5 : 1;
+  const s = fit ? 1.3 : 1.3;
 
   useEffect(() => {
     if (!fit && scrollRef.current) {
@@ -292,7 +292,7 @@ return (
             key={i}
             x1={sg.x1} y1={sg.y1} x2={sg.x2} y2={sg.y2}
             className={sg.colorClass}
-            strokeWidth={(sg.colorClass.startsWith('stroke-green') ? 2.5 : 1.5) * s}
+            strokeWidth={(sg.colorClass.startsWith('stroke-green') ? 1.5 : 1.5) * s}
           />
         ))}
         {points.map((p, i) => (
