@@ -43,6 +43,8 @@ const ROBINHOOD_CATEGORY_URLS = [
   process.env.WYCK_ROBIN4_URL,
   process.env.WYCK_ROBIN4A_URL,
   process.env.WYCK_ROBIN5_URL,
+  process.env.WYCK_ROBIN6_URL,
+  process.env.WYCK_ROBIN7_URL,
 ].filter((u): u is string => !!u);
 
 async function countTokensFromUrls(urls: string[]): Promise<number> {

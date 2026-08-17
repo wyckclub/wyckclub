@@ -131,7 +131,6 @@ function buildShareText(n: Notification, dex: ReturnType<typeof getCachedDexData
   const nameTag = dex?.name ? ` (${dex.name})` : '';
   const price = dex?.priceUsd == null ? 'N/A' : formatPriceShort(dex.priceUsd);
   const cap = dex?.marketCap == null ? 'N/A' : formatCap(dex.marketCap);
-  const twitterPart = dex?.twitter ? `@${dex.twitter} - ` : '';
   const networkLabel = chain === 'robinhood' ? 'robinhood' : 'base';
 
   const whaleLine =
@@ -148,7 +147,7 @@ function buildShareText(n: Notification, dex: ReturnType<typeof getCachedDexData
 
 👉WyckScore: ${n.levelLabel} ${n.current}${whaleLine}${verifyLine}
 
-${twitterPart}At Price: ${price} - MaketCap: ${cap}
+At Price: ${price} - MaketCap: ${cap}
 
 Check the latest WYCK update here:
 wyck.pro/${networkLabel}/${n.ca}`;
