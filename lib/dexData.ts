@@ -9,6 +9,7 @@ export interface DexData {
   imageUrl: string | null;
   symbol: string | null;
   name: string | null;
+  pairCreatedAt: number | null; // NEW
 }
 
 export interface FullPairInfo {
@@ -71,9 +72,7 @@ export function getCachedDexData(ca: string): DexData | null {
 function extractTwitter(pair: any): string | null {
   const socials = pair?.info?.socials || [];
   const tw = socials.find((s: any) => s.type === 'twitter');
-  if (!tw?.url) return null;
-  const match = tw.url.match(/(?:x|twitter)\.com\/([^/?]+)/i);
-  return match ? match[1] : null;
+  return tw?.url ?? null;
 }
 
 export async function prefetchDexDataBatch(
@@ -126,6 +125,7 @@ export async function prefetchDexDataBatch(
             imageUrl: pair?.info?.imageUrl ?? null,
             symbol: pair?.baseToken?.symbol ?? null,
             name: pair?.baseToken?.name ?? null,
+            pairCreatedAt: pair?.pairCreatedAt ?? null,
           },
           timestamp: Date.now(),
         });
@@ -166,6 +166,7 @@ export async function prefetchDexDataBatch(
           imageUrl: pair?.info?.imageUrl ?? null,
           symbol: pair?.baseToken?.symbol ?? null,
           name: pair?.baseToken?.name ?? null,
+          pairCreatedAt: pair?.pairCreatedAt ?? null,
         },
         timestamp: Date.now(),
       });
@@ -226,7 +227,7 @@ export async function fetchFullTokenPairInfo(ca: string, chainId: string = 'base
       imageUrl: pair.info?.imageUrl ?? null,
       symbol: pair.baseToken?.symbol ?? null,
       name: pair.baseToken?.name ?? null,
-      twitter: tw?.url?.match(/(?:x|twitter)\.com\/([^/?]+)/i)?.[1] ?? null,
+      twitter: tw?.url ?? null,
       telegram: tg?.url ?? null,
       website: pair.info?.websites?.[0]?.url ?? null,
       priceChange: {

@@ -84,7 +84,7 @@ export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base
             <span className="font-bold text-white">{symbol}</span>
             {dex?.name && <span className="text-slate-400 text-xs font-normal">{dex.name}</span>}
             {dex?.twitter && (
-              <a href={`https://x.com/${dex.twitter}`} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-blue-400">
+              <a href={dex.twitter} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-blue-400">
                 <XIcon />
               </a>
             )}
@@ -103,12 +103,12 @@ export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base
               <span>Cap: {dex?.marketCap == null ? 'N/A' : formatCap(dex.marketCap)}</span>
               <span>Liq: {dex?.liq == null ? 'N/A' : formatCap(dex.liq)}</span>
               <span>Vol24h: {dex?.vol24h == null ? 'N/A' : formatCap(dex.vol24h)}</span>
-              <span>
-                Powered by{' '}
-                <a href="https://x.com/WYCKSCORE" target="_blank" rel="noopener noreferrer" className="font-bold text-blue-400 hover:underline">
-                  @WYCKSCORE
-                </a>
-              </span>
+              <a href={`https://wyck.pro/${chainId}/${ca}`} target="_blank" rel="noopener noreferrer" className="font-bold text-blue-400 hover:underline">
+                Open WYCK chart
+              </a>
+              <a href={`https://dexscreener.com/${chainId}/${ca}`} target="_blank" rel="noopener noreferrer" className="font-bold text-blue-400 hover:underline">
+                Dexscreener
+              </a>
             </div>
             <div className="flex items-center gap-4 flex-wrap">
               {livePrice != null && (

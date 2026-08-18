@@ -112,3 +112,16 @@ export function hasWhaleAtE0E1(
   if (requireScoreGte && last7[0].score < last7[1].score) return false;
   return true;
 }
+
+export function formatAge(pairCreatedAt: number | null | undefined): string {
+  if (!pairCreatedAt) return 'N/A';
+  const diffMs = Date.now() - pairCreatedAt;
+  const mins = Math.max(0, Math.floor(diffMs / 60000));
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  const remHours = hours % 24;
+  if (days >= 2) return `${days}d`;
+  return remHours > 0 ? `${days}d${remHours}h` : `${days}d`;
+}

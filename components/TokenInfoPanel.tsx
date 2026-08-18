@@ -1,6 +1,6 @@
 'use client';
 
-import { formatCap, formatPriceShort } from '@/lib/format';
+import { formatCap, formatPriceShort, formatAge } from '@/lib/format';
 import { VerifyBadge } from '@/components/VerifyBadge';
 import type { FullPairInfo } from '@/lib/dexData';
 
@@ -21,7 +21,6 @@ export function TokenInfoPanel({
   if (!info) {
     return <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-slate-500 text-sm">Dex loading...</div>;
   }
-  const created = info.pairCreatedAt ? new Date(info.pairCreatedAt) : null;
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
@@ -42,7 +41,7 @@ export function TokenInfoPanel({
 
       <div className="flex items-center gap-3 text-xs">
         {info.website && <a href={info.website} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Website</a>}
-        {info.twitter && <a href={`https://x.com/${info.twitter}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">X (Twitter)</a>}
+        {info.twitter && <a href={info.twitter} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">X (Twitter)</a>}
         {info.telegram && <a href={info.telegram} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Telegram</a>}
         <a href={info.url} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:underline ml-auto">Dexscreener ↗</a>
       </div>
@@ -71,7 +70,7 @@ export function TokenInfoPanel({
           valueClass={info.txns.h24.buys >= info.txns.h24.sells ? 'text-green-400' : 'text-red-400'}
         />
         <StatRow label="DEX" value={info.dexId ?? 'N/A'} />
-        {created && <StatRow label="Pair Created" value={created.toLocaleDateString('en-US', { timeZone: 'UTC' })} />}
+        {info.pairCreatedAt && <StatRow label="Pair Created" value={formatAge(info.pairCreatedAt)} />}
       </div>
 
       <div className="flex items-center gap-2 pt-1">

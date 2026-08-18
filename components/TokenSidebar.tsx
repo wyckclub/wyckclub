@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from 'react';
 import { getCachedDexData } from '@/lib/dexData';
-import { formatCap } from '@/lib/format';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTokenData } from '@/components/TokenDataContext';
+import { formatCap, formatAge } from '@/lib/format';
 
 type Chain = 'base' | 'robinhood';
 type Tab = 'star' | 'all' | 'potential' | 'new';
@@ -38,7 +38,7 @@ export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () 
   const [tab, setTab] = useState<Tab>('all');
   const [search, setSearch] = useState('');
   const { tokens, newTokens, potential, dexTick, loading, watchlist, toggleWatchlist: toggleStar } = useTokenData();
-  type SortBy = 'az' | 'score' | 'volume' | 'marketcap';
+  type SortBy = 'az' | 'score' | 'volume' | 'marketcap' | 'change24h';
   const [sortBy, setSortBy] = useState<SortBy>('volume');
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
 
@@ -69,6 +69,11 @@ export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () 
         const ma = getCachedDexData(a.ca)?.marketCap ?? -Infinity;
         const mb = getCachedDexData(b.ca)?.marketCap ?? -Infinity;
         return mb - ma;
+        }
+        if (sortBy === 'change24h') {
+        const ca = getCachedDexData(a.ca)?.h24 ?? -Infinity;
+        const cb = getCachedDexData(b.ca)?.h24 ?? -Infinity;
+        return cb - ca;
         }
         return a.symbol.localeCompare(b.symbol);
     });
@@ -133,10 +138,11 @@ export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () 
                 {sortMenuOpen && (
                 <div className="absolute top-full left-0 mt-1 z-20 bg-slate-950 border border-slate-800 rounded-lg overflow-hidden w-40 normal-case">
                     {([
-                    { key: 'az', label: 'A-Z' },
-                    { key: 'score', label: 'WYCKSCORE' },
-                    { key: 'volume', label: 'Volume' },
-                    { key: 'marketcap', label: 'Market Cap' },
+                      { key: 'az', label: 'A-Z' },
+                      { key: 'score', label: 'WYCKSCORE' },
+                      { key: 'volume', label: 'Volume' },
+                      { key: 'marketcap', label: 'Market Cap' },
+                      { key: 'change24h', label: '24h Change' },
                     ] as { key: SortBy; label: string }[]).map((opt) => (
                     <button
                         key={opt.key}
@@ -186,7 +192,10 @@ export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () 
 
               <div className="min-w-0 flex-1">
                 <div className="text-[11px] font-bold text-blue-400 truncate">{r.symbol}</div>
-                <div className="text-[11px] text-slate-400 truncate">{dex?.marketCap == null ? 'N/A' : formatCap(dex.marketCap)}</div>
+                <div className="text-[11px] text-slate-400 truncate">
+                  {dex?.marketCap == null ? 'N/A' : formatCap(dex.marketCap)}
+                  {tab === 'new' && dex?.pairCreatedAt != null && ` - Created: ${formatAge(dex.pairCreatedAt)}`}
+                </div>
               </div>
 
               <div className="text-right shrink-0 w-14">
