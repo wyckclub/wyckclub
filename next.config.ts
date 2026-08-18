@@ -2,12 +2,6 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ['@resvg/resvg-js'],
-  outputFileTracingIncludes: {
-    '/api/cron/autopost': [
-      './node_modules/roboto-fontface/fonts/roboto/Roboto-Regular.ttf',
-      './node_modules/roboto-fontface/fonts/roboto/Roboto-Bold.ttf',
-    ],
-  },
   experimental: {
     // x
   },

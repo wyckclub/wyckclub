@@ -1,9 +1,18 @@
 import { Resvg } from '@resvg/resvg-js';
+import fs from 'fs';
 import path from 'path';
 import { formatPriceShort, formatDateShort, formatCap } from '@/lib/format';
+import { DEJAVU_SANS_BOLD_BASE64 } from '@/lib/fontData';
 
-const FONT_REGULAR = path.join(process.cwd(), 'node_modules/roboto-fontface/fonts/roboto/Roboto-Regular.ttf');
-const FONT_BOLD = path.join(process.cwd(), 'node_modules/roboto-fontface/fonts/roboto/Roboto-Bold.ttf');
+const FONT_FAMILY = 'DejaVu Sans';
+const FONT_TMP_PATH = path.join('/tmp', 'wyck-chart-font.ttf');
+
+function ensureFontFile(): string {
+  if (!fs.existsSync(FONT_TMP_PATH)) {
+    fs.writeFileSync(FONT_TMP_PATH, Buffer.from(DEJAVU_SANS_BOLD_BASE64, 'base64'));
+  }
+  return FONT_TMP_PATH;
+}
 
 export interface ChartEntry {
   date: string;
@@ -126,7 +135,7 @@ function buildChartInner(entries: ChartEntry[]): string {
   let svg = `<rect x="0" y="0" width="${width}" height="${height}" fill="${COLORS.bg}"/>`;
 
   for (const t of yTicks) {
-    svg += `<text font-family="Roboto" x="${pad.left - 1}" y="${t.y}" text-anchor="end" dominant-baseline="middle" fill="${COLORS.axisText}" font-size="${10 * s}">${formatPriceShort(t.price)}</text>`;
+    svg += `<text font-family="${FONT_FAMILY}" x="${pad.left - 1}" y="${t.y}" text-anchor="end" dominant-baseline="middle" fill="${COLORS.axisText}" font-size="${10 * s}">${formatPriceShort(t.price)}</text>`;
     svg += `<line x1="${pad.left}" y1="${t.y}" x2="${width - pad.right}" y2="${t.y}" stroke="${COLORS.grid}"/>`;
   }
 
@@ -135,7 +144,7 @@ function buildChartInner(entries: ChartEntry[]): string {
     if (!p) return;
     const isLatest = idx === points.length - 1;
     const anchor = isLatest ? 'end' : idx === 0 ? 'start' : 'middle';
-    svg += `<text font-family="Roboto" x="${p.x}" y="${height - 12}" text-anchor="${anchor}" fill="${COLORS.axisText}" font-size="${10 * s}">${formatDateShort(p.timestamp)}${isLatest ? ' (UTC +0)' : ''}</text>`;
+    svg += `<text font-family="${FONT_FAMILY}" x="${p.x}" y="${height - 12}" text-anchor="${anchor}" fill="${COLORS.axisText}" font-size="${10 * s}">${formatDateShort(p.timestamp)}${isLatest ? ' (UTC +0)' : ''}</text>`;
   });
 
   for (const sg of segments) {
@@ -164,14 +173,14 @@ function buildChartInner(entries: ChartEntry[]): string {
     if (spring) {
       svg += `<rect x="${p.x - boxW / 2}" y="${y - boxH + 4 * s}" width="${boxW}" height="${boxH}" rx="4" fill="${COLORS.springFill}" fill-opacity="0.55" stroke="${COLORS.springStroke}" stroke-width="2"/>`;
     }
-    svg += `<text font-family="Roboto" x="${p.x}" y="${y}" text-anchor="middle" fill="${scoreColor}" font-weight="bold" font-size="${14 * s}">${label}</text>`;
+    svg += `<text font-family="${FONT_FAMILY}" x="${p.x}" y="${y}" text-anchor="middle" fill="${scoreColor}" font-weight="bold" font-size="${14 * s}">${label}</text>`;
 
     if (p.top10 != null) {
       const bw = String(p.top10).length * 7 * s + 10 * s;
       svg += `<rect x="${p.x - bw / 2}" y="${p.y + 6 * s}" width="${bw}" height="${16 * s}" rx="4" fill="${COLORS.top10Box}"/>`;
-      svg += `<text font-family="Roboto" x="${p.x}" y="${p.y + 17 * s}" text-anchor="middle" fill="${COLORS.top10Text}" font-weight="600" font-size="${11 * s}">${p.top10}</text>`;
+      svg += `<text font-family="${FONT_FAMILY}" x="${p.x}" y="${p.y + 17 * s}" text-anchor="middle" fill="${COLORS.top10Text}" font-weight="600" font-size="${11 * s}">${p.top10}</text>`;
       if (wyckSell) {
-        svg += `<text font-family="Roboto" x="${p.x + charWidth / 2 + 6 * s}" y="${y}" text-anchor="middle" fill="${COLORS.red}" font-weight="bold" font-size="${14 * s}">\u25BC</text>`;
+        svg += `<text font-family="${FONT_FAMILY}" x="${p.x + charWidth / 2 + 6 * s}" y="${y}" text-anchor="middle" fill="${COLORS.red}" font-weight="bold" font-size="${14 * s}">\u25BC</text>`;
       }
     }
   });
@@ -242,13 +251,13 @@ function buildHeader(header: ChartHeader): string {
   const symbol = escapeXml(header.symbol);
   const name = header.name ? escapeXml(header.name) : '';
 
-  svg += `<text font-family="Roboto" x="${textX}" y="34" fill="${COLORS.white}" font-weight="bold" font-size="24">${symbol}</text>`;
+  svg += `<text font-family="${FONT_FAMILY}" x="${textX}" y="34" fill="${COLORS.white}" font-weight="bold" font-size="24">${symbol}</text>`;
 
   const symbolWidth = symbol.length * 14.5;
   let cursorX = textX + symbolWidth + 10;
 
   if (name) {
-    svg += `<text font-family="Roboto" x="${cursorX}" y="34" fill="${COLORS.mutedText}" font-size="16">${name}</text>`;
+    svg += `<text font-family="${FONT_FAMILY}" x="${cursorX}" y="34" fill="${COLORS.mutedText}" font-size="16">${name}</text>`;
     cursorX += name.length * 9 + 12;
   }
 
@@ -256,7 +265,7 @@ function buildHeader(header: ChartHeader): string {
     svg += buildVerifyBadge(header.verified, cursorX, 18, 20);
   }
 
-  svg += `<text font-family="Roboto" x="${textX}" y="64" fill="${COLORS.mutedText}" font-size="17">Cap: ${escapeXml(formatCap(header.marketCap))}   Liq: ${escapeXml(formatCap(header.liq))}</text>`;
+  svg += `<text font-family="${FONT_FAMILY}" x="${textX}" y="64" fill="${COLORS.mutedText}" font-size="17">Cap: ${escapeXml(formatCap(header.marketCap))}   Liq: ${escapeXml(formatCap(header.liq))}</text>`;
 
   svg += `<line x1="0" y1="${HEADER_H}" x2="${TOTAL_W}" y2="${HEADER_H}" stroke="${COLORS.border}"/>`;
 
@@ -274,12 +283,13 @@ function buildFullSvg(entries: ChartEntry[], header: ChartHeader): string {
 
 export function renderChartPng(entries: ChartEntry[], header: ChartHeader): Buffer {
   const svg = buildFullSvg(entries, header);
+  const fontPath = ensureFontFile();
   const resvg = new Resvg(svg, {
     fitTo: { mode: 'width', value: 1600 },
     font: {
-      fontFiles: [FONT_REGULAR, FONT_BOLD],
+      fontFiles: [fontPath],
       loadSystemFonts: false,
-      defaultFontFamily: 'Roboto',
+      defaultFontFamily: FONT_FAMILY,
     },
   });
   return resvg.render().asPng();
