@@ -1,5 +1,9 @@
 import { Resvg } from '@resvg/resvg-js';
-import { formatPriceShort, formatDateShort } from '@/lib/format';
+import path from 'path';
+import { formatPriceShort, formatDateShort, formatCap } from '@/lib/format';
+
+const FONT_REGULAR = path.join(process.cwd(), 'node_modules/roboto-fontface/fonts/roboto/Roboto-Regular.ttf');
+const FONT_BOLD = path.join(process.cwd(), 'node_modules/roboto-fontface/fonts/roboto/Roboto-Bold.ttf');
 
 export interface ChartEntry {
   date: string;
@@ -9,6 +13,16 @@ export interface ChartEntry {
   topwhale?: string;
   top10?: number | null;
   timestamp?: string;
+}
+
+export interface ChartHeader {
+  chain: 'base' | 'robinhood';
+  tokenImageDataUri: string | null;
+  name: string | null;
+  symbol: string;
+  verified: boolean | null; // null -> don't render verify badge (base chain)
+  marketCap: number | null;
+  liq: number | null;
 }
 
 const COLORS = {
@@ -26,7 +40,16 @@ const COLORS = {
   top10Text: '#3b82f6',
   springFill: '#363603',
   springStroke: '#ffde3a',
+  white: '#ffffff',
+  mutedText: '#94a3b8',
+  avatarFallback: '#1e293b',
 };
+
+const CHART_W = 1200;
+const CHART_H = 520;
+const HEADER_H = 110;
+const TOTAL_W = CHART_W;
+const TOTAL_H = HEADER_H + CHART_H;
 
 function segmentColor(currentScore: number | null, prevScores: number[]): { stroke: string; opacity: number } {
   if (prevScores.length < 3 || currentScore == null) return { stroke: COLORS.blue, opacity: 1 };
@@ -38,10 +61,14 @@ function segmentColor(currentScore: number | null, prevScores: number[]): { stro
   return { stroke: COLORS.blue, opacity: 1 };
 }
 
-export function buildChartSvg(entries: ChartEntry[]): string {
+function escapeXml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function buildChartInner(entries: ChartEntry[]): string {
   const s = 1.3;
-  const width = 1200;
-  const height = 520;
+  const width = CHART_W;
+  const height = CHART_H;
   const pad = { left: 90, right: 16, top: 30, bottom: 46 };
 
   const logPrices = entries.map((e) => Math.log10(e.price as number));
@@ -96,11 +123,10 @@ export function buildChartSvg(entries: ChartEntry[]): string {
 
   const dateIdxs = [...new Set([0, Math.floor((points.length - 1) / 2), points.length - 1])];
 
-  let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">`;
-  svg += `<rect x="0" y="0" width="${width}" height="${height}" fill="${COLORS.bg}"/>`;
+  let svg = `<rect x="0" y="0" width="${width}" height="${height}" fill="${COLORS.bg}"/>`;
 
   for (const t of yTicks) {
-    svg += `<text x="${pad.left - 1}" y="${t.y}" text-anchor="end" dominant-baseline="middle" fill="${COLORS.axisText}" font-size="${10 * s}">${formatPriceShort(t.price)}</text>`;
+    svg += `<text font-family="Roboto" x="${pad.left - 1}" y="${t.y}" text-anchor="end" dominant-baseline="middle" fill="${COLORS.axisText}" font-size="${10 * s}">${formatPriceShort(t.price)}</text>`;
     svg += `<line x1="${pad.left}" y1="${t.y}" x2="${width - pad.right}" y2="${t.y}" stroke="${COLORS.grid}"/>`;
   }
 
@@ -109,7 +135,7 @@ export function buildChartSvg(entries: ChartEntry[]): string {
     if (!p) return;
     const isLatest = idx === points.length - 1;
     const anchor = isLatest ? 'end' : idx === 0 ? 'start' : 'middle';
-    svg += `<text x="${p.x}" y="${height - 12}" text-anchor="${anchor}" fill="${COLORS.axisText}" font-size="${10 * s}">${formatDateShort(p.timestamp)}${isLatest ? ' (UTC +0)' : ''}</text>`;
+    svg += `<text font-family="Roboto" x="${p.x}" y="${height - 12}" text-anchor="${anchor}" fill="${COLORS.axisText}" font-size="${10 * s}">${formatDateShort(p.timestamp)}${isLatest ? ' (UTC +0)' : ''}</text>`;
   });
 
   for (const sg of segments) {
@@ -138,24 +164,123 @@ export function buildChartSvg(entries: ChartEntry[]): string {
     if (spring) {
       svg += `<rect x="${p.x - boxW / 2}" y="${y - boxH + 4 * s}" width="${boxW}" height="${boxH}" rx="4" fill="${COLORS.springFill}" fill-opacity="0.55" stroke="${COLORS.springStroke}" stroke-width="2"/>`;
     }
-    svg += `<text x="${p.x}" y="${y}" text-anchor="middle" fill="${scoreColor}" font-weight="bold" font-size="${14 * s}">${label}</text>`;
+    svg += `<text font-family="Roboto" x="${p.x}" y="${y}" text-anchor="middle" fill="${scoreColor}" font-weight="bold" font-size="${14 * s}">${label}</text>`;
 
     if (p.top10 != null) {
       const bw = String(p.top10).length * 7 * s + 10 * s;
       svg += `<rect x="${p.x - bw / 2}" y="${p.y + 6 * s}" width="${bw}" height="${16 * s}" rx="4" fill="${COLORS.top10Box}"/>`;
-      svg += `<text x="${p.x}" y="${p.y + 17 * s}" text-anchor="middle" fill="${COLORS.top10Text}" font-weight="600" font-size="${11 * s}">${p.top10}</text>`;
+      svg += `<text font-family="Roboto" x="${p.x}" y="${p.y + 17 * s}" text-anchor="middle" fill="${COLORS.top10Text}" font-weight="600" font-size="${11 * s}">${p.top10}</text>`;
       if (wyckSell) {
-        svg += `<text x="${p.x + charWidth / 2 + 6 * s}" y="${y}" text-anchor="middle" fill="${COLORS.red}" font-weight="bold" font-size="${14 * s}">\u25BC</text>`;
+        svg += `<text font-family="Roboto" x="${p.x + charWidth / 2 + 6 * s}" y="${y}" text-anchor="middle" fill="${COLORS.red}" font-weight="bold" font-size="${14 * s}">\u25BC</text>`;
       }
     }
   });
 
+  return svg;
+}
+
+function buildChainIcon(chain: 'base' | 'robinhood', x: number, y: number, size: number): string {
+  if (chain === 'base') {
+    const inset = size * 0.2;
+    const innerSize = size - inset * 2;
+    return `
+      <rect x="${x}" y="${y}" width="${size}" height="${size}" rx="4" fill="#FFFFFF"/>
+      <rect x="${x + inset}" y="${y + inset}" width="${innerSize}" height="${innerSize}" rx="2.8" fill="#0052FF"/>
+    `;
+  }
+  const scale = size / 400;
+  return `
+    <g transform="translate(${x},${y}) scale(${scale})">
+      <rect width="400" height="400" fill="#ccff00"/>
+      <g fill="#211d19">
+        <path d="M 185 133.5 L 170.5 148 C 142 176.5, 131 220, 131 245 C 131 260, 120 300, 106 321 L 115 321 C 137 280, 149 220, 172 172 Z"/>
+        <path d="M 249 80 C 275 80, 294 100, 294 130 C 294 150, 280 178, 252 206 L 252 145 L 237 130 L 185 122 Z"/>
+        <path d="M 238 145 L 238 215 L 150 272 C 175 235, 205 185, 238 145 Z"/>
+      </g>
+    </g>
+  `;
+}
+
+function buildVerifyBadge(verified: boolean, x: number, y: number, size: number): string {
+  const scale = size / 24;
+  if (verified) {
+    return `
+      <g transform="translate(${x},${y}) scale(${scale})">
+        <path d="M12 2L3 6V12C3 17.55 6.84 22.74 12 24C17.16 22.74 21 17.55 21 12V6L12 2Z" fill="#0EA5E9"/>
+        <path d="M10 15.5L7 12.5L8.41 11.09L10 12.67L15.59 7.08L17 8.5L10 15.5Z" fill="#ffffff"/>
+      </g>
+    `;
+  }
+  return `
+    <g transform="translate(${x},${y}) scale(${scale})">
+      <circle cx="12" cy="12" r="10" fill="#64748b"/>
+      <path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+    </g>
+  `;
+}
+
+function buildHeader(header: ChartHeader): string {
+  const padLeft = 24;
+  let svg = '';
+
+  svg += buildChainIcon(header.chain, padLeft, 20, 24);
+
+  const avatarX = padLeft + 34;
+  const avatarY = 12;
+  const avatarSize = 56;
+  const cx = avatarX + avatarSize / 2;
+  const cy = avatarY + avatarSize / 2;
+
+  if (header.tokenImageDataUri) {
+    svg += `<defs><clipPath id="avatarClip"><circle cx="${cx}" cy="${cy}" r="${avatarSize / 2}"/></clipPath></defs>`;
+    svg += `<image x="${avatarX}" y="${avatarY}" width="${avatarSize}" height="${avatarSize}" href="${header.tokenImageDataUri}" clip-path="url(#avatarClip)" preserveAspectRatio="xMidYMid slice"/>`;
+  } else {
+    svg += `<circle cx="${cx}" cy="${cy}" r="${avatarSize / 2}" fill="${COLORS.avatarFallback}"/>`;
+  }
+
+  const textX = avatarX + avatarSize + 16;
+  const symbol = escapeXml(header.symbol);
+  const name = header.name ? escapeXml(header.name) : '';
+
+  svg += `<text font-family="Roboto" x="${textX}" y="34" fill="${COLORS.white}" font-weight="bold" font-size="24">${symbol}</text>`;
+
+  const symbolWidth = symbol.length * 14.5;
+  let cursorX = textX + symbolWidth + 10;
+
+  if (name) {
+    svg += `<text font-family="Roboto" x="${cursorX}" y="34" fill="${COLORS.mutedText}" font-size="16">${name}</text>`;
+    cursorX += name.length * 9 + 12;
+  }
+
+  if (header.verified != null) {
+    svg += buildVerifyBadge(header.verified, cursorX, 18, 20);
+  }
+
+  svg += `<text font-family="Roboto" x="${textX}" y="64" fill="${COLORS.mutedText}" font-size="17">Cap: ${escapeXml(formatCap(header.marketCap))}   Liq: ${escapeXml(formatCap(header.liq))}</text>`;
+
+  svg += `<line x1="0" y1="${HEADER_H}" x2="${TOTAL_W}" y2="${HEADER_H}" stroke="${COLORS.border}"/>`;
+
+  return svg;
+}
+
+function buildFullSvg(entries: ChartEntry[], header: ChartHeader): string {
+  let svg = `<svg width="${TOTAL_W}" height="${TOTAL_H}" viewBox="0 0 ${TOTAL_W} ${TOTAL_H}" xmlns="http://www.w3.org/2000/svg">`;
+  svg += `<rect x="0" y="0" width="${TOTAL_W}" height="${TOTAL_H}" fill="${COLORS.bg}"/>`;
+  svg += buildHeader(header);
+  svg += `<g transform="translate(0, ${HEADER_H})">${buildChartInner(entries)}</g>`;
   svg += `</svg>`;
   return svg;
 }
 
-export function renderChartPng(entries: ChartEntry[]): Buffer {
-  const svg = buildChartSvg(entries);
-  const resvg = new Resvg(svg, { fitTo: { mode: 'width', value: 1600 } });
+export function renderChartPng(entries: ChartEntry[], header: ChartHeader): Buffer {
+  const svg = buildFullSvg(entries, header);
+  const resvg = new Resvg(svg, {
+    fitTo: { mode: 'width', value: 1600 },
+    font: {
+      fontFiles: [FONT_REGULAR, FONT_BOLD],
+      loadSystemFonts: false,
+      defaultFontFamily: 'Roboto',
+    },
+  });
   return resvg.render().asPng();
 }

@@ -71,6 +71,19 @@ async function fetchCategories(chain: 'base' | 'robinhood', origin: string) {
   );
 }
 
+async function fetchTokenImageDataUri(imageUrl: string | null): Promise<string | null> {
+  if (!imageUrl) return null;
+  try {
+    const res = await fetch(imageUrl);
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    const contentType = res.headers.get('content-type') || 'image/png';
+    return `data:${contentType};base64,${buf.toString('base64')}`;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchDexInfo(ca: string, chainId: string) {
   try {
     const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${ca}`, { cache: 'no-store' });
@@ -168,7 +181,17 @@ async function runForChain(chain: 'base' | 'robinhood', origin: string) {
 
     if (chartEntries.length < 2) continue;
 
-    const png = renderChartPng(chartEntries);
+    const tokenImageDataUri = await fetchTokenImageDataUri(dex.imageUrl);
+
+    const png = renderChartPng(chartEntries, {
+      chain,
+      tokenImageDataUri,
+      name: dex.name,
+      symbol: picked.symbol,
+      verified: chain === 'robinhood' ? picked.verified : null,
+      marketCap: dex.marketCap,
+      liq: dex.liq,
+    });
 
     const uploaded = await uploadMedia(png);
     if (!uploaded.ok || !uploaded.mediaId) continue;
