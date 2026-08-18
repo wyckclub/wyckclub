@@ -60,6 +60,16 @@ const HEADER_H = 110;
 const TOTAL_W = CHART_W;
 const TOTAL_H = HEADER_H + CHART_H;
 
+function buildWhaleIcon(x: number, y: number, size: number, color: string): string {
+  const scale = size / 24;
+  return `<g transform="translate(${x},${y}) scale(${scale})" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2 14c1-4 4-7 9-7 5.5 0 9 3.5 10 6.5-1.2 1-3 1.5-4 1-0.5 1.3-1.8 2.5-3.5 2.5-1 0-1.8-.4-2.5-1-1 .7-2.3 1-3.5 1-3 0-5-1.5-5.5-3Z"/>
+    <path d="M9 10.2V8"/>
+    <circle cx="7" cy="11" r="0.6" fill="${color}" stroke="none"/>
+    <path d="M17.5 8c.8-1 2-1.5 3.5-1-1 1.5-1 2.5 0 4-1.7.3-2.8-.2-3.5-1"/>
+  </g>`;
+}
+
 function segmentColor(currentScore: number | null, prevScores: number[]): { stroke: string; opacity: number } {
   if (prevScores.length < 3 || currentScore == null) return { stroke: COLORS.blue, opacity: 1 };
   if (currentScore <= 2) return { stroke: COLORS.blue, opacity: 1 };
@@ -78,7 +88,7 @@ function buildChartInner(entries: ChartEntry[]): string {
   const s = 1.3;
   const width = CHART_W;
   const height = CHART_H;
-  const pad = { left: 90, right: 16, top: 30, bottom: 46 };
+  const pad = { left: 90, right: 60, top: 30, bottom: 46 };
 
   const logPrices = entries.map((e) => Math.log10(e.price as number));
   let minLog = Math.min(...logPrices);
@@ -163,17 +173,25 @@ function buildChartInner(entries: ChartEntry[]): string {
     const avg = prevScores.length === 3 ? (prevScores[0] + prevScores[1] + prevScores[2]) / 3 : null;
     const isTripleAvg = avg != null && avg > 0 && p.score != null && p.score > 5 && p.score > avg * 3;
     const scoreColor = (p.score ?? 0) > 8 || isTripleAvg ? COLORS.yellow : COLORS.slate300;
-    const label = `${starred.has(i) ? '\u{1F40B}' : ''}${p.scoreDisplay ?? '-'}`;
+    const hasWhale = starred.has(i);
+    const scoreText = p.scoreDisplay ?? '-';
+    const iconSize = 14 * s;
+    const iconGap = 3 * s;
+    const textWidth = scoreText.length * 7.5 * s;
+    const charWidth = hasWhale ? iconSize + iconGap + textWidth : textWidth;
     const spring = isSpring(i);
     const wyckSell = isWyckSell(i);
-    const charWidth = (starred.has(i) ? 14 + (label.length - 1) * 7.5 : label.length * 7.5) * s;
     const boxW = charWidth + 8 * s;
     const boxH = 18 * s;
+    const startX = p.x - charWidth / 2;
 
     if (spring) {
       svg += `<rect x="${p.x - boxW / 2}" y="${y - boxH + 4 * s}" width="${boxW}" height="${boxH}" rx="4" fill="${COLORS.springFill}" fill-opacity="0.55" stroke="${COLORS.springStroke}" stroke-width="2"/>`;
     }
-    svg += `<text font-family="${FONT_FAMILY}" x="${p.x}" y="${y}" text-anchor="middle" fill="${scoreColor}" font-weight="bold" font-size="${14 * s}">${label}</text>`;
+    if (hasWhale) {
+      svg += buildWhaleIcon(startX, y - iconSize + 3 * s, iconSize, COLORS.blue);
+    }
+    svg += `<text font-family="${FONT_FAMILY}" x="${startX + (hasWhale ? iconSize + iconGap : 0)}" y="${y}" text-anchor="start" fill="${scoreColor}" font-weight="bold" font-size="${14 * s}">${scoreText}</text>`;
 
     if (p.top10 != null) {
       const bw = String(p.top10).length * 7 * s + 10 * s;
@@ -210,6 +228,23 @@ function buildChainIcon(chain: 'base' | 'robinhood', x: number, y: number, size:
   `;
 }
 
+function buildChainBadge(chain: 'base' | 'robinhood'): string {
+  const label = chain === 'base' ? 'Base' : 'Robinhood';
+  const color = chain === 'base' ? '#60a5fa' : '#ccff00';
+  const iconSize = 26;
+  const gap = 10;
+  const fontSize = 19;
+  const textWidth = label.length * (fontSize * 0.6);
+  const padRight = 24;
+  const totalW = iconSize + gap + textWidth;
+  const startX = TOTAL_W - padRight - totalW;
+  const iconY = 20;
+
+  let svg = buildChainIcon(chain, startX, iconY, iconSize);
+  svg += `<text font-family="${FONT_FAMILY}" x="${startX + iconSize + gap}" y="${iconY + iconSize - 5}" fill="${color}" font-weight="bold" font-size="${fontSize}">${label}</text>`;
+  return svg;
+}
+
 function buildVerifyBadge(verified: boolean, x: number, y: number, size: number): string {
   const scale = size / 24;
   if (verified) {
@@ -232,11 +267,11 @@ function buildHeader(header: ChartHeader): string {
   const padLeft = 24;
   let svg = '';
 
-  svg += buildChainIcon(header.chain, padLeft, 20, 24);
+  svg += buildChainBadge(header.chain);
 
-  const avatarX = padLeft + 34;
-  const avatarY = 12;
-  const avatarSize = 56;
+  const avatarX = padLeft;
+  const avatarY = 14;
+  const avatarSize = 58;
   const cx = avatarX + avatarSize / 2;
   const cy = avatarY + avatarSize / 2;
 
@@ -251,21 +286,29 @@ function buildHeader(header: ChartHeader): string {
   const symbol = escapeXml(header.symbol);
   const name = header.name ? escapeXml(header.name) : '';
 
-  svg += `<text font-family="${FONT_FAMILY}" x="${textX}" y="34" fill="${COLORS.white}" font-weight="bold" font-size="24">${symbol}</text>`;
+  // line 1: symbol
+  svg += `<text font-family="${FONT_FAMILY}" x="${textX}" y="32" fill="${COLORS.white}" font-weight="bold" font-size="23">${symbol}</text>`;
 
-  const symbolWidth = symbol.length * 14.5;
-  let cursorX = textX + symbolWidth + 10;
-
+  // line 2: name (own line, no overlap with symbol)
+  let nextY = 32;
   if (name) {
-    svg += `<text font-family="${FONT_FAMILY}" x="${cursorX}" y="34" fill="${COLORS.mutedText}" font-size="16">${name}</text>`;
-    cursorX += name.length * 9 + 12;
+    nextY = 54;
+    svg += `<text font-family="${FONT_FAMILY}" x="${textX}" y="${nextY}" fill="${COLORS.mutedText}" font-size="15">${name}</text>`;
   }
 
+  // line 3: verify icon + label text
   if (header.verified != null) {
-    svg += buildVerifyBadge(header.verified, cursorX, 18, 20);
+    nextY += 24;
+    const badgeSize = 17;
+    const verifyColor = header.verified ? '#34d399' : COLORS.mutedText;
+    const verifyLabel = header.verified ? 'Verified' : 'Not Verified';
+    svg += buildVerifyBadge(header.verified, textX, nextY - badgeSize + 3, badgeSize);
+    svg += `<text font-family="${FONT_FAMILY}" x="${textX + badgeSize + 6}" y="${nextY}" fill="${verifyColor}" font-weight="bold" font-size="14">${verifyLabel}</text>`;
   }
 
-  svg += `<text font-family="${FONT_FAMILY}" x="${textX}" y="64" fill="${COLORS.mutedText}" font-size="17">Cap: ${escapeXml(formatCap(header.marketCap))}   Liq: ${escapeXml(formatCap(header.liq))}</text>`;
+  // line 4: Cap / Liq
+  nextY += 24;
+  svg += `<text font-family="${FONT_FAMILY}" x="${textX}" y="${nextY}" fill="${COLORS.mutedText}" font-size="16">Cap: ${escapeXml(formatCap(header.marketCap))}   Liq: ${escapeXml(formatCap(header.liq))}</text>`;
 
   svg += `<line x1="0" y1="${HEADER_H}" x2="${TOTAL_W}" y2="${HEADER_H}" stroke="${COLORS.border}"/>`;
 
