@@ -21,7 +21,7 @@ export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [livePrice, setLivePrice] = useState<number | null>(null);
-  const [showTop10, setShowTop10] = useState(false);
+  const [showTop10, setShowTop10] = useState(true);
 
   useEffect(() => {
     fetch('/api/stats/track', {
@@ -233,6 +233,16 @@ export function ChartSVG({
     return springCondition || whaleStreakCondition;
   }
 
+  function isWyckSell(idx: number) {
+    const p = points[idx];
+    const prev = points[idx - 1];
+    if (!p || !prev) return false;
+    if (p.score == null || ![-2, -1, 0, 1].includes(p.score)) return false;
+    if (p.price == null || prev.price == null || !(prev.price < p.price)) return false;
+    if (p.top10 == null || prev.top10 == null || !(prev.top10 > p.top10)) return false;
+    return true;
+  }
+
   const tickCount = 4;
   const yTicks = Array.from({ length: tickCount + 1 }, (_, i) => {
     const logVal = minLog + (maxLog - minLog) * (i / tickCount);
@@ -313,6 +323,7 @@ return (
           const scoreColorClass = (p.score ?? 0) > 8 || isTripleAvg ? 'fill-yellow-400' : 'fill-slate-300';
           const label = `${starredIndices.has(i) ? '🐋' : ''}${p.scoreDisplay ?? '-'}`;
           const spring = isSpringPoint(i);
+          const wyckSell = isWyckSell(i);
 
           const charWidth = (starredIndices.has(i) ? 14 + (label.length - 1) * 7.5 : label.length * 7.5) * s;
           const boxW = charWidth + 8 * s;
@@ -352,6 +363,17 @@ return (
                   <text x={p.x} y={p.y + 17 * s} textAnchor="middle" className="fill-blue-500 font-semibold" style={{ fontSize: 11 * s }}>
                     {p.top10}
                   </text>
+                  {wyckSell && (
+                    <text
+                      x={p.x + charWidth / 2 + 6 * s}
+                      y={y}
+                      textAnchor="middle"
+                      className="fill-red-500 font-bold"
+                      style={{ fontSize: 14 * s }}
+                    >
+                      ▼
+                    </text>
+                  )}
                 </>
               )}
             </g>

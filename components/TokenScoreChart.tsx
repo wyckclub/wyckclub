@@ -12,7 +12,7 @@ export function TokenScoreChart({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [livePrice, setLivePrice] = useState<number | null>(null);
-  const [showTop10, setShowTop10] = useState(false);
+  const [showTop10, setShowTop10] = useState(true);
 
   useEffect(() => {
     if (category == null) { setLoading(false); return; }
