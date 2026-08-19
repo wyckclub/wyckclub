@@ -8,7 +8,6 @@ import {
   isWhaleStarredAt,
   isSpringPointAt,
   getChartScoreTextColorClass,
-  getWhaleStarredScore,
   formatCap,
   formatPriceShort,
 } from '@/lib/format';
@@ -21,6 +20,8 @@ const redis = new Redis({
 const HISTORY_DEPTH = 12;
 const ROBINHOOD_CATEGORY = 5;
 const MIN_LIQ = 20000;
+const MIN_MARKETCAP = 80000;
+const MIN_PCT = 50;
 
 interface RawEntry {
   entry: number;
@@ -43,17 +44,7 @@ interface Candidate {
   symbol: string;
   verified: boolean | null;
   entries: RawEntry[];
-  current: string;
-  previous: string;
-  levelLabel: string;
-  top10: number | null;
-  prevTop10: number | null;
-}
-
-function computeLevelLabel(hasWhale: boolean, isYellow: boolean, hasPlus: boolean): string {
-  if (hasWhale && isYellow && hasPlus) return 'Super Strong';
-  if (hasWhale && (hasPlus || isYellow)) return 'Strong';
-  return 'Medium';
+  signalPrice: number;
 }
 
 async function fetchCategories(chain: 'base' | 'robinhood', origin: string) {
@@ -108,9 +99,37 @@ async function fetchDexInfo(ca: string, chainId: string) {
   }
 }
 
+// Tìm entry gần nhất (index nhỏ nhất, tức mới nhất) thoả cả 5 điều kiện:
+// score>4, vàng, có whale (🐋), giá đang giảm so với entry trước, top10 tăng, có spring border.
+function findSignalEntryIndex(entries: RawEntry[]): number | null {
+  for (let i = 0; i <= entries.length - 4; i++) {
+    const cur = entries[i];
+    const prev = entries[i + 1];
+    if (!cur || !prev) continue;
+    if (cur.score == null || cur.score <= 4) continue;
+
+    const last7Slice = entries.slice(i, i + 4).map((e) => ({ score: e.score }));
+    if (getChartScoreTextColorClass(cur.score, last7Slice) !== 'text-yellow-400') continue;
+
+    const mapped = entries.map((e) => ({
+      score: e.score,
+      topwhale: e.topwhale,
+      price: e.price,
+      top10: e.top10 ?? null,
+    }));
+    if (!isWhaleStarredAt(mapped, i)) continue;
+
+    if (cur.price == null || prev.price == null || !(cur.price < prev.price)) continue;
+    if (cur.top10 == null || prev.top10 == null || !(cur.top10 > prev.top10)) continue;
+    if (!isSpringPointAt(mapped, i)) continue;
+
+    return i;
+  }
+  return null;
+}
+
 async function runForChain(chain: 'base' | 'robinhood', origin: string) {
   const HISTORY_KEY = `wyck:autopost:history:${chain}`;
-
   const categories = await fetchCategories(chain, origin);
 
   const history = (await redis.lrange<string>(HISTORY_KEY, 0, HISTORY_DEPTH - 1)) || [];
@@ -121,110 +140,88 @@ async function runForChain(chain: 'base' | 'robinhood', origin: string) {
   );
 
   const candidates: Candidate[] = [];
-
   for (const { cat, data } of categories) {
     for (const [ca, token] of Object.entries(data)) {
       if (excludedCas.has(ca)) continue;
       const entries = token.entries || [];
       if (entries.length < 4) continue;
 
-      const last7 = entries.slice(0, 7).map((e) => ({
-        score: e.score, price: e.price, topwhale: e.topwhale, top10: e.top10 ?? null,
-      }));
-      const e0 = entries[0];
-      const e1 = entries[1];
-      if (!e1) continue;
+      const idx = findSignalEntryIndex(entries);
+      if (idx == null) continue;
 
-      if (e0.score <= 4) continue;
-      const isYellow = getChartScoreTextColorClass(e0.score, last7) === 'text-yellow-400';
-      if (!isYellow) continue;
-      const hasWhale = isWhaleStarredAt(last7, 0);
-      if (!hasWhale) continue;
-      const priceDown = e1.price != null && e0.price != null && e1.price > e0.price;
-      if (!priceDown) continue;
-      const top10Up = e0.top10 != null && e1.top10 != null && e0.top10 > e1.top10;
-      if (!top10Up) continue;
-      const spring = isSpringPointAt(last7, 0);
-      if (!spring) continue;
+      const signalPrice = entries[idx].price;
+      if (signalPrice == null || signalPrice <= 0) continue;
 
-      const hasPlus = (e0.display || '').endsWith('+');
-      const current = getWhaleStarredScore(e0.display, last7);
-      const previous = e1.topwhale === 'y' ? `🐋${e1.display}` : e1.display;
-
-      candidates.push({
-        ca, cat, symbol: token.symbol, verified: token.verified ?? null, entries,
-        current, previous,
-        levelLabel: computeLevelLabel(hasWhale, isYellow, hasPlus),
-        top10: e0.top10 ?? null, prevTop10: e1.top10 ?? null,
-      });
+      candidates.push({ ca, cat, symbol: token.symbol, verified: token.verified ?? null, entries, signalPrice });
     }
   }
 
   if (!candidates.length) return { chain, posted: false, reason: 'no matching token' };
 
-  // random pick, retry with next candidate if dex data/liquidity fails
-  const pool = [...candidates];
-  while (pool.length) {
-    const idx = Math.floor(Math.random() * pool.length);
-    const picked = pool.splice(idx, 1)[0];
+  // Fetch dữ liệu dex thật cho từng candidate, tính % tăng từ giá thật hiện tại so với giá tại entry tín hiệu
+  const scored: (Candidate & { dex: NonNullable<Awaited<ReturnType<typeof fetchDexInfo>>>; pct: number })[] = [];
+  for (const c of candidates) {
+    const dex = await fetchDexInfo(c.ca, chain);
+    if (!dex || dex.priceUsd == null) continue;
+    if (dex.liq < MIN_LIQ) continue;
+    if (dex.marketCap == null || dex.marketCap < MIN_MARKETCAP) continue;
 
-    const dex = await fetchDexInfo(picked.ca, chain);
-    if (!dex || dex.priceUsd == null || dex.liq < MIN_LIQ) continue;
+    const pct = ((dex.priceUsd - c.signalPrice) / c.signalPrice) * 100;
+    if (pct <= MIN_PCT) continue;
 
-    const chartEntries: ChartEntry[] = [...picked.entries]
-      .reverse()
-      .map((e) => ({
-        date: `#${e.entry}`, price: e.price, score: e.score, scoreDisplay: e.display,
-        topwhale: e.topwhale, top10: e.top10 ?? null, timestamp: e.timestamp,
-      }))
-      .filter((e) => e.price != null && !isNaN(e.price) && e.price > 0);
-
-    if (chartEntries.length < 2) continue;
-
-    const tokenImageDataUri = await fetchTokenImageDataUri(dex.imageUrl);
-
-    const png = renderChartPng(chartEntries, {
-      chain,
-      tokenImageDataUri,
-      name: dex.name,
-      symbol: picked.symbol,
-      verified: chain === 'robinhood' ? picked.verified : null,
-      marketCap: dex.marketCap,
-      liq: dex.liq,
-    });
-
-    const uploaded = await uploadMedia(png);
-    if (!uploaded.ok || !uploaded.mediaId) continue;
-
-    const nameTag = dex.name ? ` (${dex.name})` : '';
-    const price = formatPriceShort(dex.priceUsd);
-    const cap = formatCap(dex.marketCap);
-    const whaleLine =
-      picked.top10 != null && picked.prevTop10 != null && picked.top10 !== picked.prevTop10
-        ? `\n🐋Whale Accumulation Index: ${picked.top10 - picked.prevTop10 > 0 ? '+' : ''}${picked.top10 - picked.prevTop10} (${picked.prevTop10}→${picked.top10})`
-        : '';
-    const verifyLine =
-      chain === 'robinhood' && picked.verified != null ? `\n${picked.verified ? '✅ Verified' : '❌ Not Verified'}` : '';
-
-    const text = `$${picked.symbol}${nameTag} just triggered a SmartMoney signal on #${chain}:
-
-👉WyckScore: ${picked.levelLabel} ${picked.current}${whaleLine}${verifyLine}
-
-At Price: ${price} - MaketCap: ${cap}
-
-Check the latest WYCK update here:
-wyck.pro/${chain}/${picked.ca}`;
-
-    const result = await postTweetWithMedia(text, [uploaded.mediaId]);
-    if (!result.ok) return { chain, posted: false, reason: result.error };
-
-    await redis.lpush(HISTORY_KEY, JSON.stringify([picked.ca]));
-    await redis.ltrim(HISTORY_KEY, 0, HISTORY_DEPTH - 1);
-
-    return { chain, posted: true, tweetId: result.id, token: picked.symbol, ca: picked.ca };
+    scored.push({ ...c, dex, pct });
   }
 
-  return { chain, posted: false, reason: 'no candidate passed dex/liquidity/chart check' };
+  if (!scored.length) return { chain, posted: false, reason: 'no candidate passed pct/marketcap check' };
+
+  scored.sort((a, b) => b.pct - a.pct);
+  const picked = scored[0];
+
+  const chartEntries: ChartEntry[] = [...picked.entries]
+    .reverse()
+    .map((e) => ({
+      date: `#${e.entry}`, price: e.price, score: e.score, scoreDisplay: e.display,
+      topwhale: e.topwhale, top10: e.top10 ?? null, timestamp: e.timestamp,
+    }))
+    .filter((e) => e.price != null && !isNaN(e.price) && e.price > 0);
+
+  if (chartEntries.length < 2) return { chain, posted: false, reason: 'not enough chart data' };
+
+  const tokenImageDataUri = await fetchTokenImageDataUri(picked.dex.imageUrl);
+
+  const png = renderChartPng(chartEntries, {
+    chain,
+    tokenImageDataUri,
+    name: picked.dex.name,
+    symbol: picked.symbol,
+    verified: chain === 'robinhood' ? picked.verified : null,
+    marketCap: picked.dex.marketCap,
+    liq: picked.dex.liq,
+  });
+
+  const uploaded = await uploadMedia(png);
+  if (!uploaded.ok || !uploaded.mediaId) return { chain, posted: false, reason: uploaded.error };
+
+  const oldMarketCap = picked.dex.marketCap! * (picked.signalPrice / picked.dex.priceUsd!);
+  const pctRounded = Math.round(picked.pct);
+  const verifyLine =
+    chain === 'robinhood' && picked.verified != null
+      ? (picked.verified ? '✅ Verified' : '❌ Not Verified')
+      : null;
+
+  let text = `$${picked.symbol} Token is up ${pctRounded}% after receiving a SmartMoney signal from WYCK on #${chain}.
+
+MarketCap: ${formatCap(oldMarketCap)} → ${formatCap(picked.dex.marketCap)} | Price: ${formatPriceShort(picked.dex.priceUsd)}`;
+  if (verifyLine) text += `\n${verifyLine}`;
+  text += `\n\n🌐 WYCKSCORE live on: https://wyck.pro/${chain}/${picked.ca}`;
+
+  const result = await postTweetWithMedia(text, [uploaded.mediaId]);
+  if (!result.ok) return { chain, posted: false, reason: result.error };
+
+  await redis.lpush(HISTORY_KEY, JSON.stringify([picked.ca]));
+  await redis.ltrim(HISTORY_KEY, 0, HISTORY_DEPTH - 1);
+
+  return { chain, posted: true, tweetId: result.id, token: picked.symbol, ca: picked.ca, pct: pctRounded };
 }
 
 export async function GET(req: NextRequest) {
