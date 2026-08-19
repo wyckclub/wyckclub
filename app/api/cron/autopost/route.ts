@@ -17,7 +17,7 @@ const redis = new Redis({
   token: process.env.REDIS_KV_REST_API_TOKEN!,
 });
 
-const HISTORY_DEPTH = 12;
+const HISTORY_DEPTH = 20;
 const ROBINHOOD_CATEGORY = 5;
 const MIN_LIQ = 20000;
 const MIN_MARKETCAP = 80000;
@@ -128,6 +128,34 @@ function findSignalEntryIndex(entries: RawEntry[]): number | null {
   return null;
 }
 
+const HEADLINE_TEMPLATES: ((symbol: string, pct: number, chain: string) => string)[] = [
+  (s, p, c) => `$${s} is up ${p}% after receiving a SmartMoney signal from WYCK on #${c}.`,
+  (s, p, c) => `$${s} surged ${p}% after WYCK detected SmartMoney activity on #${c}.`,
+  (s, p, c) => `$${s} +${p}% after WYCK detected a SmartMoney signal on #${c}.`,
+  (s, p, c) => `$${s} jumped ${p}% following a WYCKSCORE SmartMoney signal on #${c}.`,
+  (s, p, c) => `$${s} is now up ${p}% after a SmartMoney signal from WYCKSCORE on #${c}.`,
+  (s, p, c) => `$${s} gained ${p}% after WYCK identified SmartMoney activity on #${c}.`,
+  (s, p, c) => `$${s} +${p}% 🚀 SmartMoney activity detected by WYCK on #${c}.`,
+  (s, p, c) => `$${s} has surged ${p}% since the WYCK SmartMoney signal appeared on #${c}.`,
+  (s, p, c) => `$${s} climbed ${p}% after WYCK detected strong SmartMoney activity on #${c}.`,
+  (s, p, c) => `$${s} is up ${p}% since WYCKSCORE flagged a SmartMoney signal on #${c}.`,
+  (s, p, c) => `$${s} +${p}% after WYCKSCORE detected SmartMoney accumulation on #${c}.`,
+  (s, p, c) => `$${s} jumped ${p}% after WYCK signaled SmartMoney activity on #${c}.`,
+  (s, p, c) => `$${s} gained ${p}% following a WYCKSCORE SmartMoney alert on #${c}.`,
+  (s, p, c) => `$${s} is ${p}% higher after a SmartMoney signal from WYCKSCORE on #${c}.`,
+  (s, p, c) => `$${s} surged ${p}% after SmartMoney activity was detected by WYCK on #${c}.`,
+  (s, p, c) => `$${s} +${p}% 📈 WYCKSCORE detected SmartMoney before the move on #${c}.`,
+  (s, p, c) => `$${s} moved ${p}% higher after WYCK detected SmartMoney accumulation on #${c}.`,
+  (s, p, c) => `$${s} has gained ${p}% since WYCKSCORE detected SmartMoney buying on #${c}.`,
+  (s, p, c) => `$${s} +${p}% after WYCK identified a SmartMoney opportunity on #${c}.`,
+  (s, p, c) => `$${s} is up ${p}% after WYCK spotted SmartMoney activity ahead of the move on #${c}.`,
+];
+
+function buildHeadline(symbol: string, pct: number, chain: string): string {
+  const fn = HEADLINE_TEMPLATES[Math.floor(Math.random() * HEADLINE_TEMPLATES.length)];
+  return fn(symbol, pct, chain);
+}
+
 async function runForChain(chain: 'base' | 'robinhood', origin: string) {
   const HISTORY_KEY = `wyck:autopost:history:${chain}`;
   const categories = await fetchCategories(chain, origin);
@@ -209,7 +237,9 @@ async function runForChain(chain: 'base' | 'robinhood', origin: string) {
       ? (picked.verified ? '✅ Verified' : '❌ Not Verified')
       : null;
 
-  let text = `$${picked.symbol} Token is up ${pctRounded}% after receiving a SmartMoney signal from WYCK on #${chain}.
+  const headline = buildHeadline(picked.symbol, pctRounded, chain);
+
+  let text = `${headline}
 
 MarketCap: ${formatCap(oldMarketCap)} → ${formatCap(picked.dex.marketCap)} | Price: ${formatPriceShort(picked.dex.priceUsd)}`;
   if (verifyLine) text += `\n${verifyLine}`;
