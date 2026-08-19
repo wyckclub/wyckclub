@@ -243,7 +243,6 @@ async function runForChain(chain: 'base' | 'robinhood', origin: string) {
 
 MarketCap: ${formatCap(oldMarketCap)} → ${formatCap(picked.dex.marketCap)} | Price: ${formatPriceShort(picked.dex.priceUsd)}`;
   if (verifyLine) text += `\n${verifyLine}`;
-  text += `\n\nCA: ${picked.ca}`;
 
   const result = await postTweetWithMedia(text, [uploaded.mediaId]);
   if (!result.ok) return { chain, posted: false, reason: result.error };
