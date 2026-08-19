@@ -243,6 +243,18 @@ export function ChartSVG({
     return true;
   }
 
+  function isWyckSell2(idx: number) {
+    const p0 = points[idx];
+    const p1 = points[idx - 1];
+    const p2 = points[idx - 2];
+    if (!p0 || !p1 || !p2) return false;
+    if (p0.score == null || ![-2, -1, 0, 1].includes(p0.score)) return false;
+    if (p0.price == null || p1.price == null || p2.price == null) return false;
+    if (!(p2.price < p1.price && p1.price > p0.price)) return false;
+    if (p0.top10 == null || p1.top10 == null || !(p0.top10 < p1.top10)) return false;
+    return true;
+  }
+
   const tickCount = 4;
   const yTicks = Array.from({ length: tickCount + 1 }, (_, i) => {
     const logVal = minLog + (maxLog - minLog) * (i / tickCount);
@@ -323,7 +335,7 @@ return (
           const scoreColorClass = (p.score ?? 0) > 8 || isTripleAvg ? 'fill-yellow-400' : 'fill-slate-300';
           const label = `${starredIndices.has(i) ? '🐋' : ''}${p.scoreDisplay ?? '-'}`;
           const spring = isSpringPoint(i);
-          const wyckSell = isWyckSell(i);
+          const wyckSell = isWyckSell(i) || isWyckSell2(i);
 
           const charWidth = (starredIndices.has(i) ? 14 + (label.length - 1) * 7.5 : label.length * 7.5) * s;
           const boxW = charWidth + 8 * s;
