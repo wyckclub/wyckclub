@@ -17,7 +17,7 @@ const redis = new Redis({
   token: process.env.REDIS_KV_REST_API_TOKEN!,
 });
 
-const HISTORY_DEPTH = 20;
+const HISTORY_DEPTH = 12;
 const ROBINHOOD_CATEGORY = 5;
 const MIN_LIQ = 20000;
 const MIN_MARKETCAP = 80000;
@@ -243,7 +243,7 @@ async function runForChain(chain: 'base' | 'robinhood', origin: string) {
 
 MarketCap: ${formatCap(oldMarketCap)} → ${formatCap(picked.dex.marketCap)} | Price: ${formatPriceShort(picked.dex.priceUsd)}`;
   if (verifyLine) text += `\n${verifyLine}`;
-  text += `\n\n🌐 WYCKSCORE live on: https://wyck.pro/${chain}/${picked.ca}`;
+  text += `\n\nCA: ${picked.ca}`;
 
   const result = await postTweetWithMedia(text, [uploaded.mediaId]);
   if (!result.ok) return { chain, posted: false, reason: result.error };
