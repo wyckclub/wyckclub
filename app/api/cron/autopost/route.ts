@@ -17,7 +17,7 @@ const redis = new Redis({
   token: process.env.REDIS_KV_REST_API_TOKEN!,
 });
 
-const HISTORY_DEPTH = 12;
+const HISTORY_DEPTH = 20;
 const ROBINHOOD_CATEGORY = 5;
 const MIN_LIQ = 20000;
 const MIN_MARKETCAP = 80000;
@@ -101,8 +101,12 @@ async function fetchDexInfo(ca: string, chainId: string) {
 
 // Tìm entry gần nhất (index nhỏ nhất, tức mới nhất) thoả cả 5 điều kiện:
 // score>4, vàng, có whale (🐋), giá đang giảm so với entry trước, top10 tăng, có spring border.
+const SIGNAL_SEARCH_DEPTH = 10;
+
+// Chỉ tìm trong phạm vi 10 entry gần nhất, không thấy thì loại token
 function findSignalEntryIndex(entries: RawEntry[]): number | null {
-  for (let i = 0; i <= entries.length - 4; i++) {
+  const maxI = Math.min(SIGNAL_SEARCH_DEPTH - 1, entries.length - 4);
+  for (let i = 0; i <= maxI; i++) {
     const cur = entries[i];
     const prev = entries[i + 1];
     if (!cur || !prev) continue;
@@ -260,13 +264,23 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const origin = req.nextUrl.origin;
-  const NEXT_CHAIN_KEY = 'wyck:autopost:next_chain';
-  const lastChain = await redis.get<string>(NEXT_CHAIN_KEY);
-  const chain: 'base' | 'robinhood' = lastChain === 'base' ? 'robinhood' : 'base';
+  const LOCK_KEY = 'wyck:autopost:lock';
+  const locked = await redis.set(LOCK_KEY, '1', { nx: true, ex: 120 });
+  if (!locked) {
+    return NextResponse.json({ posted: false, reason: 'already running' });
+  }
 
-  const result = await runForChain(chain, origin);
-  await redis.set(NEXT_CHAIN_KEY, chain);
+  try {
+    const origin = req.nextUrl.origin;
+    const NEXT_CHAIN_KEY = 'wyck:autopost:next_chain';
+    const lastChain = await redis.get<string>(NEXT_CHAIN_KEY);
+    const chain: 'base' | 'robinhood' = lastChain === 'base' ? 'robinhood' : 'base';
 
-  return NextResponse.json(result);
+    const result = await runForChain(chain, origin);
+    await redis.set(NEXT_CHAIN_KEY, chain);
+
+    return NextResponse.json(result);
+  } finally {
+    await redis.del(LOCK_KEY);
+  }
 }
