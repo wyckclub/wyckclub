@@ -167,14 +167,14 @@ async function runForChain(chain: 'base' | 'robinhood', origin: string) {
   const history = (await redis.lrange<string>(HISTORY_KEY, 0, HISTORY_DEPTH - 1)) || [];
   const excludedCas = new Set(
     history.flatMap((h) => {
-      try { return JSON.parse(h) as string[]; } catch { return []; }
+      try { return (JSON.parse(h) as string[]).map((c) => c.toLowerCase()); } catch { return []; }
     })
   );
 
   const candidates: Candidate[] = [];
   for (const { cat, data } of categories) {
     for (const [ca, token] of Object.entries(data)) {
-      if (excludedCas.has(ca)) continue;
+      if (excludedCas.has(ca.toLowerCase())) continue;
       const entries = token.entries || [];
       if (entries.length < 4) continue;
 
@@ -250,7 +250,7 @@ MarketCap: ${formatCap(oldMarketCap)} → ${formatCap(picked.dex.marketCap)} | P
   const result = await postTweetWithMedia(text, [uploaded.mediaId]);
   if (!result.ok) return { chain, posted: false, reason: result.error };
 
-  await redis.lpush(HISTORY_KEY, JSON.stringify([picked.ca]));
+  await redis.lpush(HISTORY_KEY, JSON.stringify([picked.ca.toLowerCase()]));
   await redis.ltrim(HISTORY_KEY, 0, HISTORY_DEPTH - 1);
 
   return { chain, posted: true, tweetId: result.id, token: picked.symbol, ca: picked.ca, pct: pctRounded };
@@ -265,7 +265,7 @@ export async function GET(req: NextRequest) {
   }
 
   const LOCK_KEY = 'wyck:autopost:lock';
-  const locked = await redis.set(LOCK_KEY, '1', { nx: true, ex: 120 });
+  const locked = await redis.set(LOCK_KEY, '1', { nx: true, ex: 300 });
   if (!locked) {
     return NextResponse.json({ posted: false, reason: 'already running' });
   }
