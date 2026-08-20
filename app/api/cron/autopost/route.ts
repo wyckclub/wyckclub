@@ -17,7 +17,7 @@ const redis = new Redis({
   token: process.env.REDIS_KV_REST_API_TOKEN!,
 });
 
-const HISTORY_DEPTH = 20;
+const HISTORY_DEPTH = 30;
 const ROBINHOOD_CATEGORY = 5;
 const MIN_LIQ = 20000;
 const MIN_MARKETCAP = 80000;
@@ -165,11 +165,7 @@ async function runForChain(chain: 'base' | 'robinhood', origin: string) {
   const categories = await fetchCategories(chain, origin);
 
   const history = (await redis.lrange<string>(HISTORY_KEY, 0, HISTORY_DEPTH - 1)) || [];
-  const excludedCas = new Set(
-    history.flatMap((h) => {
-      try { return (JSON.parse(h) as string[]).map((c) => c.toLowerCase()); } catch { return []; }
-    })
-  );
+  const excludedCas = new Set(history.map((ca) => String(ca).toLowerCase()));
 
   const candidates: Candidate[] = [];
   for (const { cat, data } of categories) {
@@ -250,7 +246,7 @@ MarketCap: ${formatCap(oldMarketCap)} → ${formatCap(picked.dex.marketCap)} | P
   const result = await postTweetWithMedia(text, [uploaded.mediaId]);
   if (!result.ok) return { chain, posted: false, reason: result.error };
 
-  await redis.lpush(HISTORY_KEY, JSON.stringify([picked.ca.toLowerCase()]));
+  await redis.lpush(HISTORY_KEY, picked.ca.toLowerCase());
   await redis.ltrim(HISTORY_KEY, 0, HISTORY_DEPTH - 1);
 
   return { chain, posted: true, tweetId: result.id, token: picked.symbol, ca: picked.ca, pct: pctRounded };
