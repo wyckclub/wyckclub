@@ -21,6 +21,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <Header />
           {children}
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
