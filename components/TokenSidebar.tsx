@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { getCachedDexData } from '@/lib/dexData';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { useRouter, usePathname } from 'next/navigation';
@@ -31,16 +31,36 @@ function StarIcon({ filled }: { filled: boolean }) {
   );
 }
 
+const scrollPositions: Record<string, number> = {};
+const lastTab: Record<string, Tab> = {}; // key: chain
+
 export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () => void }) {
   const router = useRouter();
   const pathname = usePathname();
   const activeCa = pathname?.split('/').pop();
-  const [tab, setTab] = useState<Tab>('all');
+  const [tab, setTabState] = useState<Tab>(lastTab[chain] ?? 'all');
   const [search, setSearch] = useState('');
   const { tokens, newTokens, potential, dexTick, loading, watchlist, toggleWatchlist: toggleStar } = useTokenData();
   type SortBy = 'az' | 'score' | 'volume' | 'marketcap' | 'change24h';
   const [sortBy, setSortBy] = useState<SortBy>('volume');
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  function setTab(t: Tab) {
+    lastTab[chain] = t;
+    setTabState(t);
+  }
+
+  const scrollKey = `${chain}_${tab}`;
+
+  useEffect(() => {
+    const el = listRef.current;
+    if (el) el.scrollTop = scrollPositions[scrollKey] ?? 0;
+  }, [scrollKey, loading]);
+
+  function handleScroll(e: React.UIEvent<HTMLDivElement>) {
+    scrollPositions[scrollKey] = e.currentTarget.scrollTop;
+  }
 
   const rows: Row[] = useMemo(() => {
     if (tab === 'star') {
@@ -95,7 +115,7 @@ export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () 
     { key: 'potential', label: 'Potential' },
     { key: 'new', label: 'New' },
   ];
-
+  
   return (
     <div className="h-full flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
       <div className="p-2.5 border-b border-slate-800 shrink-0">
@@ -163,7 +183,7 @@ export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () 
             <span className="w-8 text-right">Score</span>
         </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" ref={listRef} onScroll={handleScroll}>
         {loading && <p className="text-slate-500 text-xs p-3">Loading...</p>}
         {!loading && filteredRows.length === 0 && (
           <p className="text-slate-500 text-xs p-3">{tab === 'star' ? 'No favorites yet.' : 'No tokens found.'}</p>

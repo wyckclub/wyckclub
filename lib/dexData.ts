@@ -215,6 +215,9 @@ export async function fetchFullTokenPairInfo(ca: string, chainId: string = 'base
     const tw = socials.find((s: any) => s.type === 'twitter');
     const tg = socials.find((s: any) => s.type === 'telegram');
 
+    const sumField = (getter: (p: any) => number | undefined) =>
+      caPairs.length ? caPairs.reduce((s: number, p: any) => s + (Number(getter(p)) || 0), 0) : null;
+
     return {
       pairAddress: pair.pairAddress,
       dexId: pair.dexId,
@@ -222,7 +225,7 @@ export async function fetchFullTokenPairInfo(ca: string, chainId: string = 'base
       priceUsd: pair.priceUsd == null ? null : Number(pair.priceUsd),
       marketCap: pair.marketCap ?? pair.fdv ?? null,
       fdv: pair.fdv ?? null,
-      liq: pair.liquidity?.usd ?? null,
+      liq: sumField((p) => p.liquidity?.usd),
       pairCreatedAt: pair.pairCreatedAt ?? null,
       imageUrl: pair.info?.imageUrl ?? null,
       symbol: pair.baseToken?.symbol ?? null,
@@ -237,16 +240,16 @@ export async function fetchFullTokenPairInfo(ca: string, chainId: string = 'base
         h24: pair.priceChange?.h24 ?? null,
       },
       volume: {
-        m5: pair.volume?.m5 ?? null,
-        h1: pair.volume?.h1 ?? null,
-        h6: pair.volume?.h6 ?? null,
-        h24: pair.volume?.h24 ?? null,
+        m5: sumField((p) => p.volume?.m5),
+        h1: sumField((p) => p.volume?.h1),
+        h6: sumField((p) => p.volume?.h6),
+        h24: sumField((p) => p.volume?.h24),
       },
       txns: {
-        m5: { buys: pair.txns?.m5?.buys ?? 0, sells: pair.txns?.m5?.sells ?? 0 },
-        h1: { buys: pair.txns?.h1?.buys ?? 0, sells: pair.txns?.h1?.sells ?? 0 },
-        h6: { buys: pair.txns?.h6?.buys ?? 0, sells: pair.txns?.h6?.sells ?? 0 },
-        h24: { buys: pair.txns?.h24?.buys ?? 0, sells: pair.txns?.h24?.sells ?? 0 },
+        m5: { buys: caPairs.reduce((s: number, p: any) => s + (p.txns?.m5?.buys ?? 0), 0), sells: caPairs.reduce((s: number, p: any) => s + (p.txns?.m5?.sells ?? 0), 0) },
+        h1: { buys: caPairs.reduce((s: number, p: any) => s + (p.txns?.h1?.buys ?? 0), 0), sells: caPairs.reduce((s: number, p: any) => s + (p.txns?.h1?.sells ?? 0), 0) },
+        h6: { buys: caPairs.reduce((s: number, p: any) => s + (p.txns?.h6?.buys ?? 0), 0), sells: caPairs.reduce((s: number, p: any) => s + (p.txns?.h6?.sells ?? 0), 0) },
+        h24: { buys: caPairs.reduce((s: number, p: any) => s + (p.txns?.h24?.buys ?? 0), 0), sells: caPairs.reduce((s: number, p: any) => s + (p.txns?.h24?.sells ?? 0), 0) },
       },
     };
   } catch {
