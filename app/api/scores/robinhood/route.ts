@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const NOT_VERIFIED_URLS = [
   process.env.WYCK_ROBIN_URL,
+  process.env.WYCK_ROBIN1_URL,
   process.env.WYCK_ROBIN2_URL,
   process.env.WYCK_ROBIN3_URL,
   process.env.WYCK_ROBIN4_URL,
