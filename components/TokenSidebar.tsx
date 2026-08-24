@@ -3,15 +3,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getCachedDexData } from '@/lib/dexData';
 import { ScoreBadge } from '@/components/ScoreBadge';
+import { PlatformBadge } from '@/components/PlatformBadge';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTokenData } from '@/components/TokenDataContext';
 import { formatCap, formatAge } from '@/lib/format';
+import { BASE_PLATFORMS, ROBINHOOD_PLATFORMS, PLATFORM_LABELS } from '@/lib/platforms';
 
 type Chain = 'base' | 'robinhood';
 type Tab = 'star' | 'all' | 'potential' | 'new';
 
 interface Row {
-  ca: string; symbol: string; category: number; score: number; scoreDisplay: string; verified: boolean;
+  ca: string; symbol: string; category: number; score: number; scoreDisplay: string; verified: boolean; platform: string;
 }
 
 function SearchIcon() {
@@ -44,7 +46,14 @@ export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () 
   type SortBy = 'az' | 'score' | 'volume' | 'marketcap' | 'change24h';
   const [sortBy, setSortBy] = useState<SortBy>('volume');
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const [platformFilter, setPlatformFilter] = useState<string>('all');
   const listRef = useRef<HTMLDivElement>(null);
+
+  const platforms = chain === 'robinhood' ? ROBINHOOD_PLATFORMS : BASE_PLATFORMS;
+
+  useEffect(() => {
+    setPlatformFilter('all');
+  }, [chain]);
 
   function setTab(t: Tab) {
     lastTab[chain] = t;
@@ -66,15 +75,15 @@ export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () 
     if (tab === 'star') {
       return tokens
         .filter((t) => watchlist.has(t.CA))
-        .map((t) => ({ ca: t.CA, symbol: t.symbol, category: t.category, score: t.latestScore, scoreDisplay: t.latestScoreDisplay, verified: t.verified }));
+        .map((t) => ({ ca: t.CA, symbol: t.symbol, category: t.category, score: t.latestScore, scoreDisplay: t.latestScoreDisplay, verified: t.verified, platform: t.platform }));
     }
     if (tab === 'new') {
-      return newTokens.map((t) => ({ ca: t.CA, symbol: t.symbol, category: t.category, score: t.latestScore, scoreDisplay: t.latestScoreDisplay, verified: t.verified }));
+      return newTokens.map((t) => ({ ca: t.CA, symbol: t.symbol, category: t.category, score: t.latestScore, scoreDisplay: t.latestScoreDisplay, verified: t.verified, platform: t.platform }));
     }
     if (tab === 'potential') {
-      return potential.map((p) => ({ ca: p.ca, symbol: p.symbol, category: p.category, score: p.score, scoreDisplay: p.scoreDisplay, verified: !!p.verified }));
+      return potential.map((p) => ({ ca: p.ca, symbol: p.symbol, category: p.category, score: p.score, scoreDisplay: p.scoreDisplay, verified: !!p.verified, platform: p.platform ?? 'unknown' }));
     }
-    return tokens.map((t) => ({ ca: t.CA, symbol: t.symbol, category: t.category, score: t.latestScore, scoreDisplay: t.latestScoreDisplay, verified: t.verified }));
+    return tokens.map((t) => ({ ca: t.CA, symbol: t.symbol, category: t.category, score: t.latestScore, scoreDisplay: t.latestScoreDisplay, verified: t.verified, platform: t.platform }));
   }, [tab, tokens, newTokens, potential, watchlist]);
 
     const filteredRows = useMemo(() => {
@@ -97,9 +106,10 @@ export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () 
         }
         return a.symbol.localeCompare(b.symbol);
     });
+    const platformFiltered = platformFilter === 'all' ? base : base.filter((r) => r.platform === platformFilter);
     const q = search.trim().toLowerCase();
-    if (!q) return base;
-    return base.filter((r) => {
+    if (!q) return platformFiltered;
+    return platformFiltered.filter((r) => {
         const dex = getCachedDexData(r.ca);
         return (
         r.symbol.toLowerCase().includes(q) ||
@@ -107,7 +117,7 @@ export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () 
         (dex?.name ?? '').toLowerCase().includes(q)
         );
     });
-    }, [rows, search, dexTick, sortBy]);
+    }, [rows, search, dexTick, sortBy, platformFilter]);
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'star', label: '★' },
@@ -142,6 +152,19 @@ export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () 
             {t.label}
           </button>
         ))}
+      </div>
+
+      <div className="px-2.5 py-1.5 border-b border-slate-800 shrink-0">
+        <select
+          value={platformFilter}
+          onChange={(e) => setPlatformFilter(e.target.value)}
+          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-300 focus:outline-none focus:border-blue-500"
+        >
+          <option value="all">All platforms</option>
+          {platforms.map((p) => (
+            <option key={p} value={p}>{PLATFORM_LABELS[p] ?? p}</option>
+          ))}
+        </select>
       </div>
 
         <div className="flex items-center px-2.5 py-1.5 border-b border-slate-800 text-[11px] font-bold text-slate-500 tracking-wide shrink-0 relative">
@@ -211,7 +234,10 @@ export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () 
               )}
 
               <div className="min-w-0 flex-1">
-                <div className="text-[11px] font-bold text-blue-400 truncate">{r.symbol}</div>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-[11px] font-bold text-blue-400 truncate">{r.symbol}</span>
+                  <PlatformBadge platform={r.platform} size="sm" />
+                </div>
                 <div className="text-[11px] text-slate-400 truncate">
                   {dex?.marketCap == null ? 'N/A' : formatCap(dex.marketCap)}
                   {tab === 'new' && dex?.pairCreatedAt != null && ` - Created: ${formatAge(dex.pairCreatedAt)}`}

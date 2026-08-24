@@ -5,10 +5,11 @@ import { useTokenGate, PRO_THRESHOLD } from '@/lib/tokenGate';
 import { getCachedDexData } from '@/lib/dexData';
 import { formatCap } from '@/lib/format';
 import { ScoreBadge } from '@/components/ScoreBadge';
+import { PlatformBadge } from '@/components/PlatformBadge';
 import { PriceChartModal } from '@/components/PriceChartModal';
 import { TokenEntry } from '@/lib/tokenApi';
+import { ROBINHOOD_PLATFORMS, PLATFORM_LABELS } from '@/lib/platforms';
 import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
-import { VerifyBadge } from '@/components/VerifyBadge';
 import { useTokenData } from '@/components/TokenDataContext';
 import Link from 'next/link';
 
@@ -20,13 +21,14 @@ export default function RobinhoodTrackerPage() {
   const [sortCol, setSortCol] = useState<SortCol>('snapshot');
   const [sortDir, setSortDir] = useState<1 | -1>(-1);
   const [search, setSearch] = useState('');
+  const [platformFilter, setPlatformFilter] = useState<string>('all');
   const PAGE_SIZE = 200;
   const [page, setPage] = useState(1);
   const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string; verified: boolean } | null>(null);
 
   useEffect(() => {
     setPage(1);
-  }, [search, sortCol, sortDir]);
+  }, [search, platformFilter, sortCol, sortDir]);
 
   if (!isConnected) return <GateMessage title="Connect your wallet" message="Connect your wallet to check Robinhood Tracker access." />;
   if (isLoading) return <GateMessage title="Checking balance..." message="" />;
@@ -62,12 +64,14 @@ export default function RobinhoodTrackerPage() {
     setSortCol(col);
   }
 
+  const platformFiltered = platformFilter === 'all' ? tokens : tokens.filter((t) => t.platform === platformFilter);
+
   const filteredTokens = search.trim()
-    ? tokens.filter((t) => {
+    ? platformFiltered.filter((t) => {
         const q = search.trim().toLowerCase();
         return t.symbol.toLowerCase().includes(q) || t.CA.toLowerCase().includes(q);
       })
-    : tokens;
+    : platformFiltered;
 
   const liqFilteredTokens = dexReady
     ? filteredTokens.filter((t) => {
@@ -105,6 +109,16 @@ export default function RobinhoodTrackerPage() {
           placeholder="Search token symbol or CA 0x..."
           className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
         />
+        <select
+          value={platformFilter}
+          onChange={(e) => setPlatformFilter(e.target.value)}
+          className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+        >
+          <option value="all">All platforms</option>
+          {ROBINHOOD_PLATFORMS.map((p) => (
+            <option key={p} value={p}>{PLATFORM_LABELS[p] ?? p}</option>
+          ))}
+        </select>
         <button
           onClick={loadData}
           disabled={loadingData}
@@ -122,7 +136,7 @@ export default function RobinhoodTrackerPage() {
                 <tr className="bg-slate-900 text-blue-400">
                   <th className="text-left p-3 whitespace-nowrap"></th>
                   <th className="text-left p-3 whitespace-nowrap">Token</th>
-                  <th className="text-left p-3 whitespace-nowrap">Verify</th>
+                  <th className="text-left p-3 whitespace-nowrap">Platform</th>
                   <th className="text-left p-3 whitespace-nowrap">CA</th>
                   {headers.map((h) => (
                     <th
@@ -162,7 +176,7 @@ export default function RobinhoodTrackerPage() {
                         </Link>
                       </td>
                       <td className="p-3">
-                        <VerifyBadge verified={t.verified} className="w-5 h-5" />
+                        <PlatformBadge platform={t.platform} />
                       </td>
                       <td className="p-3 whitespace-nowrap">
                         <a

@@ -1,55 +1,51 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-const NOT_VERIFIED_URLS = [
-  process.env.WYCK_ROBIN_URL,
-  process.env.WYCK_ROBIN1_URL,
-  process.env.WYCK_ROBIN2_URL,
-  process.env.WYCK_ROBIN3_URL,
-  process.env.WYCK_ROBIN4_URL,
-].filter((u): u is string => !!u);
+interface Source {
+  url: string | undefined;
+  platform: string;
+  verified: boolean;
+}
 
-const VERIFIED_URLS = [
-  process.env.WYCK_ROBIN5_URL,
-  process.env.WYCK_ROBIN6_URL,
-  process.env.WYCK_ROBIN_BANKRBOT1_URL,
-  process.env.WYCK_ROBIN_POOLSFUN1_URL,
-  process.env.WYCK_ROBIN_POOLSTRADE1_URL,
-  process.env.WYCK_ROBIN_CLANKER1_URL,
-  process.env.WYCK_ROBIN_VIRTUALS1_URL,
-  process.env.WYCK_ROBIN_FLAUNCH1_URL,
-  process.env.WYCK_ROBIN_FLAP1_URL,
-  process.env.WYCK_ROBIN_HOODFUN1_URL,
-  process.env.WYCK_ROBIN_PONSFAMILY1_URL,
-  process.env.WYCK_ROBIN_LETSCASH1_URL,
-  process.env.WYCK_ROBIN_NOXA1_URL,
-].filter((u): u is string => !!u);
+const SOURCES: Source[] = [
+  { url: process.env.WYCK_ROBIN1_URL, platform: 'robinhood', verified: false },
+  { url: process.env.WYCK_ROBIN2_URL, platform: 'robinhood', verified: false },
+  { url: process.env.WYCK_ROBIN3_URL, platform: 'robinhood', verified: false },
+  { url: process.env.WYCK_ROBIN4_URL, platform: 'robinhood', verified: false },
 
-async function fetchGroup(urls: string[], verified: boolean): Promise<Record<string, any>> {
-  if (!urls.length) return {};
-  const results = await Promise.all(
-    urls.map(async (url) => {
-      const res = await fetch(url, { next: { revalidate: 20 } });
-      if (!res.ok) throw new Error(`Upstream error: ${url}`);
-      return res.json();
-    })
-  );
-  const merged: Record<string, any> = Object.assign({}, ...results);
-  for (const ca of Object.keys(merged)) {
-    merged[ca] = { ...merged[ca], verified };
+  { url: process.env.WYCK_ROBIN5_URL, platform: 'robinhood', verified: true },
+  { url: process.env.WYCK_ROBIN6_URL, platform: 'robinhood', verified: true },
+  { url: process.env.WYCK_ROBIN_BANKRBOT1_URL, platform: 'bankr', verified: true },
+  { url: process.env.WYCK_ROBIN_POOLSFUN1_URL, platform: 'pools.fun', verified: true },
+  { url: process.env.WYCK_ROBIN_POOLSTRADE1_URL, platform: 'pools.trade', verified: true },
+  { url: process.env.WYCK_ROBIN_CLANKER1_URL, platform: 'clanker', verified: true },
+  { url: process.env.WYCK_ROBIN_VIRTUALS1_URL, platform: 'virtuals', verified: true },
+  { url: process.env.WYCK_ROBIN_FLAUNCH1_URL, platform: 'flaunch', verified: true },
+  { url: process.env.WYCK_ROBIN_FLAP1_URL, platform: 'flap', verified: true },
+  { url: process.env.WYCK_ROBIN_HOODFUN1_URL, platform: 'hood.fun', verified: true },
+  { url: process.env.WYCK_ROBIN_PONSFAMILY1_URL, platform: 'ponsfamily', verified: true },
+  { url: process.env.WYCK_ROBIN_LETSCASH1_URL, platform: 'letscash', verified: true },
+  { url: process.env.WYCK_ROBIN_NOXA1_URL, platform: 'noxa', verified: true },
+];
+
+async function fetchGroup(url: string, platform: string, verified: boolean): Promise<Record<string, any>> {
+  const res = await fetch(url, { next: { revalidate: 20 } });
+  if (!res.ok) throw new Error(`Upstream error: ${url}`);
+  const data = await res.json();
+  const tagged: Record<string, any> = {};
+  for (const [ca, token] of Object.entries<any>(data)) {
+    tagged[ca] = { ...token, platform, verified };
   }
-  return merged;
+  return tagged;
 }
 
 export async function GET() {
-  if (!NOT_VERIFIED_URLS.length && !VERIFIED_URLS.length) {
-    return NextResponse.json({ error: 'Missing config' }, { status: 400 });
-  }
+  const sources = SOURCES.filter((s): s is Source & { url: string } => !!s.url);
+  if (!sources.length) return NextResponse.json({ error: 'Missing config' }, { status: 400 });
+
   try {
-    const [notVerified, verified] = await Promise.all([
-      fetchGroup(NOT_VERIFIED_URLS, false),
-      fetchGroup(VERIFIED_URLS, true),
-    ]);
-    return NextResponse.json({ ...notVerified, ...verified });
+    const results = await Promise.all(sources.map((s) => fetchGroup(s.url, s.platform, s.verified)));
+    const merged = Object.assign({}, ...results);
+    return NextResponse.json(merged);
   } catch {
     return NextResponse.json({ error: 'Upstream error' }, { status: 502 });
   }

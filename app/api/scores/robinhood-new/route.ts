@@ -8,7 +8,7 @@ export async function GET() {
     if (!res.ok) throw new Error('Upstream error');
     const data = await res.json();
     const out: Record<string, any> = {};
-    for (const ca of Object.keys(data)) out[ca] = { ...data[ca], verified: false };
+    for (const ca of Object.keys(data)) out[ca] = { ...data[ca], verified: false, platform: 'new' };
     return NextResponse.json(out);
   } catch {
     return NextResponse.json({ error: 'Upstream error' }, { status: 502 });

@@ -13,6 +13,7 @@ export interface PotentialItem {
   score: number;
   scoreDisplay: string;
   verified: boolean | null;
+  platform?: string;
 }
 
 interface TokenDataState {

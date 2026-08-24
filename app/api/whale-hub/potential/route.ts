@@ -53,6 +53,7 @@ interface Item {
   liq?: number;
   marketCap?: number | null;
   imageUrl?: string | null;
+  platform: string | null;
 }
 
 export async function GET(req: NextRequest) {
@@ -128,6 +129,7 @@ export async function GET(req: NextRequest) {
         spring: springE0,
         yellow: yellowE0,
         verified: token.verified ?? null,
+        platform: token.platform ?? null,
       });
     }
   }

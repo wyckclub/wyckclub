@@ -1,46 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const URLS: Record<string, (string | undefined)[]> = {
+interface Source {
+  url: string | undefined;
+  platform: string;
+  verified: boolean;
+}
+
+const SOURCES: Record<string, Source[]> = {
   '1': [
-    process.env.WYCK_CLANKER1_URL,
-    process.env.WYCK_CLANKER2_URL,
-    process.env.WYCK_CLANKER3_URL,
-    process.env.WYCK_BANKRBOT1_URL,
-    process.env.WYCK_BANKRBOT3_URL,
-    process.env.WYCK_BANKRBOT4_URL,
+    { url: process.env.WYCK_CLANKER1_URL, platform: 'clanker', verified: true },
+    { url: process.env.WYCK_CLANKER2_URL, platform: 'clanker', verified: true },
+    { url: process.env.WYCK_CLANKER3_URL, platform: 'clanker', verified: true },
+    { url: process.env.WYCK_BANKRBOT1_URL, platform: 'bankr', verified: true },
+    { url: process.env.WYCK_BANKRBOT3_URL, platform: 'bankr', verified: true },
+    { url: process.env.WYCK_BANKRBOT4_URL, platform: 'bankr', verified: true },
   ],
   '2': [
-    process.env.WYCK_B1_URL,
-    process.env.WYCK_B2_URL,
-    process.env.WYCK_B3_URL,
-    process.env.WYCK_B4_URL,
-    process.env.WYCK_B5_URL,
-    process.env.WYCK_B6_URL,
-    process.env.WYCK_2NEW_URL,
-    process.env.WYCK_ZR1_URL,
-    process.env.WYCK_FLAUNCH1_URL,
+    { url: process.env.WYCK_B1_URL, platform: 'base', verified: true },
+    { url: process.env.WYCK_B2_URL, platform: 'base', verified: true },
+    { url: process.env.WYCK_B3_URL, platform: 'base', verified: true },
+    { url: process.env.WYCK_B4_URL, platform: 'base', verified: true },
+    { url: process.env.WYCK_2NEW_URL, platform: 'base', verified: true },
+    { url: process.env.WYCK_ZR1_URL, platform: 'zora', verified: true },
+    { url: process.env.WYCK_FLAUNCH1_URL, platform: 'flaunch', verified: true },
+    { url: process.env.WYCK_B5_URL, platform: 'base', verified: false },
+    { url: process.env.WYCK_B6_URL, platform: 'base', verified: false },
   ],
   '3': [
-    process.env.WYCK_VIRTUALS1_URL,
-    process.env.WYCK_VIRTUALS2_URL,
-    process.env.WYCK_VIRTUALS3_URL,
+    { url: process.env.WYCK_VIRTUALS1_URL, platform: 'virtuals', verified: true },
+    { url: process.env.WYCK_VIRTUALS2_URL, platform: 'virtuals', verified: true },
+    { url: process.env.WYCK_VIRTUALS3_URL, platform: 'virtuals', verified: true },
   ],
   '4': [
-    process.env.WYCK_5NEW_URL,
+    { url: process.env.WYCK_5NEW_URL, platform: 'new', verified: true },
   ],
 };
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ cat: string }> }) {
   const { cat } = await params;
-  const urls = (URLS[cat] || []).filter((u): u is string => !!u);
-  if (!urls.length) return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
+  const sources = (SOURCES[cat] || []).filter(
+    (s): s is Source & { url: string } => !!s.url
+  );
+  if (!sources.length) return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
 
   try {
     const results = await Promise.all(
-      urls.map(async (url) => {
-        const res = await fetch(url, { next: { revalidate: 20 } });
-        if (!res.ok) throw new Error(`Upstream error: ${url}`);
-        return res.json();
+      sources.map(async (s) => {
+        const res = await fetch(s.url, { next: { revalidate: 20 } });
+        if (!res.ok) throw new Error(`Upstream error: ${s.url}`);
+        const data = await res.json();
+        const tagged: Record<string, any> = {};
+        for (const [ca, token] of Object.entries<any>(data)) {
+          tagged[ca] = { ...token, platform: s.platform, verified: s.verified };
+        }
+        return tagged;
       })
     );
     const merged = Object.assign({}, ...results);

@@ -5,8 +5,10 @@ import { useTokenGate, PRO_THRESHOLD } from '@/lib/tokenGate';
 import { getCachedDexData } from '@/lib/dexData';
 import { formatCap } from '@/lib/format';
 import { ScoreBadge } from '@/components/ScoreBadge';
+import { PlatformBadge } from '@/components/PlatformBadge';
 import { PriceChartModal } from '@/components/PriceChartModal';
-import { TokenEntry, CATEGORY_LABELS } from '@/lib/tokenApi';
+import { TokenEntry } from '@/lib/tokenApi';
+import { BASE_PLATFORMS, PLATFORM_LABELS } from '@/lib/platforms';
 import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
 import { fetchGithubStats, GithubStats } from '@/lib/githubApi';
 import { useTokenData } from '@/components/TokenDataContext';
@@ -21,7 +23,7 @@ export default function BaseTrackerPage() {
   const [sortDir, setSortDir] = useState<1 | -1>(-1);
   const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string } | null>(null);
   const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<number | 'all'>('all');
+  const [platformFilter, setPlatformFilter] = useState<string>('all');
   const PAGE_SIZE = 200;
   const [page, setPage] = useState(1);
   const [githubStats, setGithubStats] = useState<Record<string, GithubStats>>({});
@@ -32,7 +34,7 @@ export default function BaseTrackerPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, categoryFilter, sortCol, sortDir]);
+  }, [search, platformFilter, sortCol, sortDir]);
 
   if (!isConnected) return <GateMessage title="Connect your wallet" message="Connect your wallet to check Pro Plan access." />;
   if (isLoading) return <GateMessage title="Checking balance..." message="" />;
@@ -68,14 +70,14 @@ export default function BaseTrackerPage() {
     setSortCol(col);
   }
 
-  const categoryFiltered = categoryFilter === 'all' ? tokens : tokens.filter((t) => t.category === categoryFilter);
+  const platformFiltered = platformFilter === 'all' ? tokens : tokens.filter((t) => t.platform === platformFilter);
 
   const filteredTokens = search.trim()
-    ? categoryFiltered.filter((t) => {
+    ? platformFiltered.filter((t) => {
         const q = search.trim().toLowerCase();
         return t.symbol.toLowerCase().includes(q) || t.CA.toLowerCase().includes(q);
       })
-    : categoryFiltered;
+    : platformFiltered;
 
   const liqFilteredTokens = dexReady
     ? filteredTokens.filter((t) => {
@@ -114,15 +116,14 @@ export default function BaseTrackerPage() {
           className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
         />
         <select
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+          value={platformFilter}
+          onChange={(e) => setPlatformFilter(e.target.value)}
           className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
         >
-          <option value="all">All tokens</option>
-          <option value={1}>Clanker & Bankr</option>
-          <option value={2}>Other Base</option>
-          <option value={3}>Virtuals</option>
-          <option value={4}>New tokens</option>
+          <option value="all">All platforms</option>
+          {BASE_PLATFORMS.map((p) => (
+            <option key={p} value={p}>{PLATFORM_LABELS[p] ?? p}</option>
+          ))}
         </select>
         <button
           onClick={loadData}
@@ -162,6 +163,7 @@ export default function BaseTrackerPage() {
                     <th className="text-left p-3 whitespace-nowrap">
                     Contributions<br />(30days)
                     </th>
+                    <th className="text-left p-3 whitespace-nowrap">Platform</th>
                 </tr>
               </thead>
               <tbody>
@@ -251,8 +253,8 @@ export default function BaseTrackerPage() {
                           </>
                         );
                       })()}
-                      <td className="p-3 whitespace-nowrap text-slate-400 text-xs">
-                        {CATEGORY_LABELS[t.category] ?? t.category}
+                      <td className="p-3 whitespace-nowrap">
+                        <PlatformBadge platform={t.platform} />
                       </td>
                       <td className="p-3 whitespace-nowrap">
                         <button
