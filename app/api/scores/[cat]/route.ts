@@ -3,7 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 const URLS: Record<string, (string | undefined)[]> = {
   '1': [
     process.env.WYCK_CLANKER1_URL,
+    process.env.WYCK_CLANKER2_URL,
+    process.env.WYCK_CLANKER3_URL,
     process.env.WYCK_BANKRBOT1_URL,
+    process.env.WYCK_BANKRBOT3_URL,
+    process.env.WYCK_BANKRBOT4_URL,
   ],
   '2': [
     process.env.WYCK_B1_URL,
@@ -18,6 +22,8 @@ const URLS: Record<string, (string | undefined)[]> = {
   ],
   '3': [
     process.env.WYCK_VIRTUALS1_URL,
+    process.env.WYCK_VIRTUALS2_URL,
+    process.env.WYCK_VIRTUALS3_URL,
   ],
   '4': [
     process.env.WYCK_5NEW_URL,
