@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { fetchAllCategories, fetchRobinhoodTokens, fetchRobinhoodNewTokens, TokenEntry } from '@/lib/tokenApi';
+import { fetchAllCategories, fetchRobinhoodTokens, TokenEntry } from '@/lib/tokenApi';
 import { prefetchDexDataBatch } from '@/lib/dexData';
 
 type Chain = 'base' | 'robinhood';
@@ -18,7 +18,6 @@ export interface PotentialItem {
 
 interface TokenDataState {
   tokens: TokenEntry[];
-  newTokens: TokenEntry[];
   potential: PotentialItem[];
   dexTick: number;
   loading: boolean;
@@ -34,7 +33,6 @@ const WATCHLIST_KEY_PREFIX = 'wyck_sidebar_star_';
 
 export function TokenDataProvider({ chain, children }: { chain: Chain; children: React.ReactNode }) {
   const [tokens, setTokens] = useState<TokenEntry[]>([]);
-  const [newTokens, setNewTokens] = useState<TokenEntry[]>([]);
   const [potential, setPotential] = useState<PotentialItem[]>([]);
   const [dexTick, setDexTick] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -62,18 +60,13 @@ export function TokenDataProvider({ chain, children }: { chain: Chain; children:
     setLoading(true);
     setDexReady(false);
     const loadAll = chain === 'robinhood' ? fetchRobinhoodTokens() : fetchAllCategories();
-    const loadNew = chain === 'robinhood'
-      ? fetchRobinhoodNewTokens()
-      : loadAll.then((list) => list.filter((t) => t.category === 4));
 
     Promise.all([
       loadAll,
-      loadNew,
       fetch(`/api/whale-hub/potential?chain=${chain}`).then((r) => r.json()).catch(() => ({ tier1: [], tier2: [] })),
     ])
-      .then(async ([all, news, pot]) => {
+      .then(async ([all, pot]) => {
         setTokens(all);
-        setNewTokens(news as TokenEntry[]);
         setPotential([...(pot.tier1 || []), ...(pot.tier2 || [])]);
         setLoading(false);
 
@@ -95,7 +88,7 @@ export function TokenDataProvider({ chain, children }: { chain: Chain; children:
   }, [load]);
 
   return (
-    <TokenDataContext.Provider value={{ tokens, newTokens, potential, dexTick, loading, dexReady, refresh: load, watchlist, toggleWatchlist }}>
+    <TokenDataContext.Provider value={{ tokens, potential, dexTick, loading, dexReady, refresh: load, watchlist, toggleWatchlist }}>
       {children}
     </TokenDataContext.Provider>
   );

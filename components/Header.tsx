@@ -96,11 +96,11 @@ function TokenIcon() {
 }
 
 const navItems = [
-  { href: '/', label: 'Home', suffix: '', icon: HomeIcon },
-  { href: '/base', label: 'BASE Tracker', suffix: '(Beta)', icon: BaseIcon },
-  { href: '/robinhood', label: 'Robinhood Tracker', suffix: '(Beta)', icon: RobinhoodIcon },
-  { href: '/whale-hub', label: 'Whale Hub', suffix: '', icon: WhaleIcon },
-  { href: '/portfolio', label: 'Portfolio', suffix: '', icon: PortfolioIcon },
+  { href: '/', label: 'Home', icon: HomeIcon },
+  { href: '/base', label: 'BASE', icon: BaseIcon },
+  { href: '/robinhood', label: 'Robinhood', icon: RobinhoodIcon },
+  { href: '/whale-hub', label: 'Whale Hub', icon: WhaleIcon },
+  { href: '/portfolio', label: 'Portfolio', icon: PortfolioIcon },
   { href: '/guide', label: 'Guide', suffix: '', icon: GuideIcon },
 ];
 

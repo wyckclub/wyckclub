@@ -8,7 +8,7 @@ import { ScoreBadge } from '@/components/ScoreBadge';
 import { PlatformBadge } from '@/components/PlatformBadge';
 import { PriceChartModal } from '@/components/PriceChartModal';
 import { TokenEntry } from '@/lib/tokenApi';
-import { ROBINHOOD_PLATFORMS, PLATFORM_LABELS } from '@/lib/platforms';
+import { ROBINHOOD_PLATFORMS, FILTER_LABELS } from '@/lib/platforms';
 import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
 import { useTokenData } from '@/components/TokenDataContext';
 import Link from 'next/link';
@@ -116,7 +116,7 @@ export default function RobinhoodTrackerPage() {
         >
           <option value="all">All platforms</option>
           {ROBINHOOD_PLATFORMS.map((p) => (
-            <option key={p} value={p}>{PLATFORM_LABELS[p] ?? p}</option>
+            <option key={p} value={p}>{FILTER_LABELS[p] ?? p}</option>
           ))}
         </select>
         <button

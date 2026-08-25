@@ -8,7 +8,7 @@ import { ScoreBadge } from '@/components/ScoreBadge';
 import { PlatformBadge } from '@/components/PlatformBadge';
 import { PriceChartModal } from '@/components/PriceChartModal';
 import { TokenEntry } from '@/lib/tokenApi';
-import { BASE_PLATFORMS, PLATFORM_LABELS } from '@/lib/platforms';
+import { BASE_PLATFORMS, FILTER_LABELS } from '@/lib/platforms';
 import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
 import { fetchGithubStats, GithubStats } from '@/lib/githubApi';
 import { useTokenData } from '@/components/TokenDataContext';
@@ -122,7 +122,7 @@ export default function BaseTrackerPage() {
         >
           <option value="all">All platforms</option>
           {BASE_PLATFORMS.map((p) => (
-            <option key={p} value={p}>{PLATFORM_LABELS[p] ?? p}</option>
+            <option key={p} value={p}>{FILTER_LABELS[p] ?? p}</option>
           ))}
         </select>
         <button

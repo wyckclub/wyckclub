@@ -7,13 +7,14 @@ interface Source {
 }
 
 const SOURCES: Source[] = [
-  { url: process.env.WYCK_ROBIN1_URL, platform: 'robinhood', verified: false },
-  { url: process.env.WYCK_ROBIN2_URL, platform: 'robinhood', verified: false },
-  { url: process.env.WYCK_ROBIN3_URL, platform: 'robinhood', verified: false },
-  { url: process.env.WYCK_ROBIN4_URL, platform: 'robinhood', verified: false },
+  { url: process.env.WYCK_ROBIN_URL, platform: 'robinhood_unverified', verified: false },
+  { url: process.env.WYCK_ROBIN1_URL, platform: 'robinhood_unverified', verified: false },
+  { url: process.env.WYCK_ROBIN2_URL, platform: 'robinhood_unverified', verified: false },
+  { url: process.env.WYCK_ROBIN3_URL, platform: 'robinhood_unverified', verified: false },
+  { url: process.env.WYCK_ROBIN4_URL, platform: 'robinhood_unverified', verified: false },
 
-  { url: process.env.WYCK_ROBIN5_URL, platform: 'robinhood', verified: true },
-  { url: process.env.WYCK_ROBIN6_URL, platform: 'robinhood', verified: true },
+  { url: process.env.WYCK_ROBIN5_URL, platform: 'robinhood_verified', verified: true },
+  { url: process.env.WYCK_ROBIN6_URL, platform: 'robinhood_verified', verified: true },
   { url: process.env.WYCK_ROBIN_BANKRBOT1_URL, platform: 'bankr', verified: true },
   { url: process.env.WYCK_ROBIN_POOLSFUN1_URL, platform: 'pools.fun', verified: true },
   { url: process.env.WYCK_ROBIN_POOLSTRADE1_URL, platform: 'pools.trade', verified: true },

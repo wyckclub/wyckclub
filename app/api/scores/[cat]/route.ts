@@ -12,19 +12,19 @@ const SOURCES: Record<string, Source[]> = {
     { url: process.env.WYCK_CLANKER2_URL, platform: 'clanker', verified: true },
     { url: process.env.WYCK_CLANKER3_URL, platform: 'clanker', verified: true },
     { url: process.env.WYCK_BANKRBOT1_URL, platform: 'bankr', verified: true },
+    { url: process.env.WYCK_BANKRBOT2_URL, platform: 'bankr', verified: true },
     { url: process.env.WYCK_BANKRBOT3_URL, platform: 'bankr', verified: true },
-    { url: process.env.WYCK_BANKRBOT4_URL, platform: 'bankr', verified: true },
   ],
   '2': [
-    { url: process.env.WYCK_B1_URL, platform: 'base', verified: true },
-    { url: process.env.WYCK_B2_URL, platform: 'base', verified: true },
-    { url: process.env.WYCK_B3_URL, platform: 'base', verified: true },
-    { url: process.env.WYCK_B4_URL, platform: 'base', verified: true },
-    { url: process.env.WYCK_2NEW_URL, platform: 'base', verified: true },
+    { url: process.env.WYCK_B1_URL, platform: 'base_verified', verified: true },
+    { url: process.env.WYCK_B2_URL, platform: 'base_verified', verified: true },
+    { url: process.env.WYCK_B3_URL, platform: 'base_verified', verified: true },
+    { url: process.env.WYCK_B4_URL, platform: 'base_verified', verified: true },
+    { url: process.env.WYCK_2NEW_URL, platform: 'base_verified', verified: true },
     { url: process.env.WYCK_ZR1_URL, platform: 'zora', verified: true },
     { url: process.env.WYCK_FLAUNCH1_URL, platform: 'flaunch', verified: true },
-    { url: process.env.WYCK_B5_URL, platform: 'base', verified: false },
-    { url: process.env.WYCK_B6_URL, platform: 'base', verified: false },
+    { url: process.env.WYCK_B5_URL, platform: 'base_unverified', verified: false },
+    { url: process.env.WYCK_B6_URL, platform: 'base_unverified', verified: false },
   ],
   '3': [
     { url: process.env.WYCK_VIRTUALS1_URL, platform: 'virtuals', verified: true },
@@ -32,7 +32,7 @@ const SOURCES: Record<string, Source[]> = {
     { url: process.env.WYCK_VIRTUALS3_URL, platform: 'virtuals', verified: true },
   ],
   '4': [
-    { url: process.env.WYCK_5NEW_URL, platform: 'new', verified: true },
+    { url: process.env.WYCK_5NEW_URL, platform: 'base_unverified', verified: false },
   ],
 };
 
