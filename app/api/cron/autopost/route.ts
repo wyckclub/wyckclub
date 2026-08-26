@@ -140,7 +140,6 @@ async function runForChain(chain: 'base' | 'robinhood', origin: string) {
 
 MarketCap: ${formatCap(oldMarketCap)} → ${formatCap(picked.dex.marketCap)} | Price: ${formatPriceShort(picked.dex.priceUsd)}`;
   for (const line of shareLines) text += `\n${line}`;
-  text += `\n\n🌐Check the latest WYCK update here: wyck.pro/${chain}/${picked.ca}`;
 
   const result = await postTweetWithMedia(text, [uploaded.mediaId]);
   if (!result.ok) return { chain, posted: false, reason: result.error };
