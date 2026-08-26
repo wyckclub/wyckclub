@@ -43,6 +43,7 @@ const BASE_CATEGORY_URLS = [
 
   // Flaunch.gg
   process.env.WYCK_FLAUNCH1_URL,
+  process.env.WYCK_O1EXCHANGE1_URL,
 
   // Base Other (verified)
   process.env.WYCK_B1_URL,

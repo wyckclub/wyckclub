@@ -1,4 +1,4 @@
-export const BASE_PLATFORMS = ['clanker', 'bankr', 'virtuals', 'flaunch', 'zora', 'base_verified', 'base_unverified'];
+export const BASE_PLATFORMS = ['clanker', 'bankr', 'virtuals', 'o1exchange', 'flaunch', 'zora', 'base_verified', 'base_unverified'];
 
 export const ROBINHOOD_PLATFORMS = [
   'bankr', 'ponsfamily', 'pools.fun', 'pools.trade', 'clanker', 'virtuals',
@@ -16,14 +16,15 @@ export const PLATFORM_LABELS: Record<string, string> = {
   base_unverified: 'Unknown',
   robinhood_verified: 'Other',
   robinhood_unverified: 'Unknown',
-  'pools.fun': 'Pools.fun',
-  'pools.trade': 'Pools.trade',
+  'pools.fun': 'Pools.Fun',
+  'pools.trade': 'Pools.Trade',
   flap: 'Flap.sh',
   'hood.fun': 'Hood.fun',
   ponsfamily: 'PonsFamily',
   letscash: 'LetsCash',
   noxa: 'Noxa',
   stonkbrokers: 'StonkBrokers',
+  o1exchange: 'o1.exchange',
 };
 
 // Label shown in the filter <select> dropdown (needs to distinguish verified/not verified)
