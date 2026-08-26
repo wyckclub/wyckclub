@@ -26,12 +26,12 @@ export function PlatformBadge({ platform, size = 'md' }: { platform: string; siz
 
   return (
     <span
-      className={`inline-flex items-center gap-1 font-semibold whitespace-nowrap ${
+      className={`inline-flex items-center gap-1 font-semibold whitespace-nowrap shrink-0 ${
         isUnverified ? 'text-yellow-400' : 'text-sky-400'
-      } ${size === 'sm' ? 'text-[10px]' : 'text-xs'}`}
+      } ${size === 'sm' ? 'text-[9px]' : 'text-xs'}`}
     >
       {isUnverified ? <NotVerifiedIcon dim={dim} /> : <ShieldIcon dim={dim} />}
-      {label}
+      <span className="truncate">{label}</span>
     </span>
   );
 }

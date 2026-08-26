@@ -10,6 +10,7 @@ export const PLATFORM_LABELS: Record<string, string> = {
   clanker: 'Clanker',
   bankr: 'Bankr',
   virtuals: 'Virtuals',
+  o1exchange: 'o1.exchange',
   flaunch: 'Flaunch.gg',
   zora: 'Zora',
   base_verified: 'Other',
@@ -24,7 +25,6 @@ export const PLATFORM_LABELS: Record<string, string> = {
   letscash: 'LetsCash',
   noxa: 'Noxa',
   stonkbrokers: 'StonkBrokers',
-  o1exchange: 'o1.exchange',
 };
 
 // Label shown in the filter <select> dropdown (needs to distinguish verified/not verified)

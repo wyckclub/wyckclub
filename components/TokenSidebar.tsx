@@ -135,7 +135,7 @@ export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () 
   return (
     <div className="h-full flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
       <div className="p-2.5 border-b border-slate-800 shrink-0">
-        <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5">
+        <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5">
           <SearchIcon />
           <input
             value={search}
@@ -225,7 +225,7 @@ export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () 
             <div
               key={r.ca}
                 onClick={() => { router.push(`/${chain}/${r.ca}`); onSelect?.(); }}
-              className={`flex items-center gap-2 px-2.5 py-2 border-b border-slate-800/60 cursor-pointer hover:bg-slate-800/60 ${
+              className={`flex items-center gap-0.5 px-2 py-1.5 border-b border-slate-800/60 cursor-pointer hover:bg-slate-800/60 ${
                 isActive ? 'bg-slate-800' : ''
               }`}
             >
@@ -240,8 +240,8 @@ export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () 
               )}
 
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-[11px] font-bold text-blue-400 truncate">{r.symbol}</span>
+                <div className="flex items-center gap-0.5 min-w-0">
+                  <span className="text-[11px] font-bold text-blue-400 truncate flex-1 min-w-0">{r.symbol}</span>
                   <PlatformBadge platform={r.platform} size="sm" />
                 </div>
                 <div className="text-[11px] text-slate-400 truncate">
@@ -250,7 +250,7 @@ export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () 
                 </div>
               </div>
 
-              <div className="text-right shrink-0 w-14">
+              <div className="text-right shrink-0 w-12">
                 <div className="text-[11px] font-bold text-slate-400">{dex?.vol24h == null ? 'N/A' : formatCap(dex.vol24h)}</div>
                 <div className={`text-[10px] font-semibold ${change24h == null ? 'text-slate-500' : change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {change24h == null ? 'N/A' : `${change24h >= 0 ? '+' : ''}${change24h.toFixed(0)}%`}
