@@ -2,7 +2,7 @@ export const BASE_PLATFORMS = ['clanker', 'bankr', 'virtuals', 'flaunch', 'zora'
 
 export const ROBINHOOD_PLATFORMS = [
   'robinhood_verified', 'robinhood_unverified', 'bankr', 'pools.fun', 'pools.trade', 'clanker', 'virtuals',
-  'flaunch', 'flap', 'hood.fun', 'ponsfamily', 'letscash', 'noxa',
+  'flaunch', 'flap', 'hood.fun', 'ponsfamily', 'letscash', 'noxa', 'StonkBrokers',
 ];
 
 // Label shown INSIDE the badge (icon + text) next to the token
