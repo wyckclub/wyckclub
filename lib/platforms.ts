@@ -23,6 +23,7 @@ export const PLATFORM_LABELS: Record<string, string> = {
   ponsfamily: 'PonsFamily',
   letscash: 'LetsCash',
   noxa: 'Noxa',
+  stonkbrokers: 'StonkBrokers',
 };
 
 // Label shown in the filter <select> dropdown (needs to distinguish verified/not verified)

@@ -105,6 +105,9 @@ const ROBINHOOD_CATEGORY_URLS = [
 
   // Noxa
   process.env.WYCK_ROBIN_NOXA1_URL,
+
+  // STONKBROKERS
+  process.env.WYCK_ROBIN_STONKBROKERS1_URL,
 ].filter((u): u is string => !!u);
 
 async function countTokensFromUrls(urls: string[]): Promise<number> {

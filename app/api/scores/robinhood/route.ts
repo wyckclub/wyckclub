@@ -26,6 +26,7 @@ const SOURCES: Source[] = [
   { url: process.env.WYCK_ROBIN_PONSFAMILY1_URL, platform: 'ponsfamily', verified: true },
   { url: process.env.WYCK_ROBIN_LETSCASH1_URL, platform: 'letscash', verified: true },
   { url: process.env.WYCK_ROBIN_NOXA1_URL, platform: 'noxa', verified: true },
+  { url: process.env.WYCK_ROBIN_STONKBROKERS1_URL, platform: 'stonkbrokers', verified: true },
 ];
 
 async function fetchGroup(url: string, platform: string, verified: boolean): Promise<Record<string, any>> {
