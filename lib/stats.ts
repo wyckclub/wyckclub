@@ -100,6 +100,8 @@ const ROBINHOOD_CATEGORY_URLS = [
 
   // PonsFamily
   process.env.WYCK_ROBIN_PONSFAMILY1_URL,
+  process.env.WYCK_ROBIN_PONSFAMILY2_URL,
+  process.env.WYCK_ROBIN_PONSFAMILY3_URL,
 
   // LetsCash
   process.env.WYCK_ROBIN_LETSCASH1_URL,
