@@ -7,7 +7,7 @@ import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
 import { fetchAllCategories, fetchRobinhoodTokens, TokenEntry, CATEGORY_LABELS } from '@/lib/tokenApi';
 import { prefetchDexDataBatch, getCachedDexData } from '@/lib/dexData';
 import { PriceChartModal } from '@/components/PriceChartModal';
-import { VerifyBadge } from '@/components/VerifyBadge';
+import { PlatformBadge } from '@/components/PlatformBadge';
 import { formatCap } from '@/lib/format';
 import { base, robinhood } from '@/app/config';
 import Link from 'next/link';
@@ -194,7 +194,7 @@ export default function PortfolioPage() {
   const [rhTokens, setRhTokens] = useState<TokenEntry[]>([]);
   const [rhDexReady, setRhDexReady] = useState(false);
   const [loadError, setLoadError] = useState('');
-  const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string; chainId: ChainKey; verified?: boolean } | null>(null);
+  const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string; chainId: ChainKey; platform?: string | null } | null>(null);
 
   useEffect(() => {
     if (!hasAccess) return;
@@ -254,8 +254,8 @@ export default function PortfolioPage() {
         loading={!baseDexReady || baseHoldings.loading}
         error={baseHoldings.error}
         holdings={baseHoldings.holdings}
-        showVerify={false}
-        onOpenChart={(t) => setChartToken({ category: t.category, ca: t.CA, symbol: t.symbol, chainId: 'base' })}
+        showPlatform
+        onOpenChart={(t) => setChartToken({ category: t.category, ca: t.CA, symbol: t.symbol, chainId: 'base', platform: t.platform })}
       />
 
       <HoldingsTable
@@ -266,8 +266,8 @@ export default function PortfolioPage() {
         loading={!rhDexReady || rhHoldings.loading}
         error={rhHoldings.error}
         holdings={rhHoldings.holdings}
-        showVerify
-        onOpenChart={(t) => setChartToken({ category: t.category, ca: t.CA, symbol: t.symbol, chainId: 'robinhood', verified: t.verified })}
+        showPlatform
+        onOpenChart={(t) => setChartToken({ category: t.category, ca: t.CA, symbol: t.symbol, chainId: 'robinhood', platform: t.platform })}
       />
 
       {chartToken && (
@@ -277,7 +277,7 @@ export default function PortfolioPage() {
           symbol={chartToken.symbol}
           onClose={() => setChartToken(null)}
           chainId={chartToken.chainId}
-          verified={chartToken.verified ?? null}
+          platform={chartToken.platform ?? null}
         />
       )}
     </div>
@@ -292,7 +292,7 @@ function HoldingsTable({
   loading,
   error,
   holdings,
-  showVerify,
+  showPlatform,
   onOpenChart,
 }: {
   title: string;
@@ -302,7 +302,7 @@ function HoldingsTable({
   loading: boolean;
   error: string;
   holdings: Holding[];
-  showVerify: boolean;
+  showPlatform: boolean;
   onOpenChart: (t: TokenEntry) => void;
 }) {
   const filtered = holdings.filter((h) => hasEnoughLiq(h.token.CA));
@@ -323,7 +323,7 @@ function HoldingsTable({
               <tr className="bg-slate-900 text-blue-400">
                 <th className="text-left p-3 whitespace-nowrap"></th>
                 <th className="text-left p-3 whitespace-nowrap">Token</th>
-                {showVerify && <th className="text-left p-3 whitespace-nowrap">Verify</th>}
+                {showPlatform && <th className="text-left p-3 whitespace-nowrap">Platform</th>}
                 <th className="text-left p-3 whitespace-nowrap">CA</th>
                 <th className="text-left p-3 whitespace-nowrap">Market Cap</th>
                 <th className="text-left p-3 whitespace-nowrap">Liquidity</th>
@@ -352,9 +352,9 @@ function HoldingsTable({
                         {t.symbol}
                       </Link>
                     </td>
-                    {showVerify && (
+                    {showPlatform && (
                       <td className="p-3">
-                        <VerifyBadge verified={t.verified} className="w-5 h-5" />
+                        <PlatformBadge platform={t.platform} />
                       </td>
                     )}
                     <td className="p-3 whitespace-nowrap">

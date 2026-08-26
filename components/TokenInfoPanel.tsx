@@ -1,7 +1,7 @@
 'use client';
 
 import { formatCap, formatPriceShort, formatAge } from '@/lib/format';
-import { VerifyBadge } from '@/components/VerifyBadge';
+import { PlatformBadge } from '@/components/PlatformBadge';
 import type { FullPairInfo } from '@/lib/dexData';
 
 function StatRow({ label, value, valueClass = 'text-white' }: { label: string; value: string; valueClass?: string }) {
@@ -16,8 +16,8 @@ const pctClass = (v: number | null) => (v == null ? 'text-slate-500' : v >= 0 ? 
 const pctText = (v: number | null) => (v == null ? 'N/A' : `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`);
 
 export function TokenInfoPanel({
-  info, ca, symbol, verified,
-}: { info: FullPairInfo | null; ca: string; chainId: string; symbol: string; verified?: boolean | null }) {
+  info, ca, symbol, platform,
+}: { info: FullPairInfo | null; ca: string; chainId: string; symbol: string; platform?: string | null }) {
   if (!info) {
     return <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-slate-500 text-sm">Dex loading...</div>;
   }
@@ -33,7 +33,7 @@ export function TokenInfoPanel({
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-lg font-bold text-white truncate">{info.symbol ?? symbol}</span>
-            {verified != null && <VerifyBadge verified={verified} className="w-4 h-4" />}
+            {platform && <PlatformBadge platform={platform} />}
           </div>
           {info.name && <div className="text-xs text-slate-500 truncate">{info.name}</div>}
         </div>

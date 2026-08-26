@@ -24,7 +24,7 @@ export default function RobinhoodTrackerPage() {
   const [platformFilter, setPlatformFilter] = useState<string>('all');
   const PAGE_SIZE = 200;
   const [page, setPage] = useState(1);
-  const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string; verified: boolean } | null>(null);
+  const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string; platform: string | null } | null>(null);
 
   useEffect(() => {
     setPage(1);
@@ -254,7 +254,7 @@ export default function RobinhoodTrackerPage() {
           symbol={chartToken.symbol}
           onClose={() => setChartToken(null)}
           chainId="robinhood"
-          verified={chartToken.verified}
+          platform={chartToken.platform}
         />
       )}
     </div>

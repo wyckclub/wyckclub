@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Redis } from '@upstash/redis';
 import { formatCap, formatPriceShort } from '@/lib/format';
+import { platformShareLines } from '@/lib/platforms';
 import {
   ROBINHOOD_CATEGORY,
   MIN_LIQ,
@@ -80,15 +81,15 @@ export async function POST(req: NextRequest) {
 
   const oldMarketCap = dex.marketCap! * (signalPrice / dex.priceUsd!);
   const pctRounded = Math.round(pct);
-  const verifyLine =
-    chain === 'robinhood' && token.verified != null ? (token.verified ? '✅ Verified' : '❌ Not Verified') : null;
+  const displayName = dex.name ? `${token.symbol} (${dex.name})` : token.symbol;
+  const shareLines = platformShareLines(token.platform);
 
-  const headline = buildHeadline(token.symbol, pctRounded, chain);
+  const headline = buildHeadline(displayName, pctRounded, chain);
 
   let text = `${headline}
 
   MarketCap: ${formatCap(oldMarketCap)} → ${formatCap(dex.marketCap)} | Price: ${formatPriceShort(dex.priceUsd)}`;
-  if (verifyLine) text += `\n${verifyLine}`;
+  for (const line of shareLines) text += `\n${line}`;
   text += `\n\n🌐Check the latest WYCK update here: wyck.pro/${chain}/${ca}`;
 
   const HISTORY_KEY = `wyck:autopost:history:${chain}`;

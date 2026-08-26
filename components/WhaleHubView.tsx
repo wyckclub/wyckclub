@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { PriceChartModal } from '@/components/PriceChartModal';
 import { prefetchDexDataBatch, getCachedDexData } from '@/lib/dexData';
 import { formatCap, formatPriceShort } from '@/lib/format';
-import { VerifyBadge } from '@/components/VerifyBadge';
+import { PlatformBadge } from '@/components/PlatformBadge';
+import { platformShareLines } from '@/lib/platforms';
 import { WhaleHubPotentialPanel } from '@/components/WhaleHubPotentialPanel';
 import { useTokenGate, VIP_THRESHOLD } from '@/lib/tokenGate';
 import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
@@ -25,7 +26,7 @@ interface Notification {
   timestamp: string;
   top10: number | null;
   prevTop10: number | null;
-  verified: boolean | null;
+  platform: string | null;
 }
 
 const LEVEL_STYLE: Record<Notification['level'], string> = {
@@ -138,14 +139,12 @@ function buildShareText(n: Notification, dex: ReturnType<typeof getCachedDexData
       ? `\n🐋Whale Accumulation Index: ${n.top10 - n.prevTop10 > 0 ? '+' : ''}${n.top10 - n.prevTop10} (${n.prevTop10}→${n.top10})`
       : '';
 
-  const verifyLine =
-    chain === 'robinhood' && n.verified != null
-      ? `\n${n.verified ? '✅ Verified' : '❌ Not Verified'}`
-      : '';
+  const platformStatus = platformShareLines(n.platform);
+  const platformLine = platformStatus.length ? `\n${platformStatus.join('\n')}` : '';
 
   return `$${symbol}${nameTag} just triggered a SmartMoney signal on #${networkLabel}:
 
-👉WyckScore: ${n.levelLabel} ${n.current}${whaleLine}${verifyLine}
+👉WyckScore: ${n.levelLabel} ${n.current}${whaleLine}${platformLine}
 
 At Price: ${price} - MaketCap: ${cap}
 
@@ -217,7 +216,7 @@ export function WhaleHubView({ chain }: { chain: Chain }) {
   const [error, setError] = useState('');
   const [dexTick, setDexTick] = useState(0);
   const [potentialRefreshKey, setPotentialRefreshKey] = useState(0);
-  const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string; verified: boolean | null } | null>(null);
+  const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string; platform: string | null } | null>(null);
 
   function load() {
     setLoading(true);
@@ -308,7 +307,7 @@ export function WhaleHubView({ chain }: { chain: Chain }) {
                       }}
                     />
                     <button
-                      onClick={() => setChartToken({ category: n.category, ca: n.ca, symbol: n.symbol, verified: n.verified })}
+                      onClick={() => setChartToken({ category: n.category, ca: n.ca, symbol: n.symbol, platform: n.platform })}
                       className="text-[12px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-blue-400 hover:text-blue-300 whitespace-nowrap"
                     >
                       View Chart
@@ -321,9 +320,7 @@ export function WhaleHubView({ chain }: { chain: Chain }) {
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider border ${LEVEL_STYLE[n.level]}`}>
                         {n.symbol}
                         </span>
-                        {chain === 'robinhood' && n.verified != null && (
-                        <VerifyBadge verified={n.verified} className="w-5 h-5" />
-                        )}
+                        {n.platform && <PlatformBadge platform={n.platform} />}
                         <span className="text-xs font-bold uppercase tracking-wide">{n.levelLabel} SmartMoney</span>
                     </div>
                       
@@ -403,7 +400,7 @@ export function WhaleHubView({ chain }: { chain: Chain }) {
           symbol={chartToken.symbol}
           onClose={() => setChartToken(null)}
           chainId={chain}
-          verified={chartToken.verified}
+          platform={chartToken.platform}
         />
       )}
     </div>

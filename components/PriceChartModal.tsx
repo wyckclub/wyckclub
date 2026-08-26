@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { fetchTokenHistory, PriceHistoryEntry } from '@/lib/tokenApi';
 import { fetchLivePrice, getCachedDexData } from '@/lib/dexData';
 import { formatPriceShort, formatDateShort, formatCap } from '@/lib/format';
-import { VerifyBadge } from '@/components/VerifyBadge';
+import { PlatformBadge } from '@/components/PlatformBadge';
 
 interface Props {
   category: number;
@@ -12,10 +12,10 @@ interface Props {
   symbol: string;
   onClose: () => void;
   chainId?: string;
-  verified?: boolean | null;
+  platform?: string | null;
 }
 
-export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base', verified = null }: Props) {
+export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base', platform = null }: Props) {
   const dex = getCachedDexData(ca);
   const [entries, setEntries] = useState<PriceHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,9 +93,7 @@ export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base
                 <WebsiteIcon />
               </a>
             )}
-            {chainId === 'robinhood' && verified != null && (
-              <VerifyBadge verified={verified} className="w-4 h-4" />
-            )}
+            {platform && <PlatformBadge platform={platform} />}
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-y-2">

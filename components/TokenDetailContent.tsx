@@ -47,7 +47,7 @@ export function TokenDetailContent({ chain, ca }: { chain: Chain; ca: string }) 
       </div>
 
       <div className="lg:w-96 shrink-0 lg:overflow-y-auto space-y-3">
-        <TokenInfoPanel info={pairInfo} ca={ca} chainId={chain} symbol={symbol} verified={token?.verified} />
+        <TokenInfoPanel info={pairInfo} ca={ca} chainId={chain} symbol={symbol} platform={token?.platform} />
         <TokenSwapPanel chainId={chain} ca={ca} />
       </div>
     </>

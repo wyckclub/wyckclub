@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { formatPriceShort, formatDateShort, formatCap } from '@/lib/format';
 import { DEJAVU_SANS_BOLD_BASE64 } from '@/lib/fontData';
+import { PLATFORM_LABELS } from '@/lib/platforms';
 
 const FONT_FAMILY = 'DejaVu Sans';
 const FONT_TMP_PATH = path.join('/tmp', 'wyck-chart-font.ttf');
@@ -29,7 +30,7 @@ export interface ChartHeader {
   tokenImageDataUri: string | null;
   name: string | null;
   symbol: string;
-  verified: boolean | null; // null -> don't render verify badge (base chain)
+  platform: string | null; // null -> don't render platform badge
   marketCap: number | null;
   liq: number | null;
 }
@@ -245,20 +246,24 @@ function buildChainBadge(chain: 'base' | 'robinhood'): string {
   return svg;
 }
 
-function buildVerifyBadge(verified: boolean, x: number, y: number, size: number): string {
+// Same 2 icons used everywhere else in the app: shield = verified platform, warning triangle = not-verified
+function buildShieldIcon(x: number, y: number, size: number): string {
   const scale = size / 24;
-  if (verified) {
-    return `
-      <g transform="translate(${x},${y}) scale(${scale})">
-        <path d="M12 2L3 6V12C3 17.55 6.84 22.74 12 24C17.16 22.74 21 17.55 21 12V6L12 2Z" fill="#0EA5E9"/>
-        <path d="M10 15.5L7 12.5L8.41 11.09L10 12.67L15.59 7.08L17 8.5L10 15.5Z" fill="#ffffff"/>
-      </g>
-    `;
-  }
   return `
     <g transform="translate(${x},${y}) scale(${scale})">
-      <circle cx="12" cy="12" r="10" fill="#64748b"/>
-      <path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+      <path d="M12 2L3 6V12C3 17.55 6.84 22.74 12 24C17.16 22.74 21 17.55 21 12V6L12 2Z" fill="#0EA5E9"/>
+      <path d="M10 15.5L7 12.5L8.41 11.09L10 12.67L15.59 7.08L17 8.5L10 15.5Z" fill="#ffffff"/>
+    </g>
+  `;
+}
+
+function buildWarningIcon(x: number, y: number, size: number): string {
+  const scale = size / 24;
+  return `
+    <g transform="translate(${x},${y}) scale(${scale})">
+      <path d="M12 2 23 21H1L12 2Z" fill="#FACC15"/>
+      <path d="M12 9v5" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="12" cy="17.5" r="1.2" fill="#1a1a1a"/>
     </g>
   `;
 }
@@ -296,14 +301,17 @@ function buildHeader(header: ChartHeader): string {
     svg += `<text font-family="${FONT_FAMILY}" x="${textX}" y="${nextY}" fill="${COLORS.mutedText}" font-size="15">${name}</text>`;
   }
 
-  // line 3: verify icon + label text
-  if (header.verified != null) {
+  // line 3: platform icon + label text
+  if (header.platform) {
     nextY += 24;
     const badgeSize = 17;
-    const verifyColor = header.verified ? '#34d399' : COLORS.mutedText;
-    const verifyLabel = header.verified ? 'Verified' : 'Not Verified';
-    svg += buildVerifyBadge(header.verified, textX, nextY - badgeSize + 3, badgeSize);
-    svg += `<text font-family="${FONT_FAMILY}" x="${textX + badgeSize + 6}" y="${nextY}" fill="${verifyColor}" font-weight="bold" font-size="14">${verifyLabel}</text>`;
+    const isUnverified = header.platform.endsWith('_unverified');
+    const label = escapeXml(PLATFORM_LABELS[header.platform] ?? header.platform);
+    const labelColor = isUnverified ? COLORS.yellow : '#38bdf8';
+    svg += isUnverified
+      ? buildWarningIcon(textX, nextY - badgeSize + 3, badgeSize)
+      : buildShieldIcon(textX, nextY - badgeSize + 3, badgeSize);
+    svg += `<text font-family="${FONT_FAMILY}" x="${textX + badgeSize + 6}" y="${nextY}" fill="${labelColor}" font-weight="bold" font-size="14">${label}</text>`;
   }
 
   // line 4: Cap / Liq

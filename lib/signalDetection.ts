@@ -21,6 +21,7 @@ export interface RawToken {
   symbol: string;
   entries: RawEntry[];
   verified?: boolean;
+  platform?: string;
 }
 
 // Tìm entry gần nhất (index nhỏ nhất, tức mới nhất) thoả cả 5 điều kiện:

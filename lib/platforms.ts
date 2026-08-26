@@ -13,9 +13,9 @@ export const PLATFORM_LABELS: Record<string, string> = {
   flaunch: 'Flaunch.gg',
   zora: 'Zora',
   base_verified: 'Other',
-  base_unverified: 'Other',
+  base_unverified: 'Unknown',
   robinhood_verified: 'Other',
-  robinhood_unverified: 'Other',
+  robinhood_unverified: 'Unknown',
   'pools.fun': 'Pools.fun',
   'pools.trade': 'Pools.trade',
   flap: 'Flap.sh',
@@ -29,7 +29,18 @@ export const PLATFORM_LABELS: Record<string, string> = {
 export const FILTER_LABELS: Record<string, string> = {
   ...PLATFORM_LABELS,
   base_verified: 'Other - Verified',
-  base_unverified: 'Other - Not Verified',
+  base_unverified: 'Unknown - Not Verified',
   robinhood_verified: 'Other - Verified',
-  robinhood_unverified: 'Other - Not Verified',
+  robinhood_unverified: 'Unknown - Not Verified',
 };
+
+// Two share-text lines: verified status line + platform hashtag line
+export function platformShareLines(platform: string | null | undefined): string[] {
+  if (!platform) return [];
+  const isUnverified = platform.endsWith('_unverified');
+  const label = PLATFORM_LABELS[platform] ?? platform;
+  const hashtag = label.replace(/[^a-zA-Z0-9]/g, '');
+  const verifiedLine = isUnverified ? '❌ Not Verified' : '✅ Verified';
+  const platformLine = `✅ Platform: #${hashtag}`;
+  return [verifiedLine, platformLine];
+}

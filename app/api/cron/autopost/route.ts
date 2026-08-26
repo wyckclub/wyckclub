@@ -5,6 +5,7 @@ import { Redis } from '@upstash/redis';
 import { uploadMedia, postTweetWithMedia } from '@/lib/xApi';
 import { renderChartPng, ChartEntry } from '@/lib/chartImage';
 import { formatCap, formatPriceShort } from '@/lib/format';
+import { platformShareLines } from '@/lib/platforms';
 import {
   ROBINHOOD_CATEGORY,
   MIN_LIQ,
@@ -27,7 +28,7 @@ interface Candidate {
   ca: string;
   cat: number;
   symbol: string;
-  verified: boolean | null;
+  platform: string | null;
   entries: RawEntry[];
   signalPrice: number;
 }
@@ -80,7 +81,7 @@ async function runForChain(chain: 'base' | 'robinhood', origin: string) {
       const signalPrice = entries[idx].price;
       if (signalPrice == null || signalPrice <= 0) continue;
 
-      candidates.push({ ca, cat, symbol: token.symbol, verified: token.verified ?? null, entries, signalPrice });
+      candidates.push({ ca, cat, symbol: token.symbol, platform: token.platform ?? null, entries, signalPrice });
     }
   }
 
@@ -120,7 +121,7 @@ async function runForChain(chain: 'base' | 'robinhood', origin: string) {
     tokenImageDataUri,
     name: picked.dex.name,
     symbol: picked.symbol,
-    verified: chain === 'robinhood' ? picked.verified : null,
+    platform: picked.platform,
     marketCap: picked.dex.marketCap,
     liq: picked.dex.liq,
   });
@@ -130,17 +131,16 @@ async function runForChain(chain: 'base' | 'robinhood', origin: string) {
 
   const oldMarketCap = picked.dex.marketCap! * (picked.signalPrice / picked.dex.priceUsd!);
   const pctRounded = Math.round(picked.pct);
-  const verifyLine =
-    chain === 'robinhood' && picked.verified != null
-      ? (picked.verified ? '✅ Verified' : '❌ Not Verified')
-      : null;
+  const displayName = picked.dex.name ? `${picked.symbol} (${picked.dex.name})` : picked.symbol;
+  const shareLines = platformShareLines(picked.platform);
 
-  const headline = buildHeadline(picked.symbol, pctRounded, chain);
+  const headline = buildHeadline(displayName, pctRounded, chain);
 
   let text = `${headline}
 
 MarketCap: ${formatCap(oldMarketCap)} → ${formatCap(picked.dex.marketCap)} | Price: ${formatPriceShort(picked.dex.priceUsd)}`;
-  if (verifyLine) text += `\n${verifyLine}`;
+  for (const line of shareLines) text += `\n${line}`;
+  text += `\n\n🌐Check the latest WYCK update here: wyck.pro/${chain}/${picked.ca}`;
 
   const result = await postTweetWithMedia(text, [uploaded.mediaId]);
   if (!result.ok) return { chain, posted: false, reason: result.error };

@@ -61,7 +61,7 @@ interface Notification {
   timestamp: string;
   top10: number | null;
   prevTop10: number | null;
-  verified: boolean | null;
+  platform: string | null;
 }
 
 function computeLevel(
@@ -126,7 +126,7 @@ export async function GET(req: NextRequest) {
     prevWhale: string;
     top10: number | null;
     prevTop10: number | null;
-    verified: boolean | null;
+    platform: string | null;
   };
   const candidates: Candidate[] = [];
   const MIN_LIQ = 20000;
@@ -156,7 +156,7 @@ export async function GET(req: NextRequest) {
         ca, cat, symbol: token.symbol, level, sig, scoreWithWhale, prevWhale,
         top10: latest.top10 ?? null,
         prevTop10: prevEntry.top10 ?? null,
-        verified: token.verified ?? null,
+        platform: token.platform ?? null,
       });
     }
   }
@@ -183,7 +183,7 @@ export async function GET(req: NextRequest) {
         previous: c.prevWhale,
         top10: c.top10,
         prevTop10: c.prevTop10,
-        verified: c.verified,
+        platform: c.platform,
         message: `$${c.symbol} just triggered a SmartMoney signal: ${levelLabel} ${c.scoreWithWhale} (previous ${c.prevWhale})`,
         timestamp: new Date().toISOString(),
       };
