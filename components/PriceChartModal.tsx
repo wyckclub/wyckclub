@@ -35,7 +35,7 @@ export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base
     setLoading(true);
     fetchTokenHistory(category, ca)
       .then((history) => {
-        setEntries(history.filter((h) => h.price != null && !isNaN(h.price) && h.price > 0));
+        setEntries(history.filter((h) => h.price != null && !isNaN(h.price) && h.price > 0).slice(-40));
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));

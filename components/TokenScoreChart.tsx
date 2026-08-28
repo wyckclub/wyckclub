@@ -32,7 +32,7 @@ export function TokenScoreChart({
     if (category == null) { setLoading(false); return; }
     setLoading(true);
     fetchTokenHistory(category, ca)
-      .then((h) => setEntries(h.filter((e) => e.price != null && !isNaN(e.price) && e.price > 0)))
+      .then((h) => setEntries(h.filter((e) => e.price != null && !isNaN(e.price) && e.price > 0).slice(-40)))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [category, ca]);

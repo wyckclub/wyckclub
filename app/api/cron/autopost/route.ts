@@ -2,9 +2,10 @@ export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { Redis } from '@upstash/redis';
+import crypto from 'crypto';
 import { uploadMedia, postTweetWithMedia } from '@/lib/xApi';
 import { renderChartPng, ChartEntry } from '@/lib/chartImage';
-import { formatCap, formatPriceShort } from '@/lib/format';
+import { formatCap, formatPriceShort, stripDots } from '@/lib/format';
 import { platformShareLines } from '@/lib/platforms';
 import {
   ROBINHOOD_CATEGORY,
@@ -131,7 +132,9 @@ async function runForChain(chain: 'base' | 'robinhood', origin: string) {
 
   const oldMarketCap = picked.dex.marketCap! * (picked.signalPrice / picked.dex.priceUsd!);
   const pctRounded = Math.round(picked.pct);
-  const displayName = picked.dex.name ? `${picked.symbol} (${picked.dex.name})` : picked.symbol;
+  const displayName = picked.dex.name
+    ? `${stripDots(picked.symbol)} (${stripDots(picked.dex.name)})`
+    : stripDots(picked.symbol);
   const shareLines = platformShareLines(picked.platform);
 
   const headline = buildHeadline(displayName, pctRounded, chain);
@@ -159,7 +162,8 @@ export async function GET(req: NextRequest) {
   }
 
   const LOCK_KEY = 'wyck:autopost:lock';
-  const locked = await redis.set(LOCK_KEY, '1', { nx: true, ex: 300 });
+  const lockId = crypto.randomUUID();
+  const locked = await redis.set(LOCK_KEY, lockId, { nx: true, ex: 300 });
   if (!locked) {
     return NextResponse.json({ posted: false, reason: 'already running' });
   }
@@ -175,6 +179,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(result);
   } finally {
-    await redis.del(LOCK_KEY);
+    const current = await redis.get<string>(LOCK_KEY);
+    if (current === lockId) await redis.del(LOCK_KEY);
   }
 }

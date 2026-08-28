@@ -125,3 +125,7 @@ export function formatAge(pairCreatedAt: number | null | undefined): string {
   if (days >= 2) return `${days}d`;
   return remHours > 0 ? `${days}d${remHours}h` : `${days}d`;
 }
+
+export function stripDots(s: string) {
+  return s.replace(/\./g, '');
+}
