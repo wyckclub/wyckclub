@@ -1,7 +1,7 @@
 export const BASE_PLATFORMS = ['clanker', 'bankr', 'virtuals', 'o1exchange', 'flaunch', 'zora', 'base_verified', 'base_unverified'];
 
 export const ROBINHOOD_PLATFORMS = [
-  'bankr', 'ponsfamily', 'pools.fun', 'pools.trade', 'clanker', 'virtuals', 'launchfactory',
+  'bankr', 'ponsfamily', 'pools.fun', 'pools.trade', 'clanker', 'virtuals', 'launchfactory', 'long',
   'flap', 'letscash', 'noxa', 'stonkbrokers', 'robinhood_verified', 'robinhood_unverified',
 ];
 
@@ -21,6 +21,7 @@ export const PLATFORM_LABELS: Record<string, string> = {
   'pools.trade': 'Pools.Trade',
   flap: 'Flap.sh',
   ponsfamily: 'PonsFamily',
+  long: 'LONG',
   launchfactory: 'LaunchFactory',
   letscash: 'LetsCash',
   noxa: 'Noxa',

@@ -101,6 +101,7 @@ const ROBINHOOD_CATEGORY_URLS = [
   process.env.WYCK_ROBIN_LETSCASH1_URL,
 
   process.env.WYCK_ROBIN_LAUNCHFACTORY1_URL,
+  process.env.WYCK_ROBIN_LONG1_URL,
 
   // Noxa
   process.env.WYCK_ROBIN_NOXA1_URL,
