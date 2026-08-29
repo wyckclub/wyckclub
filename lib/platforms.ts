@@ -1,8 +1,8 @@
 export const BASE_PLATFORMS = ['clanker', 'bankr', 'virtuals', 'o1exchange', 'flaunch', 'zora', 'base_verified', 'base_unverified'];
 
 export const ROBINHOOD_PLATFORMS = [
-  'bankr', 'ponsfamily', 'pools.fun', 'pools.trade', 'clanker', 'virtuals',
-  'flaunch', 'flap', 'hood.fun', 'letscash', 'noxa', 'stonkbrokers', 'robinhood_verified', 'robinhood_unverified',
+  'bankr', 'ponsfamily', 'pools.fun', 'pools.trade', 'clanker', 'virtuals', 'launchfactory',
+  'flap', 'letscash', 'noxa', 'stonkbrokers', 'robinhood_verified', 'robinhood_unverified',
 ];
 
 // Label shown INSIDE the badge (icon + text) next to the token
@@ -20,8 +20,8 @@ export const PLATFORM_LABELS: Record<string, string> = {
   'pools.fun': 'Pools.Fun',
   'pools.trade': 'Pools.Trade',
   flap: 'Flap.sh',
-  'hood.fun': 'Hood.fun',
   ponsfamily: 'PonsFamily',
+  launchfactory: 'LaunchFactory',
   letscash: 'LetsCash',
   noxa: 'Noxa',
   stonkbrokers: 'StonkBrokers',

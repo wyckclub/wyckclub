@@ -89,14 +89,8 @@ const ROBINHOOD_CATEGORY_URLS = [
   // Virtuals
   process.env.WYCK_ROBIN_VIRTUALS1_URL,
 
-  // Flaunch.gg
-  process.env.WYCK_ROBIN_FLAUNCH1_URL,
-
   // Flap.sh
   process.env.WYCK_ROBIN_FLAP1_URL,
-
-  // Hood.fun
-  process.env.WYCK_ROBIN_HOODFUN1_URL,
 
   // PonsFamily
   process.env.WYCK_ROBIN_PONSFAMILY1_URL,
@@ -105,6 +99,8 @@ const ROBINHOOD_CATEGORY_URLS = [
 
   // LetsCash
   process.env.WYCK_ROBIN_LETSCASH1_URL,
+
+  process.env.WYCK_ROBIN_LAUNCHFACTORY1_URL,
 
   // Noxa
   process.env.WYCK_ROBIN_NOXA1_URL,

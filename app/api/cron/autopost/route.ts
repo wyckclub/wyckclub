@@ -112,7 +112,7 @@ async function runForChain(chain: 'base' | 'robinhood', origin: string) {
       topwhale: e.topwhale, top10: e.top10 ?? null, timestamp: e.timestamp,
     }))
     .filter((e) => e.price != null && !isNaN(e.price) && e.price > 0)
-    .slice(-40);
+    .slice(-39);
 
   if (chartEntries.length < 2) return { chain, posted: false, reason: 'not enough chart data' };
 
