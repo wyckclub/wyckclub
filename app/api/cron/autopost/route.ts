@@ -25,6 +25,13 @@ const redis = new Redis({
   token: process.env.REDIS_KV_REST_API_TOKEN!,
 });
 
+const LAST_POST_KEY = 'wyck:autopost:last_post_at';
+const MIN_POST_INTERVAL_SECONDS = Number(process.env.AUTOPOST_MIN_INTERVAL_SECONDS) || 900;
+
+function isVerifiedPlatform(platform: string | null | undefined): boolean {
+  return !!platform && !platform.endsWith('_unverified');
+}
+
 interface Candidate {
   ca: string;
   cat: number;
@@ -73,6 +80,8 @@ async function runForChain(chain: 'base' | 'robinhood', origin: string) {
   for (const { cat, data } of categories) {
     for (const [ca, token] of Object.entries(data)) {
       if (excludedCas.has(ca.toLowerCase())) continue;
+      if (!isVerifiedPlatform(token.platform)) continue;
+
       const entries = token.entries || [];
       if (entries.length < 4) continue;
 
@@ -150,6 +159,7 @@ MarketCap: ${formatCap(oldMarketCap)} → ${formatCap(picked.dex.marketCap)} | P
 
   await redis.lpush(HISTORY_KEY, picked.ca.toLowerCase());
   await redis.ltrim(HISTORY_KEY, 0, HISTORY_DEPTH - 1);
+  await redis.set(LAST_POST_KEY, Date.now());
 
   return { chain, posted: true, tweetId: result.id, token: picked.symbol, ca: picked.ca, pct: pctRounded };
 }
@@ -170,6 +180,11 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const lastPostAt = await redis.get<number>(LAST_POST_KEY);
+    if (lastPostAt && Date.now() - lastPostAt < MIN_POST_INTERVAL_SECONDS * 1000) {
+      return NextResponse.json({ posted: false, reason: 'too soon since last post' });
+    }
+
     const origin = req.nextUrl.origin;
     const NEXT_CHAIN_KEY = 'wyck:autopost:next_chain';
     const lastChain = await redis.get<string>(NEXT_CHAIN_KEY);
