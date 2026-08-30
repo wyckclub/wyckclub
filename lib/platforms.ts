@@ -1,7 +1,7 @@
-export const BASE_PLATFORMS = ['clanker', 'bankr', 'virtuals', 'o1exchange', 'flaunch', 'zora', 'base_verified', 'base_unverified'];
+export const BASE_PLATFORMS = ['clanker', 'bankr', 'virtuals', 'o1exchange', 'flaunch', 'zora', 'basestonk', 'thestonks', 'base_verified', 'base_unverified'];
 
 export const ROBINHOOD_PLATFORMS = [
-  'bankr', 'ponsfamily', 'pools.fun', 'pools.trade', 'clanker', 'virtuals', 'launchfactory', 'long',
+  'bankr', 'ponsfamily', 'pools.fun', 'pools.trade', 'clanker', 'virtuals', 'lemon', 'long', 'utoken',
   'flap', 'letscash', 'noxa', 'stonkbrokers', 'robinhood_verified', 'robinhood_unverified',
 ];
 
@@ -11,6 +11,8 @@ export const PLATFORM_LABELS: Record<string, string> = {
   bankr: 'Bankr',
   virtuals: 'Virtuals',
   o1exchange: 'o1.exchange',
+  basestonk: 'BaseStonk',
+  thestonks: 'TheStonks',
   flaunch: 'Flaunch.gg',
   zora: 'Zora',
   base_verified: 'Other',
@@ -22,10 +24,11 @@ export const PLATFORM_LABELS: Record<string, string> = {
   flap: 'Flap.sh',
   ponsfamily: 'PonsFamily',
   long: 'LONG',
-  launchfactory: 'LaunchFactory',
   letscash: 'LetsCash',
   noxa: 'Noxa',
   stonkbrokers: 'StonkBrokers',
+  lemon: 'Lemon',
+  utoken: 'Utoken',
 };
 
 // Label shown in the filter <select> dropdown (needs to distinguish verified/not verified)

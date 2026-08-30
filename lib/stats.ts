@@ -38,10 +38,9 @@ const BASE_CATEGORY_URLS = [
   process.env.WYCK_VIRTUALS2_URL,
   process.env.WYCK_VIRTUALS3_URL,
 
-  // Zora
   process.env.WYCK_ZR1_URL,
-
-  // Flaunch.gg
+  process.env.WYCK_BASESTONK1_URL,
+  process.env.WYCK_THESTONKS1_URL,
   process.env.WYCK_FLAUNCH1_URL,
   process.env.WYCK_O1EXCHANGE1_URL,
 
@@ -66,46 +65,41 @@ const ROBINHOOD_CATEGORY_URLS = [
 
   // Robinhood Other (not verified)
   process.env.WYCK_ROBIN1_URL,
+  process.env.WYCK_ROBIN1A_URL,
+  process.env.WYCK_ROBIN1B_URL,
   process.env.WYCK_ROBIN2_URL,
   process.env.WYCK_ROBIN3_URL,
   process.env.WYCK_ROBIN4_URL,
-
   // Robinhood Other (verified)
   process.env.WYCK_ROBIN5_URL,
   process.env.WYCK_ROBIN6_URL,
-
-  // Bankr
-  process.env.WYCK_ROBIN_BANKRBOT1_URL,
-
-  // Pools.fun
-  process.env.WYCK_ROBIN_POOLSFUN1_URL,
-
-  // Pools.trade
-  process.env.WYCK_ROBIN_POOLSTRADE1_URL,
-
-  // Clanker
-  process.env.WYCK_ROBIN_CLANKER1_URL,
-
-  // Virtuals
-  process.env.WYCK_ROBIN_VIRTUALS1_URL,
-
-  // Flap.sh
-  process.env.WYCK_ROBIN_FLAP1_URL,
 
   // PonsFamily
   process.env.WYCK_ROBIN_PONSFAMILY1_URL,
   process.env.WYCK_ROBIN_PONSFAMILY2_URL,
   process.env.WYCK_ROBIN_PONSFAMILY3_URL,
+  process.env.WYCK_ROBIN_PONSFAMILY4_URL,
+  process.env.WYCK_ROBIN_PONSFAMILY5_URL,
 
+  // Bankr
+  process.env.WYCK_ROBIN_BANKRBOT1_URL,
+  // Pools.fun
+  process.env.WYCK_ROBIN_POOLSFUN1_URL,
+  // Pools.trade
+  process.env.WYCK_ROBIN_POOLSTRADE1_URL,
+  // Clanker
+  process.env.WYCK_ROBIN_CLANKER1_URL,
+  // Virtuals
+  process.env.WYCK_ROBIN_VIRTUALS1_URL,
+  // Flap.sh
+  process.env.WYCK_ROBIN_FLAP1_URL,
+  process.env.WYCK_ROBIN_LEMON1_URL,
+  process.env.WYCK_ROBIN_UTOKEN1_URL,
   // LetsCash
   process.env.WYCK_ROBIN_LETSCASH1_URL,
-
-  process.env.WYCK_ROBIN_LAUNCHFACTORY1_URL,
   process.env.WYCK_ROBIN_LONG1_URL,
-
   // Noxa
   process.env.WYCK_ROBIN_NOXA1_URL,
-
   // STONKBROKERS
   process.env.WYCK_ROBIN_STONKBROKERS1_URL,
 ].filter((u): u is string => !!u);

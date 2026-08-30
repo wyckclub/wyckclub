@@ -9,6 +9,8 @@ interface Source {
 const SOURCES: Source[] = [
   { url: process.env.WYCK_ROBIN_URL, platform: 'robinhood_unverified', verified: false },
   { url: process.env.WYCK_ROBIN1_URL, platform: 'robinhood_unverified', verified: false },
+  { url: process.env.WYCK_ROBIN1A_URL, platform: 'robinhood_unverified', verified: false },
+  { url: process.env.WYCK_ROBIN1B_URL, platform: 'robinhood_unverified', verified: false },
   { url: process.env.WYCK_ROBIN2_URL, platform: 'robinhood_unverified', verified: false },
   { url: process.env.WYCK_ROBIN3_URL, platform: 'robinhood_unverified', verified: false },
   { url: process.env.WYCK_ROBIN4_URL, platform: 'robinhood_unverified', verified: false },
@@ -24,11 +26,14 @@ const SOURCES: Source[] = [
   { url: process.env.WYCK_ROBIN_PONSFAMILY1_URL, platform: 'ponsfamily', verified: true },
   { url: process.env.WYCK_ROBIN_PONSFAMILY2_URL, platform: 'ponsfamily', verified: true },
   { url: process.env.WYCK_ROBIN_PONSFAMILY3_URL, platform: 'ponsfamily', verified: true },
-  { url: process.env.WYCK_ROBIN_LAUNCHFACTORY1_URL, platform: 'launchfactory', verified: true },
+  { url: process.env.WYCK_ROBIN_PONSFAMILY4_URL, platform: 'ponsfamily', verified: true },
+  { url: process.env.WYCK_ROBIN_PONSFAMILY5_URL, platform: 'ponsfamily', verified: true },
   { url: process.env.WYCK_ROBIN_LETSCASH1_URL, platform: 'letscash', verified: true },
   { url: process.env.WYCK_ROBIN_NOXA1_URL, platform: 'noxa', verified: true },
   { url: process.env.WYCK_ROBIN_STONKBROKERS1_URL, platform: 'stonkbrokers', verified: true },
   { url: process.env.WYCK_ROBIN_LONG1_URL, platform: 'long', verified: true },
+  { url: process.env.WYCK_ROBIN_LEMON1_URL, platform: 'lemon', verified: true },
+  { url: process.env.WYCK_ROBIN_UTOKEN1_URL, platform: 'utoken', verified: true },
 ];
 
 async function fetchGroup(url: string, platform: string, verified: boolean): Promise<Record<string, any>> {
