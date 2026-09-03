@@ -68,6 +68,8 @@ const ROBINHOOD_CATEGORY_URLS = [
   process.env.WYCK_ROBIN1A_URL,
   process.env.WYCK_ROBIN1B_URL,
   process.env.WYCK_ROBIN2_URL,
+  process.env.WYCK_ROBIN2A_URL,
+  process.env.WYCK_ROBIN2B_URL,
   process.env.WYCK_ROBIN3_URL,
   process.env.WYCK_ROBIN4_URL,
   // Robinhood Other (verified)
@@ -80,6 +82,7 @@ const ROBINHOOD_CATEGORY_URLS = [
   process.env.WYCK_ROBIN_PONSFAMILY3_URL,
   process.env.WYCK_ROBIN_PONSFAMILY4_URL,
   process.env.WYCK_ROBIN_PONSFAMILY5_URL,
+  process.env.WYCK_ROBIN_PONSFAMILY6_URL,
 
   // Bankr
   process.env.WYCK_ROBIN_BANKRBOT1_URL,
@@ -94,10 +97,11 @@ const ROBINHOOD_CATEGORY_URLS = [
   // Flap.sh
   process.env.WYCK_ROBIN_FLAP1_URL,
   process.env.WYCK_ROBIN_LEMON1_URL,
-  process.env.WYCK_ROBIN_UTOKEN1_URL,
   // LetsCash
   process.env.WYCK_ROBIN_LETSCASH1_URL,
   process.env.WYCK_ROBIN_LONG1_URL,
+  process.env.WYCK_ROBIN_LONG2_URL,
+  process.env.WYCK_ROBIN_LONG3_URL,
   // Noxa
   process.env.WYCK_ROBIN_NOXA1_URL,
   // STONKBROKERS
