@@ -2,9 +2,9 @@ export const BASE_PLATFORMS = [
   'clanker', 'bankr', 'virtuals', 'o1exchange', 'flaunch', 'zora', 'basestonk', 'thestonks', 'base_verified', 'base_unverified'];
 
 export const ROBINHOOD_PLATFORMS = [
-  'bankr', 'ponsfamily', 'poolsfun', 'poolstrade', 'clanker', 'virtuals', 'lemon', 'long',
-  'flap', 'letscash', 'noxa', 'stonkbrokers', 'robinhood_verified', 'robinhood_unverified',
-  'feelcash', 'lunchfun', 'pairfund', 'sentry'
+  'ponsfamily', 'o1exchange', 'long', 'poolsfun', 'poolstrade', 'bankr', 'virtuals', 'clanker',
+  'flap', 'noxa', 'stonkbrokers', 'feelcash', 'letscash', 'lunchfun', 'pairfund', 'sentry', 'lemon',
+  'robinhood_verified', 'robinhood_unverified'
 ];
 
 // Label shown INSIDE the badge (icon + text) next to the token
