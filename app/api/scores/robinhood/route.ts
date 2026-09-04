@@ -20,8 +20,8 @@ const SOURCES: Source[] = [
   { url: process.env.WYCK_ROBIN5_URL, platform: 'robinhood_verified', verified: true },
   { url: process.env.WYCK_ROBIN6_URL, platform: 'robinhood_verified', verified: true },
   { url: process.env.WYCK_ROBIN_BANKRBOT1_URL, platform: 'bankr', verified: true },
-  { url: process.env.WYCK_ROBIN_POOLSFUN1_URL, platform: 'pools.fun', verified: true },
-  { url: process.env.WYCK_ROBIN_POOLSTRADE1_URL, platform: 'pools.trade', verified: true },
+  { url: process.env.WYCK_ROBIN_POOLSFUN1_URL, platform: 'poolsfun', verified: true },
+  { url: process.env.WYCK_ROBIN_POOLSTRADE1_URL, platform: 'poolstrade', verified: true },
   { url: process.env.WYCK_ROBIN_CLANKER1_URL, platform: 'clanker', verified: true },
   { url: process.env.WYCK_ROBIN_VIRTUALS1_URL, platform: 'virtuals', verified: true },
   { url: process.env.WYCK_ROBIN_FLAP1_URL, platform: 'flap', verified: true },
@@ -31,15 +31,22 @@ const SOURCES: Source[] = [
   { url: process.env.WYCK_ROBIN_PONSFAMILY4_URL, platform: 'ponsfamily', verified: true },
   { url: process.env.WYCK_ROBIN_PONSFAMILY5_URL, platform: 'ponsfamily', verified: true },
   { url: process.env.WYCK_ROBIN_PONSFAMILY6_URL, platform: 'ponsfamily', verified: true },
+  { url: process.env.WYCK_ROBIN_PONSFAMILY7_URL, platform: 'ponsfamily', verified: true },
+  { url: process.env.WYCK_ROBIN_PONSFAMILY8_URL, platform: 'ponsfamily', verified: true },
   { url: process.env.WYCK_ROBIN_LETSCASH1_URL, platform: 'letscash', verified: true },
   { url: process.env.WYCK_ROBIN_NOXA1_URL, platform: 'noxa', verified: true },
   { url: process.env.WYCK_ROBIN_STONKBROKERS1_URL, platform: 'stonkbrokers', verified: true },
   { url: process.env.WYCK_ROBIN_LONG1_URL, platform: 'long', verified: true },
   { url: process.env.WYCK_ROBIN_LONG2_URL, platform: 'long', verified: true },
   { url: process.env.WYCK_ROBIN_LONG3_URL, platform: 'long', verified: true },
+  { url: process.env.WYCK_ROBIN_LONG4_URL, platform: 'long', verified: true },
   { url: process.env.WYCK_ROBIN_LEMON1_URL, platform: 'lemon', verified: true },
+  { url: process.env.WYCK_ROBIN_O1EXCHANGE1_URL, platform: 'o1exchange', verified: true },
+  { url: process.env.WYCK_ROBIN_FEELCASH1_URL, platform: 'feelcash', verified: true },
+  { url: process.env.WYCK_ROBIN_LUNCHFUN1_URL, platform: 'lunchfun', verified: true },
+  { url: process.env.WYCK_ROBIN_PAIRFUND1_URL, platform: 'pairfund', verified: true },
+  { url: process.env.WYCK_ROBIN_SENTRY1_URL, platform: 'sentry', verified: true },
 ];
-
 async function fetchGroup(url: string, platform: string, verified: boolean): Promise<Record<string, any>> {
   const res = await fetch(url, { next: { revalidate: 20 } });
   if (!res.ok) throw new Error(`Upstream error: ${url}`);

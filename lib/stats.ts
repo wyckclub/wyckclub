@@ -83,29 +83,29 @@ const ROBINHOOD_CATEGORY_URLS = [
   process.env.WYCK_ROBIN_PONSFAMILY4_URL,
   process.env.WYCK_ROBIN_PONSFAMILY5_URL,
   process.env.WYCK_ROBIN_PONSFAMILY6_URL,
+  process.env.WYCK_ROBIN_PONSFAMILY7_URL,
+  process.env.WYCK_ROBIN_PONSFAMILY8_URL,
 
-  // Bankr
-  process.env.WYCK_ROBIN_BANKRBOT1_URL,
-  // Pools.fun
-  process.env.WYCK_ROBIN_POOLSFUN1_URL,
-  // Pools.trade
-  process.env.WYCK_ROBIN_POOLSTRADE1_URL,
-  // Clanker
-  process.env.WYCK_ROBIN_CLANKER1_URL,
-  // Virtuals
-  process.env.WYCK_ROBIN_VIRTUALS1_URL,
-  // Flap.sh
-  process.env.WYCK_ROBIN_FLAP1_URL,
-  process.env.WYCK_ROBIN_LEMON1_URL,
-  // LetsCash
-  process.env.WYCK_ROBIN_LETSCASH1_URL,
   process.env.WYCK_ROBIN_LONG1_URL,
   process.env.WYCK_ROBIN_LONG2_URL,
   process.env.WYCK_ROBIN_LONG3_URL,
-  // Noxa
+  process.env.WYCK_ROBIN_LONG4_URL,
+
   process.env.WYCK_ROBIN_NOXA1_URL,
-  // STONKBROKERS
   process.env.WYCK_ROBIN_STONKBROKERS1_URL,
+  process.env.WYCK_ROBIN_O1EXCHANGE1_URL,
+  process.env.WYCK_ROBIN_FEELCASH1_URL,
+  process.env.WYCK_ROBIN_LUNCHFUN1_URL,
+  process.env.WYCK_ROBIN_PAIRFUND1_URL,
+  process.env.WYCK_ROBIN_SENTRY1_URL,
+  process.env.WYCK_ROBIN_BANKRBOT1_URL,
+  process.env.WYCK_ROBIN_POOLSFUN1_URL,
+  process.env.WYCK_ROBIN_POOLSTRADE1_URL,
+  process.env.WYCK_ROBIN_CLANKER1_URL,
+  process.env.WYCK_ROBIN_VIRTUALS1_URL,
+  process.env.WYCK_ROBIN_FLAP1_URL,
+  process.env.WYCK_ROBIN_LEMON1_URL,
+  process.env.WYCK_ROBIN_LETSCASH1_URL,
 ].filter((u): u is string => !!u);
 
 async function countTokensFromUrls(urls: string[]): Promise<number> {

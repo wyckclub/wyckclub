@@ -1,8 +1,10 @@
-export const BASE_PLATFORMS = ['clanker', 'bankr', 'virtuals', 'o1exchange', 'flaunch', 'zora', 'basestonk', 'thestonks', 'base_verified', 'base_unverified'];
+export const BASE_PLATFORMS = [
+  'clanker', 'bankr', 'virtuals', 'o1exchange', 'flaunch', 'zora', 'basestonk', 'thestonks', 'base_verified', 'base_unverified'];
 
 export const ROBINHOOD_PLATFORMS = [
-  'bankr', 'ponsfamily', 'pools.fun', 'pools.trade', 'clanker', 'virtuals', 'lemon', 'long',
+  'bankr', 'ponsfamily', 'poolsfun', 'poolstrade', 'clanker', 'virtuals', 'lemon', 'long',
   'flap', 'letscash', 'noxa', 'stonkbrokers', 'robinhood_verified', 'robinhood_unverified',
+  'feelcash', 'lunchfun', 'pairfund', 'sentry'
 ];
 
 // Label shown INSIDE the badge (icon + text) next to the token
@@ -19,8 +21,8 @@ export const PLATFORM_LABELS: Record<string, string> = {
   base_unverified: 'Unknown',
   robinhood_verified: 'Other',
   robinhood_unverified: 'Unknown',
-  'pools.fun': 'Pools.Fun',
-  'pools.trade': 'Pools.Trade',
+  poolsfun: 'Pools.Fun',
+  poolstrade: 'Pools.Trade',
   flap: 'Flap.sh',
   ponsfamily: 'PonsFamily',
   long: 'LONG',
@@ -28,6 +30,10 @@ export const PLATFORM_LABELS: Record<string, string> = {
   noxa: 'Noxa',
   stonkbrokers: 'StonkBrokers',
   lemon: 'Lemon',
+  feelcash: 'Feel.Cash',
+  lunchfun: 'Lunch.Fun',
+  pairfund: 'Pair.Fund',
+  sentry: 'Sentry',
 };
 
 // Label shown in the filter <select> dropdown (needs to distinguish verified/not verified)

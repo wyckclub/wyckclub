@@ -25,7 +25,7 @@ const SOURCES: Record<string, Source[]> = {
     { url: process.env.WYCK_2NEW_URL, platform: 'base_verified', verified: true },
     { url: process.env.WYCK_ZR1_URL, platform: 'zora', verified: true },
     { url: process.env.WYCK_FLAUNCH1_URL, platform: 'flaunch', verified: true },
-    { url: process.env.WYCK_O1EXCHANGE1_URL, platform: 'o1exchange', verified: true },
+    { url: process.env.WYCK_O1EXCHANGE1_URL, platform: 'o1.exchange', verified: true },
     { url: process.env.WYCK_BASESTONK1_URL, platform: 'basestonk', verified: true },
     { url: process.env.WYCK_THESTONKS1_URL, platform: 'thestonks', verified: true },
   ],
