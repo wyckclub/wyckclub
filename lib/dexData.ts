@@ -14,6 +14,7 @@ export interface DexData {
 
 export interface FullPairInfo {
   pairAddress: string;
+  topVolumePairAddress: string | null; // NEW
   dexId: string;
   url: string;
   priceUsd: number | null;
@@ -220,6 +221,9 @@ export async function fetchFullTokenPairInfo(ca: string, chainId: string = 'base
       pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase());
     if (!pair) return null;
 
+    const topVolumePair =
+      [...caPairs].sort((a: any, b: any) => (Number(b.volume?.h24) || 0) - (Number(a.volume?.h24) || 0))[0] ?? pair;
+
     const socials = pair.info?.socials || [];
     const tw = socials.find((s: any) => s.type === 'twitter');
     const tg = socials.find((s: any) => s.type === 'telegram');
@@ -229,6 +233,7 @@ export async function fetchFullTokenPairInfo(ca: string, chainId: string = 'base
 
     return {
       pairAddress: pair.pairAddress,
+      topVolumePairAddress: topVolumePair?.pairAddress ?? pair.pairAddress,
       dexId: pair.dexId,
       url: pair.url,
       priceUsd: pair.priceUsd == null ? null : Number(pair.priceUsd),

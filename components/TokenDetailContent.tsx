@@ -48,7 +48,7 @@ export function TokenDetailContent({ chain, ca }: { chain: Chain; ca: string }) 
   const category = token?.category ?? (chain === 'robinhood' ? ROBINHOOD_CATEGORY : null);
   const symbol = pairInfo?.symbol ?? token?.symbol ?? ca.slice(0, 6);
   const dexscreenerUrl = pairInfo
-    ? `https://dexscreener.com/${chain}/${pairInfo.pairAddress}?embed=1&theme=dark&trades=0&info=0&interval=240`
+    ? `https://dexscreener.com/${chain}/${pairInfo.topVolumePairAddress ?? pairInfo.pairAddress}?embed=1&theme=dark&trades=0&info=0&interval=60`
     : null;
 
   return (
