@@ -136,7 +136,7 @@ export default async function Home() {
         <div className="grid md:grid-cols-3 gap-6">
           <StatCard label="Total tokens analyzed" value={totalTokens.toLocaleString()} />
           <StatCard label="Total Users" value={totalConnects.toLocaleString()} />
-          <StatCard label="Tracker Views" value={totalChartViews.toLocaleString()} />
+          <StatCard label="Tracker" value={totalChartViews.toLocaleString()} />
         </div>
       </section>
 

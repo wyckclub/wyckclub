@@ -11,7 +11,6 @@ import {
   RawToken,
   findSignalEntryIndex,
   fetchDexInfo,
-  buildHeadline,
 } from '@/lib/signalDetection';
 
 const redis = new Redis({
@@ -81,16 +80,28 @@ export async function POST(req: NextRequest) {
 
   const oldMarketCap = dex.marketCap! * (signalPrice / dex.priceUsd!);
   const pctRounded = Math.round(pct);
-  const displayName = dex.name ? `${token.symbol} (${dex.name})` : token.symbol;
-  const shareLines = platformShareLines(token.platform);
+  const nameTag = dex.name ? ` (${dex.name})` : '';
+  const networkLabel = chain === 'robinhood' ? 'robinhood' : 'base';
 
-  const headline = buildHeadline(displayName, pctRounded, chain);
+  const prevEntry = entries[idx + 1];
+  const curTop10 = entries[idx].top10 ?? null;
+  const prevTop10 = prevEntry?.top10 ?? null;
+  const whaleLine =
+    curTop10 != null && prevTop10 != null && curTop10 !== prevTop10
+      ? `\n🐋Whale Accumulation Index: ${curTop10 - prevTop10 > 0 ? '+' : ''}${curTop10 - prevTop10} (${prevTop10}→${curTop10})`
+      : '';
 
-  let text = `${headline}
+  const platformStatus = platformShareLines(token.platform);
+  const platformLine = platformStatus.length ? `\n${platformStatus.join('\n')}` : '';
 
-  MarketCap: ${formatCap(oldMarketCap)} → ${formatCap(dex.marketCap)} | Price: ${formatPriceShort(dex.priceUsd)}`;
-  for (const line of shareLines) text += `\n${line}`;
-  text += `\n\n🌐Check the latest WYCK update here: wyck.pro/${chain}/${ca}`;
+  const text = `$${token.symbol}${nameTag} just triggered a SmartMoney signal on #${networkLabel}:
+
+👉WyckScore: +${pctRounded}% since signal${whaleLine}${platformLine}
+
+At Price: ${formatPriceShort(dex.priceUsd)} - MarketCap: ${formatCap(oldMarketCap)} → ${formatCap(dex.marketCap)}
+
+🌐Check the latest WYCK update here:
+wyck.pro/${chain}/${ca}`;
 
   const HISTORY_KEY = `wyck:autopost:history:${chain}`;
   await redis.lpush(HISTORY_KEY, ca.toLowerCase());

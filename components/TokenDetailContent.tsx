@@ -7,10 +7,13 @@ import { TokenScoreChart } from '@/components/TokenScoreChart';
 import { TokenInfoPanel } from '@/components/TokenInfoPanel';
 import { TokenSwapPanel } from '@/components/TokenSwapPanel';
 import { useTokenData } from '@/components/TokenDataContext';
+import { useTokenGate, PRO_THRESHOLD } from '@/lib/tokenGate';
+import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
 
 type Chain = 'base' | 'robinhood';
 
 export function TokenDetailContent({ chain, ca }: { chain: Chain; ca: string }) {
+  const { isConnected, isLoading, amount, hasAccess } = useTokenGate(PRO_THRESHOLD);
   const { tokens } = useTokenData();
   const [pairInfo, setPairInfo] = useState<FullPairInfo | null>(null);
 
@@ -26,6 +29,18 @@ export function TokenDetailContent({ chain, ca }: { chain: Chain; ca: string }) 
     const id = setInterval(poll, 30000);
     return () => { active = false; clearInterval(id); };
   }, [ca, chain]);
+
+  if (!isConnected) return <GateMessage title="Connect your wallet" message="Connect your wallet to view this token." />;
+  if (isLoading) return <GateMessage title="Checking balance..." message="" />;
+  if (!hasAccess) {
+    return (
+      <GateMessage
+        title="Access Locked"
+        message={`You need at least ${PRO_THRESHOLD.toLocaleString()} tokens. Your balance: ${amount.toLocaleString()}.`}
+        showBuyPrompt
+      />
+    );
+  }
 
   const category = token?.category ?? (chain === 'robinhood' ? ROBINHOOD_CATEGORY : null);
   const symbol = pairInfo?.symbol ?? token?.symbol ?? ca.slice(0, 6);
@@ -51,5 +66,17 @@ export function TokenDetailContent({ chain, ca }: { chain: Chain; ca: string }) 
         <TokenSwapPanel chainId={chain} ca={ca} />
       </div>
     </>
+  );
+}
+
+function GateMessage({ title, message, showBuyPrompt }: { title: string; message: string; showBuyPrompt?: boolean }) {
+  return (
+    <div className="flex-1 min-h-[60vh] flex items-center justify-center p-6">
+      <div className="max-w-md text-center space-y-3">
+        <h1 className="text-2xl font-bold text-blue-400">{title}</h1>
+        <p className="text-slate-400">{message}</p>
+        {showBuyPrompt && <BuyTokenPrompt />}
+      </div>
+    </div>
   );
 }
