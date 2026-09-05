@@ -75,6 +75,15 @@ function extractTwitter(pair: any): string | null {
   return tw?.url ?? null;
 }
 
+function oldestPairCreatedAt(caPairs: any[], fallback: any): number | null {
+  if (!caPairs.length) return fallback?.pairCreatedAt ?? null;
+  return caPairs.reduce((min: number | null, p: any) => {
+    const t = p.pairCreatedAt ?? null;
+    if (t == null) return min;
+    return min == null ? t : Math.min(min, t);
+  }, null as number | null);
+}
+
 export async function prefetchDexDataBatch(
   caList: string[],
   onBatch?: () => void,
@@ -125,7 +134,7 @@ export async function prefetchDexDataBatch(
             imageUrl: pair?.info?.imageUrl ?? null,
             symbol: pair?.baseToken?.symbol ?? null,
             name: pair?.baseToken?.name ?? null,
-            pairCreatedAt: pair?.pairCreatedAt ?? null,
+            pairCreatedAt: oldestPairCreatedAt(caPairs, pair),
           },
           timestamp: Date.now(),
         });
@@ -166,7 +175,7 @@ export async function prefetchDexDataBatch(
           imageUrl: pair?.info?.imageUrl ?? null,
           symbol: pair?.baseToken?.symbol ?? null,
           name: pair?.baseToken?.name ?? null,
-          pairCreatedAt: pair?.pairCreatedAt ?? null,
+          pairCreatedAt: oldestPairCreatedAt(caPairs, pair),
         },
         timestamp: Date.now(),
       });
@@ -218,14 +227,6 @@ export async function fetchFullTokenPairInfo(ca: string, chainId: string = 'base
     const sumField = (getter: (p: any) => number | undefined) =>
       caPairs.length ? caPairs.reduce((s: number, p: any) => s + (Number(getter(p)) || 0), 0) : null;
 
-    const oldestPairCreatedAt = caPairs.length
-      ? caPairs.reduce((min: number | null, p: any) => {
-          const t = p.pairCreatedAt ?? null;
-          if (t == null) return min;
-          return min == null ? t : Math.min(min, t);
-        }, null as number | null)
-      : pair.pairCreatedAt ?? null;
-
     return {
       pairAddress: pair.pairAddress,
       dexId: pair.dexId,
@@ -234,7 +235,7 @@ export async function fetchFullTokenPairInfo(ca: string, chainId: string = 'base
       marketCap: pair.marketCap ?? pair.fdv ?? null,
       fdv: pair.fdv ?? null,
       liq: sumField((p) => p.liquidity?.usd),
-      pairCreatedAt: oldestPairCreatedAt,
+      pairCreatedAt: oldestPairCreatedAt(caPairs, pair),
       imageUrl: pair.info?.imageUrl ?? null,
       symbol: pair.baseToken?.symbol ?? null,
       name: pair.baseToken?.name ?? null,
