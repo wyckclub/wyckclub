@@ -256,3 +256,14 @@ export async function fetchFullTokenPairInfo(ca: string, chainId: string = 'base
     return null;
   }
 }
+
+export async function fetchHoldersCount(ca: string, chainId: string): Promise<number | null> {
+  try {
+    const res = await fetch(`/api/holders?ca=${ca}&chain=${chainId}`);
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.holders ?? null;
+  } catch {
+    return null;
+  }
+}

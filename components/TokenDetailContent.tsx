@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { ROBINHOOD_CATEGORY } from '@/lib/tokenApi';
-import { fetchFullTokenPairInfo, FullPairInfo } from '@/lib/dexData';
+import { fetchFullTokenPairInfo, fetchHoldersCount, FullPairInfo } from '@/lib/dexData';
 import { TokenScoreChart } from '@/components/TokenScoreChart';
 import { TokenInfoPanel } from '@/components/TokenInfoPanel';
 import { TokenSwapPanel } from '@/components/TokenSwapPanel';
@@ -16,14 +16,17 @@ export function TokenDetailContent({ chain, ca }: { chain: Chain; ca: string }) 
   const { isConnected, isLoading, amount, hasAccess } = useTokenGate(PRO_THRESHOLD);
   const { tokens } = useTokenData();
   const [pairInfo, setPairInfo] = useState<FullPairInfo | null>(null);
+  const [holders, setHolders] = useState<number | null>(null);
 
   const token = tokens.find((t) => t.CA.toLowerCase() === ca.toLowerCase()) ?? null;
 
   useEffect(() => {
     setPairInfo(null);
+    setHolders(null);
     let active = true;
     function poll() {
       fetchFullTokenPairInfo(ca, chain).then((info) => { if (active) setPairInfo(info); });
+      fetchHoldersCount(ca, chain).then((h) => { if (active) setHolders(h); });
     }
     poll();
     const id = setInterval(poll, 30000);
@@ -62,7 +65,7 @@ export function TokenDetailContent({ chain, ca }: { chain: Chain; ca: string }) 
       </div>
 
       <div className="lg:w-96 shrink-0 lg:overflow-y-auto space-y-3">
-        <TokenInfoPanel info={pairInfo} ca={ca} chainId={chain} symbol={symbol} platform={token?.platform} />
+        <TokenInfoPanel info={pairInfo} ca={ca} chainId={chain} symbol={symbol} platform={token?.platform} holders={holders} />
         <TokenSwapPanel chainId={chain} ca={ca} />
       </div>
     </>

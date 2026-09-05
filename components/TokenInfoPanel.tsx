@@ -5,21 +5,19 @@ import { formatCap, formatPriceShort, formatAge } from '@/lib/format';
 import { PlatformBadge } from '@/components/PlatformBadge';
 import type { FullPairInfo } from '@/lib/dexData';
 
-// ----- Small reusable pieces -----
-
-function StatBox({ label, value, valueClass = 'text-white' }: { label: string; value: string; valueClass?: string }) {
+function StatBox({ label, value, valueClass = 'text-slate-100' }: { label: string; value: string; valueClass?: string }) {
   return (
     <div className="bg-slate-950 rounded-lg py-2 px-1.5 flex flex-col items-center justify-center gap-0.5">
-      <span className="text-[10px] text-slate-500 uppercase tracking-wide">{label}</span>
+      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">{label}</span>
       <span className={`text-xs sm:text-sm font-bold truncate ${valueClass}`}>{value}</span>
     </div>
   );
 }
 
-function StatRow({ label, value, valueClass = 'text-white' }: { label: string; value: string; valueClass?: string }) {
+function StatRow({ label, value, valueClass = 'text-slate-100' }: { label: string; value: string; valueClass?: string }) {
   return (
     <div className="flex items-center justify-between text-sm py-1.5 border-b border-slate-800/60 last:border-0">
-      <span className="text-slate-500">{label}</span>
+      <span className="text-slate-500 font-semibold">{label}</span>
       <span className={`font-semibold ${valueClass}`}>{value}</span>
     </div>
   );
@@ -36,8 +34,8 @@ function formatHolders(h: number | null | undefined) {
 }
 
 export function TokenInfoPanel({
-  info, ca, symbol, platform,
-}: { info: FullPairInfo | null; ca: string; chainId: string; symbol: string; platform?: string | null }) {
+  info, ca, symbol, platform, holders,
+}: { info: FullPairInfo | null; ca: string; chainId: string; symbol: string; platform?: string | null; holders?: number | null }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopyCA = async () => {
@@ -54,11 +52,6 @@ export function TokenInfoPanel({
     return <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-slate-500 text-sm">Dex loading...</div>;
   }
 
-  // NOTE: `holders` isn't in the FullPairInfo snippet shown — using (info as any).holders
-  // as a safe fallback. Add `holders?: number | null` to FullPairInfo and swap this out
-  // for `info.holders` once the type/API actually returns it.
-  const holders = (info as any).holders as number | null | undefined;
-
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
       {/* Header */}
@@ -70,7 +63,7 @@ export function TokenInfoPanel({
         )}
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-lg font-bold text-white truncate">{info.symbol ?? symbol}</span>
+            <span className="text-lg font-bold text-slate-100 truncate">{info.symbol ?? symbol}</span>
             {platform && <PlatformBadge platform={platform} />}
           </div>
           {info.name && <div className="text-xs text-slate-500 truncate">{info.name}</div>}
@@ -88,12 +81,12 @@ export function TokenInfoPanel({
       {/* Price + Holders */}
       <div className="grid grid-cols-2 gap-1.5">
         <div className="bg-slate-950 rounded-lg py-2 px-3 flex flex-col justify-center">
-          <span className="text-[10px] text-slate-500 uppercase tracking-wide">Price</span>
-          <span className="text-lg font-extrabold text-white font-mono truncate">{formatPriceShort(info.priceUsd)}</span>
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Price</span>
+          <span className="text-lg font-extrabold text-slate-100 font-mono truncate">{formatPriceShort(info.priceUsd)}</span>
         </div>
         <div className="bg-slate-950 rounded-lg py-2 px-3 flex flex-col justify-center">
-          <span className="text-[10px] text-slate-500 uppercase tracking-wide">Holders</span>
-          <span className="text-lg font-extrabold text-white font-mono truncate">{formatHolders(holders)}</span>
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Holders</span>
+          <span className="text-lg font-extrabold text-slate-100 font-mono truncate">{formatHolders(holders)}</span>
         </div>
       </div>
 
@@ -101,7 +94,7 @@ export function TokenInfoPanel({
       <div className="grid grid-cols-4 gap-1.5 text-center">
         {(['m5', 'h1', 'h6', 'h24'] as const).map((k) => (
           <div key={k} className="bg-slate-950 rounded-lg py-1.5">
-            <div className="text-[10px] text-slate-500 uppercase">{k}</div>
+            <div className="text-[10px] font-bold text-slate-500 uppercase">{k}</div>
             <div className={`text-xs font-bold ${pctClass(info.priceChange[k])}`}>{pctText(info.priceChange[k])}</div>
           </div>
         ))}
