@@ -72,8 +72,7 @@ export async function POST(req: NextRequest) {
 
 At Price: ${price} - MarketCap: ${cap}
 
-Check the latest WYCK update here:
-wyck.pro/${chain}/${ca}`;
+🔄Live Data: wyck.pro/${chain}/${ca}`;
 
   return NextResponse.json({ ok: true, text, symbol: token.symbol });
 }
