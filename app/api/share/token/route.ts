@@ -1,22 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Redis } from '@upstash/redis';
-import { formatCap, formatPriceShort } from '@/lib/format';
+import { formatCap, formatPriceShort, getWhaleStarredScore, getChartScoreTextColorClass } from '@/lib/format';
 import { platformShareLines } from '@/lib/platforms';
-import {
-  ROBINHOOD_CATEGORY,
-  MIN_LIQ,
-  MIN_MARKETCAP,
-  MIN_PCT,
-  HISTORY_DEPTH,
-  RawToken,
-  findSignalEntryIndex,
-  fetchDexInfo,
-} from '@/lib/signalDetection';
-
-const redis = new Redis({
-  url: process.env.REDIS_KV_REST_API_URL!,
-  token: process.env.REDIS_KV_REST_API_TOKEN!,
-});
+import { ROBINHOOD_CATEGORY, RawToken, fetchDexInfo } from '@/lib/signalDetection';
 
 async function findToken(
   chain: 'base' | 'robinhood',
@@ -54,37 +39,21 @@ export async function POST(req: NextRequest) {
 
   const { token } = found;
   const entries = token.entries || [];
-  if (entries.length < 4) return NextResponse.json({ ok: false, reason: 'Not enough data' });
+  if (!entries.length) return NextResponse.json({ ok: false, reason: 'No data yet' });
 
-  const idx = findSignalEntryIndex(entries);
-  if (idx == null) {
-    return NextResponse.json({ ok: false, reason: 'This token has not triggered a SmartMoney signal yet.' });
-  }
+  const latest = entries[0];
+  const prevEntry = entries[1];
+  const last7 = entries.slice(0, 7).map((e) => ({ score: e.score, topwhale: e.topwhale }));
 
-  const signalPrice = entries[idx].price;
-  if (signalPrice == null || signalPrice <= 0) {
-    return NextResponse.json({ ok: false, reason: 'Invalid signal price' });
-  }
+  const scoreWithWhale = getWhaleStarredScore(latest.display, last7);
+  const isYellow = getChartScoreTextColorClass(latest.score, last7) === 'text-yellow-400';
 
   const dex = await fetchDexInfo(ca, chain);
-  if (!dex || dex.priceUsd == null) return NextResponse.json({ ok: false, reason: 'No live market data' });
-  if (dex.liq < MIN_LIQ) return NextResponse.json({ ok: false, reason: 'Liquidity too low' });
-  if (dex.marketCap == null || dex.marketCap < MIN_MARKETCAP) {
-    return NextResponse.json({ ok: false, reason: 'Market cap too low' });
-  }
 
-  const pct = ((dex.priceUsd - signalPrice) / signalPrice) * 100;
-  if (pct <= MIN_PCT) {
-    return NextResponse.json({ ok: false, reason: `Not enough gain yet (+${pct.toFixed(0)}%, need >${MIN_PCT}%)` });
-  }
-
-  const oldMarketCap = dex.marketCap! * (signalPrice / dex.priceUsd!);
-  const pctRounded = Math.round(pct);
-  const nameTag = dex.name ? ` (${dex.name})` : '';
+  const nameTag = dex?.name ? ` (${dex.name})` : '';
   const networkLabel = chain === 'robinhood' ? 'robinhood' : 'base';
 
-  const prevEntry = entries[idx + 1];
-  const curTop10 = entries[idx].top10 ?? null;
+  const curTop10 = latest.top10 ?? null;
   const prevTop10 = prevEntry?.top10 ?? null;
   const whaleLine =
     curTop10 != null && prevTop10 != null && curTop10 !== prevTop10
@@ -94,18 +63,17 @@ export async function POST(req: NextRequest) {
   const platformStatus = platformShareLines(token.platform);
   const platformLine = platformStatus.length ? `\n${platformStatus.join('\n')}` : '';
 
-  const text = `$${token.symbol}${nameTag} just triggered a SmartMoney signal on #${networkLabel}:
+  const price = dex?.priceUsd == null ? 'N/A' : formatPriceShort(dex.priceUsd);
+  const cap = dex?.marketCap == null ? 'N/A' : formatCap(dex.marketCap);
 
-👉WyckScore: +${pctRounded}% since signal${whaleLine}${platformLine}
+  const text = `$${token.symbol}${nameTag} WYCKSCORE update on #${networkLabel}:
 
-At Price: ${formatPriceShort(dex.priceUsd)} - MarketCap: ${formatCap(oldMarketCap)} → ${formatCap(dex.marketCap)}
+👉WyckScore: ${isYellow ? '⚡' : ''}${scoreWithWhale}${whaleLine}${platformLine}
 
-🌐Check the latest WYCK update here:
+At Price: ${price} - MarketCap: ${cap}
+
+Check the latest WYCK update here:
 wyck.pro/${chain}/${ca}`;
 
-  const HISTORY_KEY = `wyck:autopost:history:${chain}`;
-  await redis.lpush(HISTORY_KEY, ca.toLowerCase());
-  await redis.ltrim(HISTORY_KEY, 0, HISTORY_DEPTH - 1);
-
-  return NextResponse.json({ ok: true, text, symbol: token.symbol, pct: pctRounded });
+  return NextResponse.json({ ok: true, text, symbol: token.symbol });
 }

@@ -36,7 +36,7 @@ export default function BaseTrackerPage() {
     setPage(1);
   }, [search, platformFilter, sortCol, sortDir]);
 
-  if (!isConnected) return <GateMessage title="Connect your wallet" message="Connect your wallet to check Pro Plan access." />;
+  if (!isConnected) return <GateMessage title="Connect your wallet" message="Connect your wallet to check BASE Tracker access." />;
   if (isLoading) return <GateMessage title="Checking balance..." message="" />;
   if (!hasAccess) {
     return (
