@@ -266,12 +266,19 @@ export async function fetchFullTokenPairInfo(ca: string, chainId: string = 'base
   }
 }
 
+const BLOCKSCOUT_BASE_URL: Record<string, string> = {
+  base: 'https://base.blockscout.com',
+  robinhood: 'https://robinhoodchain.blockscout.com',
+};
+
 export async function fetchHoldersCount(ca: string, chainId: string): Promise<number | null> {
+  const base = BLOCKSCOUT_BASE_URL[chainId] ?? BLOCKSCOUT_BASE_URL.base;
   try {
-    const res = await fetch(`/api/holders?ca=${ca}&chain=${chainId}`);
+    const res = await fetch(`${base}/api/v2/tokens/${ca}`);
     if (!res.ok) return null;
     const json = await res.json();
-    return json.holders ?? null;
+    const n = Number(json.holders_count);
+    return isNaN(n) ? null : n;
   } catch {
     return null;
   }
