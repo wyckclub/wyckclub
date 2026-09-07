@@ -35,7 +35,7 @@ export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base
     setLoading(true);
     fetchTokenHistory(category, ca)
       .then((history) => {
-        setEntries(history.filter((h) => h.price != null && !isNaN(h.price) && h.price > 0).slice(-40));
+        setEntries(history.filter((h) => h.price != null && !isNaN(h.price) && h.price > 0).slice(-35));
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -187,14 +187,14 @@ export function ChartSVG({
       }
     : null;
 
-  function segmentColorClass(currentScore: number, prevScores: number[]) {
-    if (prevScores.length < 3) return 'stroke-blue-400';
-    if (currentScore <= 2) return 'stroke-blue-400';
+  function segmentColorClass(currentScore: number, prevScores: number[]): { colorClass: string; isHighlighted: boolean } {
+    if (prevScores.length < 3) return { colorClass: 'stroke-blue-400', isHighlighted: false };
+    if (currentScore <= 2) return { colorClass: 'stroke-blue-400', isHighlighted: false };
     const avg = (prevScores[0] + prevScores[1] + prevScores[2]) / 3;
     const aboveAvg = currentScore - avg;
-    if (aboveAvg > 3) return 'stroke-green-700';
-    if (aboveAvg > 0) return 'stroke-green-300/50';
-    return 'stroke-blue-400';
+    if (aboveAvg > 3) return { colorClass: 'stroke-emerald-500', isHighlighted: true };
+    if (aboveAvg > 0) return { colorClass: 'stroke-emerald-300/70', isHighlighted: true };
+    return { colorClass: 'stroke-blue-400', isHighlighted: false };
   }
 
   const starredIndices = new Set<number>();
@@ -204,8 +204,10 @@ export function ChartSVG({
     const prevScores = [points[i - 1]?.score, points[i - 2]?.score, points[i - 3]?.score].filter(
       (sc): sc is number => sc != null
     );
-    const colorClass = p.score == null ? 'stroke-blue-400' : segmentColorClass(p.score, prevScores);
-    if ((colorClass === 'stroke-green-700' || colorClass === 'stroke-green-300/50') && p.topwhale === 'y') {
+    const { colorClass, isHighlighted } = p.score == null
+      ? { colorClass: 'stroke-blue-400', isHighlighted: false }
+      : segmentColorClass(p.score, prevScores);
+    if (isHighlighted && p.topwhale === 'y') {
       starredIndices.add(i);
     }
     return { x1: prev.x, y1: prev.y, x2: p.x, y2: p.y, colorClass };
@@ -330,8 +332,14 @@ return (
           const isTripleAvg =
             avg != null && avg > 0 && p.score != null && p.score > 5 && p.score > avg * 3;
 
-          const scoreColorClass = (p.score ?? 0) > 8 || isTripleAvg ? 'fill-yellow-400' : 'fill-slate-300';
-          const label = `${starredIndices.has(i) ? '🐋' : ''}${p.scoreDisplay ?? '-'}`;
+          const scoreColorClass = (p.score ?? 0) > 8 || isTripleAvg ? 'fill-yellow-300' : 'fill-slate-300';
+
+          const whalePrefix = starredIndices.has(i) ? '🐋' : '';
+          const rawScore = String(p.scoreDisplay ?? '-').trim();
+          const hasPlus = /\+$/.test(rawScore);
+          const scoreText = hasPlus ? rawScore.replace(/\+$/, '') : rawScore;
+          const label = `${whalePrefix}${rawScore}`;
+
           const spring = isSpringPoint(i);
           const wyckSell = isWyckSell(i) || isWyckSell2(i);
 
@@ -354,8 +362,10 @@ return (
                   strokeWidth={2}
                 />
               )}
-              <text x={p.x} y={y} textAnchor="middle" className={`${scoreColorClass} font-bold`} style={{ fontSize: 14 * s }}>
-                {label}
+              <text x={p.x} y={y} textAnchor="middle" className="font-bold" style={{ fontSize: 14 * s }}>
+                {whalePrefix && <tspan>{whalePrefix}</tspan>}
+                <tspan className={scoreColorClass}>{scoreText}</tspan>
+                {hasPlus && <tspan className="fill-green-500" dx={2}>▲</tspan>}
               </text>
               {showTop10 && p.top10 != null && (
                 <>
