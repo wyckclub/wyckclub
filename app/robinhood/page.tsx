@@ -94,7 +94,7 @@ export default function RobinhoodTrackerPage() {
     { col: 'liq', label: 'Liquidity' },
     { col: 'vol24h', label: 'Vol 24h' },
     { col: 'score', label: 'WYCKSCORE' },
-    { col: 'change24h', label: 'Change 24h' },
+    { col: 'change24h', label: 'Change24h' },
     { col: 'snapshot', label: 'Snapshot Change' },
   ];
 
