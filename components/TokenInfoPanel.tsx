@@ -6,7 +6,7 @@ import { PlatformBadge } from '@/components/PlatformBadge';
 import type { FullPairInfo } from '@/lib/dexData';
 
 function formatWalletShort(addr: string) {
-  return `${addr.slice(0, 4)}......${addr.slice(-4)}`;
+  return `${addr.slice(0, 4)}...${addr.slice(-4)}`;
 }
 
 function StatBox({ label, value, valueClass = 'text-slate-100' }: { label: string; value: string; valueClass?: string }) {
