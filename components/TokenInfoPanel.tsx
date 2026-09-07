@@ -5,6 +5,10 @@ import { formatCap, formatPriceShort, formatAge } from '@/lib/format';
 import { PlatformBadge } from '@/components/PlatformBadge';
 import type { FullPairInfo } from '@/lib/dexData';
 
+function formatWalletShort(addr: string) {
+  return `${addr.slice(0, 4)}......${addr.slice(-4)}`;
+}
+
 function StatBox({ label, value, valueClass = 'text-slate-100' }: { label: string; value: string; valueClass?: string }) {
   return (
     <div className="bg-slate-950 rounded-lg py-2 px-1.5 flex flex-col items-center justify-center gap-0.5">
@@ -34,8 +38,8 @@ function formatHolders(h: number | null | undefined) {
 }
 
 export function TokenInfoPanel({
-  info, ca, symbol, platform, holders,
-}: { info: FullPairInfo | null; ca: string; chainId: string; symbol: string; platform?: string | null; holders?: number | null }) {
+  info, ca, symbol, platform, holders, wallets,
+}: { info: FullPairInfo | null; ca: string; chainId: string; symbol: string; platform?: string | null; holders?: number | null; wallets?: string[] }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopyCA = async () => {
@@ -140,6 +144,28 @@ export function TokenInfoPanel({
           {copied ? '✓ Copied' : 'Copy'}
         </span>
       </button>
+
+      {wallets && wallets.length > 0 && (
+        <div className="pt-2 border-t border-slate-800/60">
+          <div className="text-[11px] text-slate-500 mb-1.5">Deployer / Fee Recipient / Dev:</div>
+          <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-mono">
+            {wallets.map((w, i) => (
+              <span key={w} className="flex items-center gap-1.5">
+                <a
+                  href={`https://app.zerion.io/${w}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 hover:underline"
+                >
+                  {formatWalletShort(w)}
+                </a>
+                {i < wallets.length - 1 && <span className="text-slate-700">|</span>}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

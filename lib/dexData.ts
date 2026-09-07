@@ -288,3 +288,14 @@ export async function fetchHoldersCount(ca: string, chainId: string): Promise<nu
     return null;
   }
 }
+
+export async function fetchFactoryWallets(ca: string, chainId: string): Promise<string[]> {
+  try {
+    const res = await fetch(`/api/factory?ca=${ca}&chain=${chainId}`);
+    if (!res.ok) return [];
+    const json = await res.json();
+    return Array.isArray(json.wallets) ? json.wallets : [];
+  } catch {
+    return [];
+  }
+}
