@@ -48,7 +48,7 @@ export function TokenDetailContent({ chain, ca }: { chain: Chain; ca: string }) 
   const category = token?.category ?? (chain === 'robinhood' ? ROBINHOOD_CATEGORY : null);
   const symbol = pairInfo?.symbol ?? token?.symbol ?? ca.slice(0, 6);
   const dexscreenerUrl = pairInfo
-    ? `https://dexscreener.com/${chain}/${pairInfo.topVolumePairAddress ?? pairInfo.pairAddress}?embed=1&theme=dark&trades=0&info=0&interval=60`
+    ? `https://dexscreener.com/${chain}/${pairInfo.topVolumePairAddress ?? pairInfo.pairAddress}?embed=1&theme=dark&trades=0&info=0&interval=${getDexscreenerInterval(pairInfo.pairCreatedAt)}`
     : null;
 
   return (
@@ -82,4 +82,14 @@ function GateMessage({ title, message, showBuyPrompt }: { title: string; message
       </div>
     </div>
   );
+}
+
+function getDexscreenerInterval(pairCreatedAt: number | null): number {
+  if (!pairCreatedAt) return 60;
+  const days = (Date.now() - pairCreatedAt) / (24 * 60 * 60 * 1000);
+  if (days > 30) return 240;
+  if (days > 5) return 60;
+  if (days > 3) return 15;
+  if (days >= 1) return 5;
+  return 1;
 }
