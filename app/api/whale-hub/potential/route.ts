@@ -1,43 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isWhaleStarredAt, isSpringPointAt, getChartScoreTextColorClass } from '@/lib/format';
+import { fetchDexscreenerBatchMap } from '@/lib/dexscreenerServer';
 
 const ROBINHOOD_CATEGORY = 5;
 const MIN_LIQ = 20000;
-
-interface MarketInfo {
-  liq: number;
-  marketCap: number | null;
-  imageUrl: string | null;
-}
-
-async function fetchMarketDataMap(caList: string[], chainId: string): Promise<Record<string, MarketInfo>> {
-  const out: Record<string, MarketInfo> = {};
-  const BATCH_SIZE = 30;
-  for (let i = 0; i < caList.length; i += BATCH_SIZE) {
-    const chunk = caList.slice(i, i + BATCH_SIZE);
-    try {
-      const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${chunk.join(',')}`, { cache: 'no-store' });
-      if (!res.ok) continue;
-      const json = await res.json();
-      const pairs = json.pairs || [];
-      chunk.forEach((ca) => {
-        const caPairs = pairs.filter(
-          (p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase() && p.chainId === chainId
-        );
-        const pair = caPairs[0] || pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase());
-        const liq = caPairs.reduce((s: number, p: any) => s + (Number(p.liquidity?.usd) || 0), 0);
-        out[ca] = {
-          liq: caPairs.length ? liq : 0,
-          marketCap: pair?.marketCap ?? pair?.fdv ?? null,
-          imageUrl: pair?.info?.imageUrl ?? null,
-        };
-      });
-    } catch {
-      // skip
-    }
-  }
-  return out;
-}
 
 interface Item {
   ca: string;
@@ -134,10 +100,17 @@ export async function GET(req: NextRequest) {
 
   if (!items.length) return NextResponse.json({ tier1: [], tier2: [] });
 
-  const marketMap = await fetchMarketDataMap(items.map((i) => i.ca), chain);
+  const marketMap = await fetchDexscreenerBatchMap(
+    items.map((i) => i.ca),
+    chain,
+    { revalidateSeconds: 30, maxRetries: 2 }
+  );
 
   const enriched = items
-    .map((i) => ({ ...i, ...(marketMap[i.ca] ?? { liq: 0, marketCap: null, imageUrl: null }) }))
+    .map((i) => {
+      const m = marketMap[i.ca];
+      return { ...i, liq: m?.liq ?? 0, marketCap: m?.marketCap ?? null, imageUrl: m?.imageUrl ?? null };
+    })
     .filter((i) => (i.liq ?? 0) >= MIN_LIQ);
 
   const tier1 = enriched.filter((i) => i.tier === 1).sort((a, b) => b.score - a.score);

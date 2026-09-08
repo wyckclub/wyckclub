@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Redis } from '@upstash/redis';
 import { getWhaleStarredScore, getChartScoreTextColorClass } from '@/lib/format';
+import { fetchDexscreenerBatchMap } from '@/lib/dexscreenerServer';
 
 const redis = new Redis({
   url: process.env.REDIS_KV_REST_API_URL!,
@@ -9,35 +10,7 @@ const redis = new Redis({
 
 const MAX_NOTIFS = 50;
 const MIN_VOL24H = 1000;
-
 const ROBINHOOD_CATEGORY = 5;
-
-async function fetchMarketDataMap(caList: string[], chainId: string): Promise<Record<string, { vol24h: number; liq: number }>> {
-  const out: Record<string, { vol24h: number; liq: number }> = {};
-  const BATCH_SIZE = 30;
-  for (let i = 0; i < caList.length; i += BATCH_SIZE) {
-    const chunk = caList.slice(i, i + BATCH_SIZE);
-    try {
-      const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${chunk.join(',')}`, {
-        cache: 'no-store',
-      });
-      if (!res.ok) continue;
-      const json = await res.json();
-      const pairs = json.pairs || [];
-      chunk.forEach((ca) => {
-        const caPairs = pairs.filter(
-          (p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase() && p.chainId === chainId
-        );
-        const vol24h = caPairs.reduce((s: number, p: any) => s + (Number(p.volume?.h24) || 0), 0);
-        const liq = caPairs.reduce((s: number, p: any) => s + (Number(p.liquidity?.usd) || 0), 0);
-        out[ca] = { vol24h: caPairs.length ? vol24h : 0, liq: caPairs.length ? liq : 0 };
-      });
-    } catch {
-      // skip
-    }
-  }
-  return out;
-}
 
 type Level = 'inflow' | 'medium' | 'strong' | 'super';
 
@@ -164,12 +137,18 @@ export async function GET(req: NextRequest) {
   const notifUpdates: Record<string, string> = {};
 
   if (candidates.length) {
-    const marketMap = await fetchMarketDataMap(candidates.map((c) => c.ca), chain);
+    const marketMap = await fetchDexscreenerBatchMap(
+      candidates.map((c) => c.ca),
+      chain,
+      { revalidateSeconds: 30, maxRetries: 2 }
+    );
 
     for (const c of candidates) {
-      const md = marketMap[c.ca] ?? { vol24h: 0, liq: 0 };
-      if (md.vol24h < MIN_VOL24H) continue;
-      if (md.liq < MIN_LIQ) continue;
+      const md = marketMap[c.ca];
+      const vol24h = md?.vol24h ?? 0;
+      const liq = md?.liq ?? 0;
+      if (vol24h < MIN_VOL24H) continue;
+      if (liq < MIN_LIQ) continue;
 
       const levelLabel = LEVEL_LABELS[c.level];
       const notif: Notification = {

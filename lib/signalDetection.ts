@@ -1,4 +1,5 @@
 import { isWhaleStarredAt, isSpringPointAt, getChartScoreTextColorClass } from '@/lib/format';
+import { fetchDexscreenerSingle } from '@/lib/dexscreenerServer';
 
 export const ROBINHOOD_CATEGORY = 5;
 export const MIN_LIQ = 20000;
@@ -58,27 +59,15 @@ export interface DexInfo {
 }
 
 export async function fetchDexInfo(ca: string, chainId: string): Promise<DexInfo | null> {
-  try {
-    const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${ca}`, { cache: 'no-store' });
-    if (!res.ok) return null;
-    const json = await res.json();
-    const pairs = json.pairs || [];
-    const caPairs = pairs.filter(
-      (p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase() && p.chainId === chainId
-    );
-    const pair = caPairs[0] || pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase());
-    if (!pair) return null;
-    const liq = caPairs.reduce((s: number, p: any) => s + (Number(p.liquidity?.usd) || 0), 0);
-    return {
-      priceUsd: pair.priceUsd == null ? null : Number(pair.priceUsd),
-      marketCap: pair.marketCap ?? pair.fdv ?? null,
-      name: pair.baseToken?.name ?? null,
-      imageUrl: pair.info?.imageUrl ?? null,
-      liq: caPairs.length ? liq : 0,
-    };
-  } catch {
-    return null;
-  }
+  const info = await fetchDexscreenerSingle(ca, chainId, { revalidateSeconds: 20, maxRetries: 2 });
+  if (!info) return null;
+  return {
+    priceUsd: info.priceUsd,
+    marketCap: info.marketCap,
+    name: info.name,
+    imageUrl: info.imageUrl,
+    liq: info.liq,
+  };
 }
 
 export const HEADLINE_TEMPLATES: ((symbol: string, pct: number, chain: string) => string)[] = [
