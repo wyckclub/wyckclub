@@ -7,7 +7,6 @@ export const ROBINHOOD_PLATFORMS = [
   'robinhood_verified', 'robinhood_unverified'
 ];
 
-// Label shown INSIDE the badge (icon + text) next to the token
 export const PLATFORM_LABELS: Record<string, string> = {
   clanker: 'Clanker',
   bankr: 'Bankr.bot',
@@ -36,7 +35,6 @@ export const PLATFORM_LABELS: Record<string, string> = {
   sentry: 'Sentry',
 };
 
-// Label shown in the filter <select> dropdown (needs to distinguish verified/not verified)
 export const FILTER_LABELS: Record<string, string> = {
   ...PLATFORM_LABELS,
   base_verified: 'Other - Verified',
@@ -45,7 +43,6 @@ export const FILTER_LABELS: Record<string, string> = {
   robinhood_unverified: 'Unknown - Not Verified',
 };
 
-// Two share-text lines: verified status line + platform hashtag line
 export function platformShareLines(platform: string | null | undefined): string[] {
   if (!platform) return [];
   const isUnverified = platform.endsWith('_unverified');

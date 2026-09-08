@@ -30,7 +30,7 @@ export interface ChartHeader {
   tokenImageDataUri: string | null;
   name: string | null;
   symbol: string;
-  platform: string | null; // null -> don't render platform badge
+  platform: string | null;
   marketCap: number | null;
   liq: number | null;
 }
@@ -246,7 +246,6 @@ function buildChainBadge(chain: 'base' | 'robinhood'): string {
   return svg;
 }
 
-// Same 2 icons used everywhere else in the app: shield = verified platform, warning triangle = not-verified
 function buildShieldIcon(x: number, y: number, size: number): string {
   const scale = size / 24;
   return `
@@ -291,17 +290,14 @@ function buildHeader(header: ChartHeader): string {
   const symbol = escapeXml(header.symbol);
   const name = header.name ? escapeXml(header.name) : '';
 
-  // line 1: symbol
   svg += `<text font-family="${FONT_FAMILY}" x="${textX}" y="32" fill="${COLORS.white}" font-weight="bold" font-size="23">${symbol}</text>`;
 
-  // line 2: name (own line, no overlap with symbol)
   let nextY = 32;
   if (name) {
     nextY = 54;
     svg += `<text font-family="${FONT_FAMILY}" x="${textX}" y="${nextY}" fill="${COLORS.mutedText}" font-size="15">${name}</text>`;
   }
 
-  // line 3: platform icon + label text
   if (header.platform) {
     nextY += 24;
     const badgeSize = 17;
@@ -314,7 +310,6 @@ function buildHeader(header: ChartHeader): string {
     svg += `<text font-family="${FONT_FAMILY}" x="${textX + badgeSize + 6}" y="${nextY}" fill="${labelColor}" font-weight="bold" font-size="14">${label}</text>`;
   }
 
-  // line 4: Cap / Liq
   nextY += 24;
   svg += `<text font-family="${FONT_FAMILY}" x="${textX}" y="${nextY}" fill="${COLORS.mutedText}" font-size="16">Cap: ${escapeXml(formatCap(header.marketCap))}   Liq: ${escapeXml(formatCap(header.liq))}</text>`;
 

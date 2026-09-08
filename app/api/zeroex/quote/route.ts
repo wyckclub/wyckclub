@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   if (feeRecipient && params.get('sellToken')) {
     params.set('swapFeeRecipient', feeRecipient);
     params.set('swapFeeBps', process.env.SWAP_FEE_BPS || '30');
-    params.set('swapFeeToken', params.get('sellToken')!); // phí trừ trên token bán ra, đúng công thức 0x
+    params.set('swapFeeToken', params.get('sellToken')!);
   }
   const url = `https://api.0x.org/swap/allowance-holder/quote?${params.toString()}`;
   const res = await fetch(url, {

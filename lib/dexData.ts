@@ -9,12 +9,12 @@ export interface DexData {
   imageUrl: string | null;
   symbol: string | null;
   name: string | null;
-  pairCreatedAt: number | null; // NEW
+  pairCreatedAt: number | null;
 }
 
 export interface FullPairInfo {
   pairAddress: string;
-  topVolumePairAddress: string | null; // NEW
+  topVolumePairAddress: string | null;
   dexId: string;
   url: string;
   priceUsd: number | null;

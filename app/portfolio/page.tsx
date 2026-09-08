@@ -96,7 +96,7 @@ async function multicallWithRetry(publicClient: any, contracts: any[], retries =
       await new Promise((r) => setTimeout(r, delay));
       return multicallWithRetry(publicClient, contracts, retries - 1, delay * 2);
     }
-    // Multicall3 có thể chưa deploy trên chain -> fallback gọi trực tiếp từng contract
+
     return Promise.all(
       contracts.map((c) =>
         publicClient

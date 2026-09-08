@@ -24,10 +24,6 @@ export interface RawToken {
   platform?: string;
 }
 
-// Tìm entry gần nhất (index nhỏ nhất, tức mới nhất) thoả cả 5 điều kiện:
-// score>4, vàng (đúng như màu hiển thị trên UI chart), có whale (🐋),
-// giá đang giảm so với entry trước, top10 tăng, có spring border.
-// Chỉ tìm trong phạm vi 10 entry gần nhất, không thấy thì loại token
 export function findSignalEntryIndex(entries: RawEntry[]): number | null {
   const maxI = Math.min(SIGNAL_SEARCH_DEPTH - 1, entries.length - 4);
   for (let i = 0; i <= maxI; i++) {

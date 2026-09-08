@@ -34,7 +34,7 @@ function StarIcon({ filled }: { filled: boolean }) {
 }
 
 const scrollPositions: Record<string, number> = {};
-const lastTab: Record<string, Tab> = {}; // key: chain
+const lastTab: Record<string, Tab> = {};
 
 export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () => void }) {
   const router = useRouter();

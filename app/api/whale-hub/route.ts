@@ -33,7 +33,7 @@ async function fetchMarketDataMap(caList: string[], chainId: string): Promise<Re
         out[ca] = { vol24h: caPairs.length ? vol24h : 0, liq: caPairs.length ? liq : 0 };
       });
     } catch {
-      // skip -> mặc định vol=0, liq=0
+      // skip
     }
   }
   return out;
