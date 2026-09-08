@@ -41,6 +41,47 @@ export interface FullPairInfo {
 const TTL = 2 * 60 * 1000;
 const STORAGE_KEY = 'wyck_dex_cache_v1';
 const cache = new Map<string, { data: DexData; timestamp: number }>();
+const IMAGE_TTL = 7 * 24 * 60 * 60 * 1000;
+const IMAGE_STORAGE_KEY = 'wyck_image_cache_v1';
+const imageCache = new Map<string, { url: string; timestamp: number }>();
+
+function loadImageCacheFromStorage() {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = localStorage.getItem(IMAGE_STORAGE_KEY);
+    if (!raw) return;
+    const parsed: Record<string, { url: string; timestamp: number }> = JSON.parse(raw);
+    const now = Date.now();
+    Object.entries(parsed).forEach(([ca, entry]) => {
+      if (now - entry.timestamp < IMAGE_TTL) imageCache.set(ca, entry);
+    });
+  } catch {}
+}
+
+function saveImageCacheToStorage() {
+  if (typeof window === 'undefined') return;
+  try {
+    const obj: Record<string, { url: string; timestamp: number }> = {};
+    imageCache.forEach((v, k) => (obj[k] = v));
+    localStorage.setItem(IMAGE_STORAGE_KEY, JSON.stringify(obj));
+  } catch {}
+}
+
+function getCachedImage(ca: string): string | null {
+  const entry = imageCache.get(ca);
+  if (!entry || Date.now() - entry.timestamp >= IMAGE_TTL) return null;
+  return entry.url;
+}
+
+function setCachedImage(ca: string, url: string | null | undefined) {
+  if (!url) return;
+  const existing = imageCache.get(ca);
+  if (existing && existing.url === url && Date.now() - existing.timestamp < IMAGE_TTL) return;
+  imageCache.set(ca, { url, timestamp: Date.now() });
+  saveImageCacheToStorage();
+}
+
+loadImageCacheFromStorage();
 
 function loadFromStorage() {
   if (typeof window === 'undefined') return;
@@ -67,7 +108,27 @@ function saveToStorage() {
 loadFromStorage();
 
 export function getCachedDexData(ca: string): DexData | null {
-  return cache.get(ca)?.data ?? null;
+  const entry = cache.get(ca);
+  if (entry) return entry.data;
+
+  const img = getCachedImage(ca);
+  if (img) {
+    return {
+      h24: null,
+      priceUsd: null,
+      vol24h: null,
+      liq: null,
+      marketCap: null,
+      twitter: null,
+      website: null,
+      imageUrl: img,
+      symbol: null,
+      name: null,
+      pairCreatedAt: null,
+    };
+  }
+
+  return null;
 }
 
 function extractTwitter(pair: any): string | null {
@@ -132,13 +193,14 @@ export async function prefetchDexDataBatch(
             marketCap: marketCap == null ? null : Number(marketCap),
             twitter: extractTwitter(pair),
             website: pair?.info?.websites?.[0]?.url ?? null,
-            imageUrl: pair?.info?.imageUrl ?? null,
+            imageUrl: pair?.info?.imageUrl ?? getCachedImage(ca),
             symbol: pair?.baseToken?.symbol ?? null,
             name: pair?.baseToken?.name ?? null,
             pairCreatedAt: oldestPairCreatedAt(caPairs, pair),
           },
           timestamp: Date.now(),
         });
+        setCachedImage(ca, pair?.info?.imageUrl); // 👈 thêm dòng này
       });
     } catch {
       failedCas.push(...chunk);
@@ -241,7 +303,7 @@ export async function fetchFullTokenPairInfo(ca: string, chainId: string = 'base
       fdv: pair.fdv ?? null,
       liq: sumField((p) => p.liquidity?.usd),
       pairCreatedAt: oldestPairCreatedAt(caPairs, pair),
-      imageUrl: pair.info?.imageUrl ?? null,
+      imageUrl: pair.info?.imageUrl ?? getCachedImage(ca),
       symbol: pair.baseToken?.symbol ?? null,
       name: pair.baseToken?.name ?? null,
       twitter: tw?.url ?? null,

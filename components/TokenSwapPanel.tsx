@@ -394,7 +394,7 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
       <div className="flex items-center justify-between px-3 py-2 border-b border-slate-800">
         <span className="flex items-center gap-1.5 text-sm font-bold text-blue-400">
           <img src="/0x.svg" alt="0x" className="w-4 h-4" />
-          Exchange
+          SWAP
         </span>
       </div>
 
