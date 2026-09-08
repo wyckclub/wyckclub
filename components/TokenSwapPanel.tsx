@@ -42,7 +42,7 @@ interface QuoteResp {
 }
 
 type Side = 'pay' | 'receive';
-type SlippagePreset = '0.5' | '1' | '5' | 'custom';
+type SlippagePreset = '1' | '2' | '5' | 'custom';
 
 function AssetIcon({ asset, size = 20 }: { asset: Asset; size?: number }) {
   const [failed, setFailed] = useState(false);
@@ -474,7 +474,7 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
         <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
           <span>Max Slippage</span>
           <div className="flex items-center gap-1.5">
-            {(['0.5', '1', '5'] as const).map((p) => (
+            {(['1', '2', '5'] as const).map((p) => (
               <button
                 key={p}
                 onClick={() => setSlippagePreset(p)}
