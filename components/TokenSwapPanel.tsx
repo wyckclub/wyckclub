@@ -10,7 +10,10 @@ const NATIVE = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 const USDG_ROBINHOOD = '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168';
 const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const NATIVE_GAS_BUFFER = parseUnits('0.0005', 18);
-const SWAP_VISIBLE_KEY = 'wyck_show_swap';
+
+const ETH_LOGO = '/eth.svg';
+const USDC_LOGO = '/usdc.svg';
+const USDG_LOGO = '/usdg.svg';
 
 const erc20Abi = [
   { name: 'decimals', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint8' }] },
@@ -23,12 +26,13 @@ interface Asset {
   address: string;
   symbol: string;
   decimals: number;
+  logoUrl: string | null;
 }
 
 interface QuoteResp {
   buyAmount: string;
-  sellAmount?: string;      // trả về khi request bằng buyAmount (Exact Buy)
-  maxSellAmount?: string;   // trần số phải trả khi Exact Buy
+  sellAmount?: string;
+  maxSellAmount?: string;
   transaction?: { to: `0x${string}`; data: `0x${string}`; value: string; gas: string | null };
   issues?: { allowance?: { spender: `0x${string}` } | null; balance?: unknown };
   fees?: { integratorFee?: { amount: string; token: string; type: string } | null };
@@ -39,18 +43,82 @@ interface QuoteResp {
 
 type Side = 'pay' | 'receive';
 
+function AssetIcon({ asset, size = 20 }: { asset: Asset; size?: number }) {
+  const [failed, setFailed] = useState(false);
+  if (!asset.logoUrl || failed) {
+    return (
+      <span
+        className="rounded-full bg-slate-600 flex items-center justify-center font-bold shrink-0"
+        style={{ width: size, height: size, fontSize: size * 0.4 }}
+      >
+        {asset.symbol.slice(0, 2).toUpperCase()}
+      </span>
+    );
+  }
+  return (
+    <img
+      src={asset.logoUrl}
+      alt={asset.symbol}
+      onError={() => setFailed(true)}
+      className="rounded-full object-cover shrink-0"
+      style={{ width: size, height: size }}
+    />
+  );
+}
+
+function AssetSelect({
+  side, current, exclude, assets, onPick,
+}: {
+  side: Side;
+  current: Asset;
+  exclude: Asset['key'];
+  assets: Asset[];
+  onPick: (side: Side, key: Asset['key']) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative shrink-0">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 rounded-full px-2.5 py-1.5"
+      >
+        <AssetIcon asset={current} size={20} />
+        <span className="text-sm font-bold">{current.symbol}</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3 h-3 opacity-60">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute right-0 mt-1 z-20 bg-slate-950 border border-slate-800 rounded-lg overflow-hidden w-36">
+          {assets.filter((a) => a.key !== exclude).map((a) => (
+            <button
+              key={a.key}
+              onClick={() => { onPick(side, a.key); setOpen(false); }}
+              className="w-full text-left px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800 flex items-center gap-2"
+            >
+              <AssetIcon asset={a} size={20} />
+              {a.symbol}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TokenSwapPanel({ chainId, ca }: { chainId: string; ca: string }) {
-  const [visible, setVisible] = useState(true);
   const numericChainId = CHAIN_IDS[chainId] ?? 8453;
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient({ chainId: numericChainId });
 
   const [tokenSymbol, setTokenSymbol] = useState<string>('TOKEN');
   const [tokenDecimals, setTokenDecimals] = useState<number | null>(null);
+  const [tokenLogo, setTokenLogo] = useState<string | null>(null);
 
   useEffect(() => {
     const dex = getCachedDexData(ca);
     if (dex?.symbol) setTokenSymbol(dex.symbol);
+    if (dex?.imageUrl) setTokenLogo(dex.imageUrl);
     if (!publicClient) return;
     publicClient.readContract({ address: ca as `0x${string}`, abi: erc20Abi, functionName: 'decimals' })
       .then((d) => setTokenDecimals(Number(d))).catch(() => setTokenDecimals(18));
@@ -61,23 +129,23 @@ export function TokenSwapPanel({ chainId, ca }: { chainId: string; ca: string })
   }, [ca, publicClient]);
 
   const assets: Asset[] = useMemo(() => {
-    const list: Asset[] = [{ key: 'ETH', address: NATIVE, symbol: 'ETH', decimals: 18 }];
+    const list: Asset[] = [{ key: 'ETH', address: NATIVE, symbol: 'ETH', decimals: 18, logoUrl: ETH_LOGO }];
     if (chainId === 'robinhood') {
-      list.push({ key: 'USDG', address: USDG_ROBINHOOD, symbol: 'USDG', decimals: 6 });
+      list.push({ key: 'USDG', address: USDG_ROBINHOOD, symbol: 'USDG', decimals: 6, logoUrl: USDG_LOGO });
     } else {
-      list.push({ key: 'USDC', address: USDC_BASE, symbol: 'USDC', decimals: 6 });
+      list.push({ key: 'USDC', address: USDC_BASE, symbol: 'USDC', decimals: 6, logoUrl: USDC_LOGO });
     }
-    list.push({ key: 'TOKEN', address: ca, symbol: tokenSymbol, decimals: tokenDecimals ?? 18 });
+    list.push({ key: 'TOKEN', address: ca, symbol: tokenSymbol, decimals: tokenDecimals ?? 18, logoUrl: tokenLogo });
     return list;
-  }, [chainId, ca, tokenSymbol, tokenDecimals]);
+  }, [chainId, ca, tokenSymbol, tokenDecimals, tokenLogo]);
 
   const [payKey, setPayKey] = useState<Asset['key']>('ETH');
   const [receiveKey, setReceiveKey] = useState<Asset['key']>('TOKEN');
   const payAsset = assets.find((a) => a.key === payKey)!;
   const receiveAsset = assets.find((a) => a.key === receiveKey)!;
 
-  const [amount, setAmount] = useState(''); // số lượng của bên đang "active"
-  const [activeSide, setActiveSide] = useState<Side>('pay'); // ô nào người dùng đang gõ
+  const [amount, setAmount] = useState('');
+  const [activeSide, setActiveSide] = useState<Side>('pay');
   const [quote, setQuote] = useState<QuoteResp | null>(null);
   const [loadingQuote, setLoadingQuote] = useState(false);
   const [error, setError] = useState('');
@@ -102,14 +170,6 @@ export function TokenSwapPanel({ chainId, ca }: { chainId: string; ca: string })
     chainId: numericChainId,
   });
 
-  useEffect(() => {
-    localStorage.setItem(SWAP_VISIBLE_KEY, visible ? '1' : '0');
-  }, [visible]);
-  useEffect(() => {
-    const saved = localStorage.getItem(SWAP_VISIBLE_KEY);
-    if (saved != null) setVisible(saved === '1');
-  }, []);
-
   function pickAsset(side: Side, key: Asset['key']) {
     if (side === 'pay') {
       if (key === receiveKey) setReceiveKey(payKey);
@@ -123,7 +183,6 @@ export function TokenSwapPanel({ chainId, ca }: { chainId: string; ca: string })
     setQuote(null);
   }
 
-  // Feature 1: đổi chiều nhưng GIỮ NGUYÊN số đã nhập, chỉ đổi asset đang gắn với số đó
   function flip() {
     setPayKey(receiveKey);
     setReceiveKey(payKey);
@@ -152,7 +211,6 @@ export function TokenSwapPanel({ chainId, ca }: { chainId: string; ca: string })
     return v < 0.01 ? `~$${v.toFixed(6)}` : `~$${v.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
   }
 
-  // Feature 2: gõ ở ô "receive" -> gửi buyAmount thay vì sellAmount (Exact Buy của 0x)
   const buildParams = (taker: string) => {
     const params = new URLSearchParams({
       chainId: String(numericChainId),
@@ -244,7 +302,6 @@ export function TokenSwapPanel({ chainId, ca }: { chainId: string; ca: string })
     }
   }
 
-  // Giá trị hiển thị của từng ô: ô đang "active" hiện số người gõ, ô còn lại hiện số tính ra từ quote
   const payAmountDisplay = activeSide === 'pay'
     ? amount
     : (quote?.sellAmount ? formatUnits(BigInt(quote.sellAmount), payAsset.decimals) : '');
@@ -252,7 +309,6 @@ export function TokenSwapPanel({ chainId, ca }: { chainId: string; ca: string })
     ? amount
     : (quote?.buyAmount ? formatUnits(BigInt(quote.buyAmount), receiveAsset.decimals) : '');
 
-  // "Minimum received" chỉ có ý nghĩa khi nhập theo sellAmount; nhập theo buyAmount thì hiện "Maximum you pay"
   const minReceived = useMemo(() => {
     if (!quote || slippageMode !== 'custom' || activeSide !== 'pay') return null;
     const bps = Math.round(Number(slippagePct) * 100);
@@ -319,196 +375,155 @@ export function TokenSwapPanel({ chainId, ca }: { chainId: string; ca: string })
     return formatUnits(cost, 18);
   }, [quote, gasPriceWei]);
 
-  function AssetSelect({ side, current, exclude }: { side: Side; current: Asset; exclude: Asset['key'] }) {
-    const [open, setOpen] = useState(false);
-    return (
-      <div className="relative shrink-0">
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 rounded-full px-2.5 py-1.5"
-        >
-          <span className="w-5 h-5 rounded-full bg-slate-600 flex items-center justify-center text-[9px] font-bold shrink-0">
-            {current.symbol.slice(0, 2).toUpperCase()}
-          </span>
-          <span className="text-sm font-bold">{current.symbol}</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3 h-3 opacity-60">
-            <path d="m6 9 6 6 6-6" />
-          </svg>
-        </button>
-        {open && (
-          <div className="absolute right-0 mt-1 z-20 bg-slate-950 border border-slate-800 rounded-lg overflow-hidden w-36">
-            {assets.filter((a) => a.key !== exclude).map((a) => (
-              <button
-                key={a.key}
-                onClick={() => { pickAsset(side, a.key); setOpen(false); }}
-                className="w-full text-left px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800 flex items-center gap-2"
-              >
-                <span className="w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center text-[9px] font-bold">
-                  {a.symbol.slice(0, 2).toUpperCase()}
-                </span>
-                {a.symbol}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 border-b border-slate-800">
         <span className="text-sm font-bold text-blue-400">Exchange</span>
-        <button onClick={() => setVisible((v) => !v)} className="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200">
-          {visible ? 'Hide' : 'Show'}
-        </button>
       </div>
 
-      {visible && (
-        <div className="p-3 space-y-2">
-          {/* PAY */}
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
-            <div className="flex items-center justify-between text-xs text-slate-500">
-              <span>You pay</span>
-              <span>Balance: {payBalance.data ? Number(payBalance.data.formatted).toLocaleString(undefined, { maximumFractionDigits: 6 }) : '0'}</span>
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={activeSide === 'pay' ? amount : (loadingQuote ? '...' : payAmountDisplay)}
-                onChange={(e) => { setActiveSide('pay'); setAmount(e.target.value); }}
-                placeholder="0.0"
-                className="bg-transparent outline-none text-2xl font-bold w-full min-w-0"
-              />
-              <AssetSelect side="pay" current={payAsset} exclude={receiveKey} />
-            </div>
-            <div className="flex gap-1.5">
-              {[20, 50, 100].map((p) => (
-                <button
-                  key={p}
-                  onClick={() => applyPercent(p)}
-                  className="text-[11px] font-bold px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300"
-                >
-                  {p === 100 ? 'MAX' : `${p}%`}
-                </button>
-              ))}
-            </div>
+      <div className="p-3 space-y-2">
+        {/* PAY */}
+        <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
+          <div className="flex items-center justify-between text-xs text-slate-500">
+            <span>You pay</span>
+            <span>Balance: {payBalance.data ? Number(payBalance.data.formatted).toLocaleString(undefined, { maximumFractionDigits: 6 }) : '0'}</span>
           </div>
-
-          {/* FLIP */}
-          <div className="flex justify-center -my-1 relative z-10">
-            <button
-              onClick={flip}
-              className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 hover:bg-slate-700 flex items-center justify-center"
-              aria-label="Flip"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
-                <path d="M17 3v18M17 3l-4 4M17 3l4 4M7 21V3M7 21l-4-4M7 21l4-4" />
-              </svg>
-            </button>
+          <div className="flex items-center justify-between gap-2">
+            <input
+              type="text"
+              inputMode="decimal"
+              value={activeSide === 'pay' ? amount : (loadingQuote ? '...' : payAmountDisplay)}
+              onChange={(e) => { setActiveSide('pay'); setAmount(e.target.value); }}
+              placeholder="0.0"
+              className="bg-transparent outline-none text-2xl font-bold w-full min-w-0"
+            />
+            <AssetSelect side="pay" current={payAsset} exclude={receiveKey} assets={assets} onPick={pickAsset} />
           </div>
-
-          {/* RECEIVE */}
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
-            <div className="flex items-center justify-between text-xs text-slate-500">
-              <span>You receive</span>
-              <span>Balance: {receiveBalance.data ? Number(receiveBalance.data.formatted).toLocaleString(undefined, { maximumFractionDigits: 6 }) : '0'}</span>
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={activeSide === 'receive' ? amount : (loadingQuote ? '...' : receiveAmountDisplay)}
-                onChange={(e) => { setActiveSide('receive'); setAmount(e.target.value); }}
-                placeholder="0.0"
-                className="bg-transparent outline-none text-2xl font-bold w-full min-w-0"
-              />
-              <AssetSelect side="receive" current={receiveAsset} exclude={payKey} />
-            </div>
-          </div>
-
-          {/* SLIPPAGE */}
-          <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
-            <span>Max Slippage</span>
-            <div className="flex items-center gap-1.5">
+          <div className="flex gap-1.5">
+            {[20, 50, 100].map((p) => (
               <button
-                onClick={() => setSlippageMode('auto')}
-                className={`px-2 py-1 rounded font-bold ${slippageMode === 'auto' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}
+                key={p}
+                onClick={() => applyPercent(p)}
+                className="text-[11px] font-bold px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300"
               >
-                Auto
+                {p === 100 ? 'MAX' : `${p}%`}
               </button>
-              <input
-                type="number"
-                value={slippagePct}
-                onFocus={() => setSlippageMode('custom')}
-                onChange={(e) => { setSlippageMode('custom'); setSlippagePct(e.target.value); }}
-                className={`w-14 text-right bg-slate-800 rounded px-1.5 py-1 outline-none ${slippageMode === 'custom' ? 'text-white' : 'text-slate-500'}`}
-              />
-              <span>%</span>
-            </div>
+            ))}
           </div>
-
-          {/* DETAILS */}
-          {quote && (
-            <div className="text-xs text-slate-400 space-y-1 pt-2 border-t border-slate-800">
-              {minReceived && (
-                <div className="flex justify-between">
-                  <span>Minimum received</span>
-                  <span className="text-slate-200">
-                    {Number(minReceived).toLocaleString(undefined, { maximumFractionDigits: 6 })} {receiveAsset.symbol}
-                    {usdPrices.receive != null && (
-                      <span className="text-slate-500"> ({formatUsd(Number(minReceived) * usdPrices.receive)})</span>
-                    )}
-                  </span>
-                </div>
-              )}
-              {maxYouPay && (
-                <div className="flex justify-between">
-                  <span>Maximum you pay</span>
-                  <span className="text-slate-200">
-                    {Number(maxYouPay).toLocaleString(undefined, { maximumFractionDigits: 6 })} {payAsset.symbol}
-                    {usdPrices.pay != null && (
-                      <span className="text-slate-500"> ({formatUsd(Number(maxYouPay) * usdPrices.pay)})</span>
-                    )}
-                  </span>
-                </div>
-              )}
-              {tradeFeeDisplay && (
-                <div className="flex justify-between"><span>Trade fees</span><span className="text-slate-200">{tradeFeeDisplay}</span></div>
-              )}
-              {networkFeeEth && (
-                <div className="flex justify-between"><span>Network fees (est.)</span><span className="text-slate-200">{Number(networkFeeEth).toFixed(6)} ETH</span></div>
-              )}
-              {quote.estimatedPriceImpact && (
-                <div className="flex justify-between"><span>Price impact</span><span className="text-slate-200">{quote.estimatedPriceImpact}%</span></div>
-              )}
-            </div>
-          )}
-
-          {insufficientBalance && (
-            <p className="text-xs text-red-400">Insufficient balance for this trade.</p>
-          )}
-          {error && <p className="text-xs text-red-400">{error}</p>}
-          {!isConnected && <p className="text-xs text-slate-500">Connect wallet to swap.</p>}
-
-          {isConnected && (
-            <button
-              onClick={handleSwap}
-              disabled={!quote || step !== 'idle' || insufficientBalance}
-              className="w-full py-2.5 rounded-xl bg-blue-500 hover:bg-blue-400 disabled:opacity-50 text-sm font-bold text-white"
-            >
-              {insufficientBalance ? 'Insufficient balance' : step === 'approving' ? 'Approving...' : step === 'swapping' ? 'Swapping...' : 'Swap'}
-            </button>
-          )}
-
-          {receipt && txHash && (
-            <p className="text-xs text-green-400 text-center">
-              Confirmed: <a href={`https://basescan.org/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="underline">{txHash.slice(0, 10)}...</a>
-            </p>
-          )}
         </div>
-      )}
+
+        {/* FLIP */}
+        <div className="flex justify-center -my-1 relative z-10">
+          <button
+            onClick={flip}
+            className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 hover:bg-slate-700 flex items-center justify-center"
+            aria-label="Flip"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+              <path d="M17 3v18M17 3l-4 4M17 3l4 4M7 21V3M7 21l-4-4M7 21l4-4" />
+            </svg>
+          </button>
+        </div>
+
+        {/* RECEIVE */}
+        <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
+          <div className="flex items-center justify-between text-xs text-slate-500">
+            <span>You receive</span>
+            <span>Balance: {receiveBalance.data ? Number(receiveBalance.data.formatted).toLocaleString(undefined, { maximumFractionDigits: 6 }) : '0'}</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <input
+              type="text"
+              inputMode="decimal"
+              value={activeSide === 'receive' ? amount : (loadingQuote ? '...' : receiveAmountDisplay)}
+              onChange={(e) => { setActiveSide('receive'); setAmount(e.target.value); }}
+              placeholder="0.0"
+              className="bg-transparent outline-none text-2xl font-bold w-full min-w-0"
+            />
+            <AssetSelect side="receive" current={receiveAsset} exclude={payKey} assets={assets} onPick={pickAsset} />
+          </div>
+        </div>
+
+        {/* SLIPPAGE */}
+        <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
+          <span>Max Slippage</span>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setSlippageMode('auto')}
+              className={`px-2 py-1 rounded font-bold ${slippageMode === 'auto' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}
+            >
+              Auto
+            </button>
+            <input
+              type="number"
+              value={slippagePct}
+              onFocus={() => setSlippageMode('custom')}
+              onChange={(e) => { setSlippageMode('custom'); setSlippagePct(e.target.value); }}
+              className={`w-14 text-right bg-slate-800 rounded px-1.5 py-1 outline-none ${slippageMode === 'custom' ? 'text-white' : 'text-slate-500'}`}
+            />
+            <span>%</span>
+          </div>
+        </div>
+
+        {/* DETAILS */}
+        {quote && (
+          <div className="text-xs text-slate-400 space-y-1 pt-2 border-t border-slate-800">
+            {minReceived && (
+              <div className="flex justify-between">
+                <span>Minimum received</span>
+                <span className="text-slate-200">
+                  {Number(minReceived).toLocaleString(undefined, { maximumFractionDigits: 6 })} {receiveAsset.symbol}
+                  {usdPrices.receive != null && (
+                    <span className="text-slate-500"> ({formatUsd(Number(minReceived) * usdPrices.receive)})</span>
+                  )}
+                </span>
+              </div>
+            )}
+            {maxYouPay && (
+              <div className="flex justify-between">
+                <span>Maximum you pay</span>
+                <span className="text-slate-200">
+                  {Number(maxYouPay).toLocaleString(undefined, { maximumFractionDigits: 6 })} {payAsset.symbol}
+                  {usdPrices.pay != null && (
+                    <span className="text-slate-500"> ({formatUsd(Number(maxYouPay) * usdPrices.pay)})</span>
+                  )}
+                </span>
+              </div>
+            )}
+            {tradeFeeDisplay && (
+              <div className="flex justify-between"><span>Trade fees</span><span className="text-slate-200">{tradeFeeDisplay}</span></div>
+            )}
+            {networkFeeEth && (
+              <div className="flex justify-between"><span>Network fees (est.)</span><span className="text-slate-200">{Number(networkFeeEth).toFixed(6)} ETH</span></div>
+            )}
+            {quote.estimatedPriceImpact && (
+              <div className="flex justify-between"><span>Price impact</span><span className="text-slate-200">{quote.estimatedPriceImpact}%</span></div>
+            )}
+          </div>
+        )}
+
+        {insufficientBalance && (
+          <p className="text-xs text-red-400">Insufficient balance for this trade.</p>
+        )}
+        {error && <p className="text-xs text-red-400">{error}</p>}
+        {!isConnected && <p className="text-xs text-slate-500">Connect wallet to swap.</p>}
+
+        {isConnected && (
+          <button
+            onClick={handleSwap}
+            disabled={!quote || step !== 'idle' || insufficientBalance}
+            className="w-full py-2.5 rounded-xl bg-blue-500 hover:bg-blue-400 disabled:opacity-50 text-sm font-bold text-white"
+          >
+            {insufficientBalance ? 'Insufficient balance' : step === 'approving' ? 'Approving...' : step === 'swapping' ? 'Swapping...' : 'Swap'}
+          </button>
+        )}
+
+        {receipt && txHash && (
+          <p className="text-xs text-green-400 text-center">
+            Confirmed: <a href={`https://basescan.org/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="underline">{txHash.slice(0, 10)}...</a>
+          </p>
+        )}
+      </div>
     </div>
   );
 }
