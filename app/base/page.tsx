@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTokenGate, PRO_THRESHOLD } from '@/lib/tokenGate';
 import { getCachedDexData } from '@/lib/dexData';
 import { formatCap } from '@/lib/format';
 import { ScoreBadge } from '@/components/ScoreBadge';
@@ -9,7 +8,6 @@ import { PlatformBadge } from '@/components/PlatformBadge';
 import { PriceChartModal } from '@/components/PriceChartModal';
 import { TokenEntry } from '@/lib/tokenApi';
 import { BASE_PLATFORMS, FILTER_LABELS } from '@/lib/platforms';
-import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
 import { fetchGithubStats, GithubStats } from '@/lib/githubApi';
 import { useTokenData } from '@/components/TokenDataContext';
 import Link from 'next/link';
@@ -17,7 +15,6 @@ import Link from 'next/link';
 type SortCol = 'marketCap' | 'liq' | 'vol24h' | 'score' | 'change24h' | 'snapshot' | null;
 
 export default function BaseTrackerPage() {
-  const { isConnected, isLoading, amount, hasAccess } = useTokenGate(PRO_THRESHOLD);
   const { tokens, loading: loadingData, dexReady, refresh: loadData, watchlist, toggleWatchlist } = useTokenData();
   const [sortCol, setSortCol] = useState<SortCol>('snapshot');
   const [sortDir, setSortDir] = useState<1 | -1>(-1);
@@ -35,18 +32,6 @@ export default function BaseTrackerPage() {
   useEffect(() => {
     setPage(1);
   }, [search, platformFilter, sortCol, sortDir]);
-
-  if (!isConnected) return <GateMessage title="Connect your wallet" message="Connect your wallet to check BASE Tracker access." />;
-  if (isLoading) return <GateMessage title="Checking balance..." message="" />;
-  if (!hasAccess) {
-    return (
-      <GateMessage
-        title="PRO Plan Locked"
-        message={`You need at least ${PRO_THRESHOLD.toLocaleString()} tokens. Your balance: ${amount.toLocaleString()}.`}
-        showBuyPrompt
-      />
-    );
-  }
 
   function getSortValue(t: TokenEntry, col: SortCol): number {
     if (col === 'marketCap') {
@@ -303,18 +288,6 @@ export default function BaseTrackerPage() {
           onClose={() => setChartToken(null)}
         />
       )}
-    </div>
-  );
-}
-
-function GateMessage({ title, message, showBuyPrompt }: { title: string; message: string; showBuyPrompt?: boolean }) {
-  return (
-    <div className="min-h-[60vh] flex items-center justify-center p-6">
-      <div className="max-w-md text-center space-y-3">
-        <h1 className="text-2xl font-bold text-blue-400">{title}</h1>
-        <p className="text-slate-400">{message}</p>
-        {showBuyPrompt && <BuyTokenPrompt />}
-      </div>
     </div>
   );
 }

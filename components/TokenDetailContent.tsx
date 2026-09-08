@@ -1,19 +1,30 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAccount } from 'wagmi';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { ROBINHOOD_CATEGORY } from '@/lib/tokenApi';
 import { fetchFullTokenPairInfo, fetchHoldersCount, fetchFactoryWallets, FullPairInfo } from '@/lib/dexData';
 import { TokenScoreChart } from '@/components/TokenScoreChart';
 import { TokenInfoPanel } from '@/components/TokenInfoPanel';
 import { TokenSwapPanel } from '@/components/TokenSwapPanel';
 import { useTokenData } from '@/components/TokenDataContext';
-import { useTokenGate, PRO_THRESHOLD } from '@/lib/tokenGate';
-import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
 
 type Chain = 'base' | 'robinhood';
 
+function WalletIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+      <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
+      <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
+    </svg>
+  );
+}
+
 export function TokenDetailContent({ chain, ca }: { chain: Chain; ca: string }) {
-  const { isConnected, isLoading, amount, hasAccess } = useTokenGate(PRO_THRESHOLD);
+  const { isConnected } = useAccount();
+  const { openConnectModal } = useConnectModal();
   const { tokens } = useTokenData();
   const [pairInfo, setPairInfo] = useState<FullPairInfo | null>(null);
   const [holders, setHolders] = useState<number | null>(null);
@@ -35,31 +46,6 @@ export function TokenDetailContent({ chain, ca }: { chain: Chain; ca: string }) 
     return () => { active = false; clearInterval(id); };
   }, [ca, chain]);
 
-  useEffect(() => {
-    setPairInfo(null);
-    setHolders(null);
-    let active = true;
-    function poll() {
-      fetchFullTokenPairInfo(ca, chain).then((info) => { if (active) setPairInfo(info); });
-      fetchHoldersCount(ca, chain).then((h) => { if (active) setHolders(h); });
-    }
-    poll();
-    const id = setInterval(poll, 30000);
-    return () => { active = false; clearInterval(id); };
-  }, [ca, chain]);
-
-  if (!isConnected) return <GateMessage title="Connect your wallet" message="Connect your wallet to view this token." />;
-  if (isLoading) return <GateMessage title="Checking balance..." message="" />;
-  if (!hasAccess) {
-    return (
-      <GateMessage
-        title="Access Locked"
-        message={`You need at least ${PRO_THRESHOLD.toLocaleString()} tokens. Your balance: ${amount.toLocaleString()}.`}
-        showBuyPrompt
-      />
-    );
-  }
-
   const category = token?.category ?? (chain === 'robinhood' ? ROBINHOOD_CATEGORY : null);
   const symbol = pairInfo?.symbol ?? token?.symbol ?? ca.slice(0, 6);
   const dexscreenerUrl = pairInfo
@@ -76,7 +62,26 @@ export function TokenDetailContent({ chain, ca }: { chain: Chain; ca: string }) 
             <div className="w-full h-full flex items-center justify-center text-slate-500 text-sm">Loading chart...</div>
           )}
         </div>
-        <TokenScoreChart category={category} ca={ca} chainId={chain} className="h-[42vh] lg:flex-1 lg:min-h-0" />
+
+        {isConnected ? (
+          <TokenScoreChart category={category} ca={ca} chainId={chain} className="h-[42vh] lg:flex-1 lg:min-h-0" />
+        ) : (
+          <div className="h-[42vh] lg:flex-1 lg:min-h-0 bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col">
+            <div className="flex items-center mb-2 shrink-0">
+              <span className="text-sm font-bold text-blue-400">WYCKSCORE Chart</span>
+            </div>
+            <div className="flex-1 flex flex-col items-center justify-center gap-3">
+              <p className="text-slate-400 text-sm text-center">Connect your wallet to view the WYCKSCORE chart.</p>
+              <button
+                onClick={openConnectModal}
+                className="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-500 flex items-center justify-center text-white"
+                aria-label="Connect wallet"
+              >
+                <WalletIcon />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="lg:w-96 shrink-0 lg:overflow-y-auto space-y-3">
@@ -84,18 +89,6 @@ export function TokenDetailContent({ chain, ca }: { chain: Chain; ca: string }) 
         <TokenSwapPanel chainId={chain} ca={ca} platform={token?.platform} />
       </div>
     </>
-  );
-}
-
-function GateMessage({ title, message, showBuyPrompt }: { title: string; message: string; showBuyPrompt?: boolean }) {
-  return (
-    <div className="flex-1 min-h-[60vh] flex items-center justify-center p-6">
-      <div className="max-w-md text-center space-y-3">
-        <h1 className="text-2xl font-bold text-blue-400">{title}</h1>
-        <p className="text-slate-400">{message}</p>
-        {showBuyPrompt && <BuyTokenPrompt />}
-      </div>
-    </div>
   );
 }
 
