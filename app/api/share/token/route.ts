@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
 
   const text = `$${token.symbol}${nameTag} WYCKSCORE update on #${networkLabel}:
 
-👉WyckScore: ${isYellow ? '⚡' : ''}${scoreWithWhale}${whaleLine}${platformLine}
+✅WyckScore: ${isYellow ? '⚡' : ''}${scoreWithWhale}${whaleLine}${platformLine}
 
 At Price: ${price} - MarketCap: ${cap}
 

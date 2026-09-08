@@ -49,6 +49,6 @@ export function platformShareLines(platform: string | null | undefined): string[
   const label = PLATFORM_LABELS[platform] ?? platform;
   const hashtag = label.replace(/[^a-zA-Z0-9]/g, '');
   const verifiedLine = isUnverified ? '❌ Not Verified' : '✅ Verified';
-  const platformLine = `✅ Platform: #${hashtag}`;
+  const platformLine = `🚀 Token Launcher: #${hashtag}`;
   return [verifiedLine, platformLine];
 }

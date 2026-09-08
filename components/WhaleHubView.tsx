@@ -144,11 +144,11 @@ function buildShareText(n: Notification, dex: ReturnType<typeof getCachedDexData
 
   return `$${symbol}${nameTag} just triggered a SmartMoney signal on #${networkLabel}:
 
-👉WyckScore: ${n.levelLabel} ${n.current}${whaleLine}${platformLine}
+  🔄Live Data: wyck.pro/${networkLabel}/${n.ca}
 
-At Price: ${price} - MaketCap: ${cap}
+✅WyckScore: ${n.levelLabel} ${n.current}${whaleLine}${platformLine}
 
-🔄Live Data: wyck.pro/${networkLabel}/${n.ca}`;
+At Price: ${price} - MaketCap: ${cap}`;
 }
 
 function handleShare(n: Notification, dex: ReturnType<typeof getCachedDexData>, chain: Chain) {
