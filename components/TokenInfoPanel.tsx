@@ -9,6 +9,38 @@ function formatWalletShort(addr: string) {
   return `${addr.slice(0, 4)}...${addr.slice(-4)}`;
 }
 
+function TelegramIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+      <path d="M21.9 4.3 2.7 11.6c-1.3.5-1.3 1.2-.2 1.6l4.9 1.5 1.9 5.8c.2.6.4.8.9.8.4 0 .6-.2.9-.5l2.2-2.1 4.6 3.4c.8.5 1.4.2 1.6-.8L23.9 5.6c.3-1.2-.5-1.8-1.9-1.3z"/>
+    </svg>
+  );
+}
+
+function XIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+      <path d="M18.9 2H22l-7.6 8.7L23.3 22H16.7l-5.2-6.8L5.6 22H2.5l8.1-9.3L1.7 2h6.8l4.7 6.2L18.9 2Zm-1.2 18h1.7L7.4 3.9H5.6L17.7 20Z" />
+    </svg>
+  );
+}
+
+function WebsiteIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+      <path fillRule="evenodd" clipRule="evenodd" d="M10.27 14.1a6.5 6.5 0 0 0 3.67-3.45q-1.24.21-2.7.34-.31 1.83-.97 3.1M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.48-1.52a7 7 0 0 1-.96 0H7.5a4 4 0 0 1-.84-1.32q-.38-.89-.63-2.08a40 40 0 0 0 3.92 0q-.25 1.2-.63 2.08a4 4 0 0 1-.84 1.31zm2.94-4.76q1.66-.15 2.95-.43a7 7 0 0 0 0-2.58q-1.3-.27-2.95-.43a18 18 0 0 1 0 3.44m-1.27-3.54a17 17 0 0 1 0 3.64 39 39 0 0 1-4.3 0 17 17 0 0 1 0-3.64 39 39 0 0 1 4.3 0m1.1-1.17q1.45.13 2.69.34a6.5 6.5 0 0 0-3.67-3.44q.65 1.26.98 3.1M8.48 1.5l.01.02q.41.37.84 1.31.38.89.63 2.08a40 40 0 0 0-3.92 0q.25-1.2.63-2.08a4 4 0 0 1 .85-1.32 7 7 0 0 1 .96 0m-2.75.4a6.5 6.5 0 0 0-3.67 3.44 29 29 0 0 1 2.7-.34q.31-1.83.97-3.1M4.58 6.28q-1.66.16-2.95.43a7 7 0 0 0 0 2.58q1.3.27 2.95.43a18 18 0 0 1 0-3.44m.17 4.71q-1.45-.12-2.69-.34a6.5 6.5 0 0 0 3.67 3.44q-.65-1.27-.98-3.1"/>
+    </svg>
+  );
+}
+
+function DiscordIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+      <path d="M20.3 4.4A19.8 19.8 0 0 0 15.5 3l-.3.6a14.3 14.3 0 0 1 4 1.6 15.6 15.6 0 0 0-13.9 0 14 14 0 0 1 4-1.6L9 3a19.7 19.7 0 0 0-4.8 1.4C1.5 8.8.8 13 1.1 17.2a20 20 0 0 0 6 3l.8-1.3a13 13 0 0 1-2-1c.2-.1.3-.2.5-.3a14.3 14.3 0 0 0 12.1 0l.5.3a13 13 0 0 1-2 1l.8 1.3a19.9 19.9 0 0 0 6-3c.4-4.8-.8-9-3.5-12.8ZM8.7 14.7c-.9 0-1.7-.9-1.7-2s.7-2 1.7-2c1 0 1.8.9 1.7 2 0 1.1-.7 2-1.7 2Zm6.6 0c-.9 0-1.7-.9-1.7-2s.7-2 1.7-2c1 0 1.8.9 1.7 2 0 1.1-.7 2-1.7 2Z"/>
+    </svg>
+  );
+}
+
 function StatBox({ label, value, valueClass = 'text-slate-100' }: { label: string; value: string; valueClass?: string }) {
   return (
     <div className="bg-slate-950 rounded-md py-1 px-1 flex flex-col items-center justify-center gap-0">
@@ -31,6 +63,7 @@ function formatHolders(h: number | null | undefined) {
 export function TokenInfoPanel({
   info, ca, symbol, platform, holders, wallets,
 }: { info: FullPairInfo | null; ca: string; chainId: string; symbol: string; platform?: string | null; holders?: number | null; wallets?: string[] }) {
+
   const [copied, setCopied] = useState(false);
 
   const handleCopyCA = async () => {
@@ -59,7 +92,7 @@ export function TokenInfoPanel({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-sm font-bold text-slate-100 truncate">{info.symbol ?? symbol}</span>
-            {info.name && <span className="text-[11px] text-slate-500 truncate">{info.name}</span>}
+            {info.name && <span className="text-[12px] font-bold text-slate-500 truncate">{info.name}</span>}
             {platform && <PlatformBadge platform={platform} size="sm" />}
           </div>
         </div>
@@ -69,11 +102,28 @@ export function TokenInfoPanel({
       </div>
 
       {/* Links (only if present) */}
-      {(info.website || info.twitter || info.telegram) && (
-        <div className="flex items-center gap-2 text-[10px]">
-          {info.website && <a href={info.website} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Website</a>}
-          {info.twitter && <a href={info.twitter} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">X</a>}
-          {info.telegram && <a href={info.telegram} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Telegram</a>}
+      {(info.website || info.twitter || info.telegram || info.discord) && (
+        <div className="flex items-center gap-3 text-[11px]">
+          {info.website && (
+            <a href={info.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-400 hover:underline">
+              <WebsiteIcon /> Website
+            </a>
+          )}
+          {info.twitter && (
+            <a href={info.twitter} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-400 hover:underline">
+              <XIcon /> Twitter
+            </a>
+          )}
+          {info.telegram && (
+            <a href={info.telegram} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-400 hover:underline">
+              <TelegramIcon /> Telegram
+            </a>
+          )}
+          {info.discord && (
+            <a href={info.discord} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-400 hover:underline">
+              <DiscordIcon /> Discord
+            </a>
+          )}
         </div>
       )}
 
@@ -114,7 +164,7 @@ export function TokenInfoPanel({
       </div>
 
       {/* Buys/Sells, DEX, Pair Created */}
-      <div className="flex items-center justify-between text-[11px] text-slate-400 py-0.5 border-t border-slate-800/60">
+      <div className="flex items-center justify-between text-[12px] text-slate-400 py-0.5 border-t border-slate-800/60">
         <span className={info.txns.h24.buys >= info.txns.h24.sells ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
           {info.txns.h24.buys}/{info.txns.h24.sells} txns
         </span>
@@ -129,18 +179,18 @@ export function TokenInfoPanel({
         className="w-full flex items-center gap-1.5 group cursor-pointer text-left"
         title="Click để copy contract address"
       >
-        <span className="text-[10px] text-slate-500 shrink-0">CA:</span>
-        <span className="font-mono text-[10px] text-blue-400 break-all group-hover:text-blue-300 transition-colors">
+        <span className="text-[12px] text-slate-500 shrink-0">CA:</span>
+        <span className="font-mono text-[11px] text-blue-400 break-all group-hover:text-blue-300 transition-colors">
           {ca}
         </span>
-        <span className={`text-[9px] shrink-0 ml-auto transition-opacity ${copied ? 'text-green-400 opacity-100' : 'text-slate-500 opacity-0 group-hover:opacity-100'}`}>
+        <span className={`text-[11px] shrink-0 ml-auto transition-opacity ${copied ? 'text-green-400 opacity-100' : 'text-slate-500 opacity-0 group-hover:opacity-100'}`}>
           {copied ? '✓' : 'Copy'}
         </span>
       </button>
 
       {wallets && wallets.length > 0 && (
         <div className="pt-1 border-t border-slate-800/60">
-          <div className="flex flex-wrap items-center gap-1 text-[10px] font-mono">
+          <div className="flex flex-wrap items-center gap-1 text-[11px] font-mono">
             <span className="text-slate-500 shrink-0">Dev:</span>
             {wallets.map((w, i) => (
               <span key={w} className="flex items-center gap-1">

@@ -27,6 +27,7 @@ export interface FullPairInfo {
   name: string | null;
   twitter: string | null;
   telegram: string | null;
+  discord: string | null;   // 👈 thêm dòng này
   website: string | null;
   priceChange: { m5: number | null; h1: number | null; h6: number | null; h24: number | null };
   volume: { m5: number | null; h1: number | null; h6: number | null; h24: number | null };
@@ -289,6 +290,7 @@ export async function fetchFullTokenPairInfo(ca: string, chainId: string = 'base
     const socials = pair.info?.socials || [];
     const tw = socials.find((s: any) => s.type === 'twitter');
     const tg = socials.find((s: any) => s.type === 'telegram');
+    const dc = socials.find((s: any) => s.type === 'discord');
 
     const sumField = (getter: (p: any) => number | undefined) =>
       caPairs.length ? caPairs.reduce((s: number, p: any) => s + (Number(getter(p)) || 0), 0) : null;
@@ -308,6 +310,7 @@ export async function fetchFullTokenPairInfo(ca: string, chainId: string = 'base
       name: pair.baseToken?.name ?? null,
       twitter: tw?.url ?? null,
       telegram: tg?.url ?? null,
+      discord: dc?.url ?? null,
       website: pair.info?.websites?.[0]?.url ?? null,
       priceChange: {
         m5: pair.priceChange?.m5 ?? null,

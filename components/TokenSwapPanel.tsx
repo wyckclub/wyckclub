@@ -164,7 +164,7 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
   const [error, setError] = useState('');
   const [step, setStep] = useState<'idle' | 'approving' | 'swapping'>('idle');
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
-  const [slippagePreset, setSlippagePreset] = useState<SlippagePreset>('1');
+  const [slippagePreset, setSlippagePreset] = useState<SlippagePreset>('2');
   const [customSlippage, setCustomSlippage] = useState('');
   const [gasPriceWei, setGasPriceWei] = useState<bigint | null>(null);
 
@@ -224,6 +224,17 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
   function formatUsd(v: number | null) {
     if (v == null || isNaN(v)) return null;
     return v < 0.01 ? `~$${v.toFixed(6)}` : `~$${v.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  }
+
+  function SlippageIcon() {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 shrink-0">
+        <path d="M7 16V4M7 4L4 7M7 4L10 7" />
+        <path d="M17 8V20M17 20L14 17M17 20L20 17" />
+        <path d="M3 20H11" />
+        <path d="M13 4H21" />
+      </svg>
+    );
   }
 
   const buildParams = (taker: string) => {
@@ -410,7 +421,7 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
 
         {/* PAY */}
         <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
-          <div className="flex items-center justify-between text-xs text-slate-500">
+          <div className="flex items-center justify-between text-s text-slate-500">
             <span>You pay</span>
             <span>Balance: {payBalance.data ? Number(payBalance.data.formatted).toLocaleString(undefined, { maximumFractionDigits: 6 }) : '0'}</span>
           </div>
@@ -453,7 +464,7 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
 
         {/* RECEIVE */}
         <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
-          <div className="flex items-center justify-between text-xs text-slate-500">
+          <div className="flex items-center justify-between text-s text-slate-500">
             <span>You receive</span>
             <span>Balance: {receiveBalance.data ? Number(receiveBalance.data.formatted).toLocaleString(undefined, { maximumFractionDigits: 6 }) : '0'}</span>
           </div>
@@ -472,7 +483,7 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
 
         {/* SLIPPAGE */}
         <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
-          <span>Max Slippage</span>
+          <span className="flex items-center gap-1"><SlippageIcon /> Max Slippage</span>
           <div className="flex items-center gap-1.5">
             {(['1', '2', '5'] as const).map((p) => (
               <button
@@ -525,7 +536,10 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
               </div>
             )}
             {tradeFeeDisplay && (
-              <div className="flex justify-between"><span>Trade fees</span><span className="text-slate-200">{tradeFeeDisplay}</span></div>
+              <div className="flex justify-between">
+                <span className="flex items-center gap-1"><GasIcon /> Trade fees</span>
+                <span className="text-slate-200">{tradeFeeDisplay}</span>
+              </div>
             )}
             {networkFeeEth && (
               <div className="flex justify-between"><span>Network fees (est.)</span><span className="text-slate-200">{Number(networkFeeEth).toFixed(6)} ETH</span></div>
@@ -559,5 +573,15 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
         )}
       </div>
     </div>
+  );
+}
+
+function GasIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 shrink-0">
+      <path d="M4 20V5C4 3.9 4.9 3 6 3H13C14.1 3 15 3.9 15 5V20M3 20H16" />
+      <rect x="7" y="6" width="5" height="4" rx="1" fill="currentColor" stroke="none" />
+      <path d="M15 9H17C18.1 9 19 9.9 19 11V14.5C19 15.3 19.7 16 20.5 16C21.3 16 22 15.3 22 14.5V11L20 8" />
+    </svg>
   );
 }
