@@ -58,8 +58,7 @@ export default async function Home() {
         WYCKSCORE
       </h1>
         <p className="text-slate-400 max-w-2xl mx-auto text-lg">
-          🐋 Smart Money Tracking tool 🐋
-          Scanning tokens across the Base and Robinhood networks.
+          🐋 Smart Money Tracking tool 🐋 on Base and Robinhood networks.
         </p>
 
         <div className="flex flex-wrap justify-center gap-4 pt-4">

@@ -9,8 +9,8 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Wyck.Pro - Base Ecosystem Token Tracker",
-  description: "Track tokens controlled by strong Wyckoff-style players on Base network.",
+  title: "Wyck.Pro - Base & Robinhood Tracker",
+  description: "Smart Money Tracking tool on Base and Robinhood networks.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

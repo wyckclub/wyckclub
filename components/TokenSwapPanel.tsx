@@ -403,7 +403,7 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 border-b border-slate-800">
-        <span className="flex items-center gap-1.5 text-sm font-bold text-blue-400">
+        <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
           <img src="/0x.svg" alt="0x" className="w-4 h-4" />
           SWAP
         </span>
@@ -450,17 +450,19 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
         </div>
 
         {/* FLIP */}
-        <div className="flex justify-center -my-1 relative z-10">
-          <button
-            onClick={flip}
-            className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 hover:bg-slate-700 flex items-center justify-center"
-            aria-label="Flip"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
-              <path d="M17 3v18M17 3l-4 4M17 3l4 4M7 21V3M7 21l-4-4M7 21l4-4" />
-            </svg>
-          </button>
-        </div>
+<div className="flex justify-center -my-1 relative z-10">
+  <button
+    onClick={flip}
+    className="w-[39px] h-[39px] hover:opacity-80 transition-opacity flex items-center justify-center"
+    aria-label="Flip"
+  >
+    <svg width="39" height="39" viewBox="0 0 39 39" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="39" height="39" rx="11" fill="#3c4569" />
+      <path d="M12.19 16.46C12.19 13.76 14.38 11.58 17.07 11.58H26.19M26.19 11.58L22.53 7.92M26.19 11.58L22.53 15.23" stroke="#FFFFFF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M26.81 22.53C26.81 25.23 24.62 27.42 21.93 27.42H12.81M12.81 27.42L16.47 23.77M12.81 27.42L16.47 31.08" stroke="#FFFFFF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  </button>
+</div>
 
         {/* RECEIVE */}
         <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">

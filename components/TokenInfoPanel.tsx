@@ -43,7 +43,7 @@ function DiscordIcon() {
 
 function StatBox({ label, value, valueClass = 'text-slate-100' }: { label: string; value: string; valueClass?: string }) {
   return (
-    <div className="bg-slate-950 rounded-md py-1 px-1 flex flex-col items-center justify-center gap-0">
+    <div className="bg-[oklch(0.24_0.05_272.36)] rounded-md py-1 px-1 flex flex-col items-center justify-center gap-0">
       <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wide">{label}</span>
       <span className={`text-[11px] font-bold truncate ${valueClass}`}>{value}</span>
     </div>
@@ -91,7 +91,7 @@ export function TokenInfoPanel({
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-sm font-bold text-slate-100 truncate">{info.symbol ?? symbol}</span>
+            <span className="text-m font-bold text-slate-200 truncate">{info.symbol ?? symbol}</span>
             {info.name && <span className="text-[12px] font-bold text-slate-500 truncate">{info.name}</span>}
             {platform && <PlatformBadge platform={platform} size="sm" />}
           </div>
@@ -103,24 +103,24 @@ export function TokenInfoPanel({
 
       {/* Links (only if present) */}
       {(info.website || info.twitter || info.telegram || info.discord) && (
-        <div className="flex items-center gap-3 text-[11px]">
+        <div className="flex items-center gap-4 text-[12px]">
           {info.website && (
-            <a href={info.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-400 hover:underline">
+            <a href={info.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-slate-500 font-bold hover:underline">
               <WebsiteIcon /> Website
             </a>
           )}
           {info.twitter && (
-            <a href={info.twitter} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-400 hover:underline">
+            <a href={info.twitter} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-slate-500 font-bold hover:underline">
               <XIcon /> Twitter
             </a>
           )}
           {info.telegram && (
-            <a href={info.telegram} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-400 hover:underline">
+            <a href={info.telegram} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-slate-500 font-bold hover:underline">
               <TelegramIcon /> Telegram
             </a>
           )}
           {info.discord && (
-            <a href={info.discord} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-400 hover:underline">
+            <a href={info.discord} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-slate-500 font-bold hover:underline">
               <DiscordIcon /> Discord
             </a>
           )}
@@ -129,20 +129,20 @@ export function TokenInfoPanel({
 
       {/* Price + Holders */}
       <div className="grid grid-cols-2 gap-1">
-        <div className="bg-slate-950 rounded-md py-1 px-2 flex flex-col justify-center">
+        <div className="bg-[oklch(0.18_0.05_268.11)] rounded-md py-1 px-2 flex flex-col justify-center">
           <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wide">Price</span>
-          <span className="text-sm font-extrabold text-slate-100 font-mono truncate">{formatPriceShort(info.priceUsd)}</span>
+          <span className="text-sm font-extrabold text-slate-300 font-mono truncate">{formatPriceShort(info.priceUsd)}</span>
         </div>
-        <div className="bg-slate-950 rounded-md py-1 px-2 flex flex-col justify-center">
+        <div className="bg-[oklch(0.18_0.05_268.11)] rounded-md py-1 px-2 flex flex-col justify-center">
           <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wide">Holders</span>
-          <span className="text-sm font-extrabold text-slate-100 font-mono truncate">{formatHolders(holders)}</span>
+          <span className="text-sm font-extrabold text-slate-300 font-mono truncate">{formatHolders(holders)}</span>
         </div>
       </div>
 
       {/* m5 / h1 / h6 / h24 - all 4 in ONE row */}
       <div className="grid grid-cols-4 gap-1 text-center">
         {(['m5', 'h1', 'h6', 'h24'] as const).map((k) => (
-          <div key={k} className="bg-slate-950 rounded-md py-1">
+          <div key={k} className="bg-[oklch(0.18_0.05_268.11)] rounded-md py-1">
             <div className="text-[9px] font-bold text-slate-500 uppercase">{k}</div>
             <div className={`text-[11px] font-bold ${pctClass(info.priceChange[k])}`}>{pctText(info.priceChange[k])}</div>
           </div>
@@ -164,9 +164,9 @@ export function TokenInfoPanel({
       </div>
 
       {/* Buys/Sells, DEX, Pair Created */}
-      <div className="flex items-center justify-between text-[12px] text-slate-400 py-0.5 border-t border-slate-800/60">
+      <div className="flex items-center justify-between text-[14px] text-slate-400 py-0.5 border-t border-slate-800/60">
         <span className={info.txns.h24.buys >= info.txns.h24.sells ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
-          {info.txns.h24.buys}/{info.txns.h24.sells} txns
+          {info.txns.h24.buys} / {info.txns.h24.sells} txns
         </span>
         <span>{info.dexId ?? 'N/A'}</span>
         {info.pairCreatedAt && <span>{formatAge(info.pairCreatedAt)} old</span>}
@@ -190,7 +190,7 @@ export function TokenInfoPanel({
 
       {wallets && wallets.length > 0 && (
         <div className="pt-1 border-t border-slate-800/60">
-          <div className="flex flex-wrap items-center gap-1 text-[11px] font-mono">
+          <div className="flex flex-wrap items-center gap-1 text-[12px] font-mono">
             <span className="text-slate-500 shrink-0">Dev:</span>
             {wallets.map((w, i) => (
               <span key={w} className="flex items-center gap-1">
