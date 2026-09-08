@@ -42,6 +42,7 @@ interface QuoteResp {
 }
 
 type Side = 'pay' | 'receive';
+type SlippagePreset = '0.5' | '1' | '5' | 'custom';
 
 function AssetIcon({ asset, size = 20 }: { asset: Asset; size?: number }) {
   const [failed, setFailed] = useState(false);
@@ -106,10 +107,22 @@ function AssetSelect({
   );
 }
 
-export function TokenSwapPanel({ chainId, ca }: { chainId: string; ca: string }) {
+function WarningTriangleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width={16} height={16} className="shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2 23 21H1L12 2Z" fill="#FACC15" />
+      <path d="M12 9v5" stroke="#1a1a1a" strokeWidth={2.5} strokeLinecap="round" />
+      <circle cx="12" cy="17.5" r="1.2" fill="#1a1a1a" />
+    </svg>
+  );
+}
+
+export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca: string; platform?: string | null }) {
   const numericChainId = CHAIN_IDS[chainId] ?? 8453;
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient({ chainId: numericChainId });
+
+  const isUnverified = !!platform && platform.endsWith('_unverified');
 
   const [tokenSymbol, setTokenSymbol] = useState<string>('TOKEN');
   const [tokenDecimals, setTokenDecimals] = useState<number | null>(null);
@@ -151,9 +164,11 @@ export function TokenSwapPanel({ chainId, ca }: { chainId: string; ca: string })
   const [error, setError] = useState('');
   const [step, setStep] = useState<'idle' | 'approving' | 'swapping'>('idle');
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
-  const [slippageMode, setSlippageMode] = useState<'auto' | 'custom'>('auto');
-  const [slippagePct, setSlippagePct] = useState('5');
+  const [slippagePreset, setSlippagePreset] = useState<SlippagePreset>('1');
+  const [customSlippage, setCustomSlippage] = useState('');
   const [gasPriceWei, setGasPriceWei] = useState<bigint | null>(null);
+
+  const effectiveSlippagePct = slippagePreset === 'custom' ? customSlippage : slippagePreset;
 
   const { data: receipt } = useWaitForTransactionReceipt({ hash: txHash, chainId: numericChainId });
   const { sendTransactionAsync } = useSendTransaction();
@@ -227,10 +242,8 @@ export function TokenSwapPanel({ chainId, ca }: { chainId: string; ca: string })
       if (buyAmount <= BigInt(0)) throw new Error('Amount too small for this token');
       params.set('buyAmount', buyAmount.toString());
     }
-    if (slippageMode === 'custom') {
-      const bps = Math.round(Number(slippagePct) * 100);
-      if (bps > 0 && bps <= 1000) params.set('slippageBps', String(bps));
-    }
+    const bps = Math.round(Number(effectiveSlippagePct) * 100);
+    if (bps > 0 && bps <= 1000) params.set('slippageBps', String(bps));
     return params;
   };
 
@@ -259,7 +272,7 @@ export function TokenSwapPanel({ chainId, ca }: { chainId: string; ca: string })
     }, 500);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [amount, activeSide, payKey, receiveKey, address, numericChainId, tokenDecimals, slippageMode, slippagePct]);
+  }, [amount, activeSide, payKey, receiveKey, address, numericChainId, tokenDecimals, effectiveSlippagePct]);
 
   useEffect(() => {
     if (!quote?.transaction?.gas || !publicClient) return;
@@ -310,12 +323,13 @@ export function TokenSwapPanel({ chainId, ca }: { chainId: string; ca: string })
     : (quote?.buyAmount ? formatUnits(BigInt(quote.buyAmount), receiveAsset.decimals) : '');
 
   const minReceived = useMemo(() => {
-    if (!quote || slippageMode !== 'custom' || activeSide !== 'pay') return null;
-    const bps = Math.round(Number(slippagePct) * 100);
+    if (!quote || activeSide !== 'pay' || !effectiveSlippagePct) return null;
+    const bps = Math.round(Number(effectiveSlippagePct) * 100);
+    if (!(bps > 0)) return null;
     const buy = BigInt(quote.buyAmount);
     const min = buy - (buy * BigInt(bps)) / BigInt(10000);
     return formatUnits(min, receiveAsset.decimals);
-  }, [quote, slippageMode, slippagePct, receiveAsset.decimals, activeSide]);
+  }, [quote, effectiveSlippagePct, receiveAsset.decimals, activeSide]);
 
   const maxYouPay = useMemo(() => {
     if (activeSide !== 'receive' || !quote?.maxSellAmount) return null;
@@ -378,10 +392,22 @@ export function TokenSwapPanel({ chainId, ca }: { chainId: string; ca: string })
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 border-b border-slate-800">
-        <span className="text-sm font-bold text-blue-400">Exchange</span>
+        <span className="flex items-center gap-1.5 text-sm font-bold text-blue-400">
+          <img src="/0x.svg" alt="0x" className="w-4 h-4" />
+          Exchange
+        </span>
       </div>
 
       <div className="p-3 space-y-2">
+        {isUnverified && (
+          <div className="flex items-start gap-2 bg-yellow-500/10 border border-yellow-400/30 rounded-lg px-3 py-2">
+            <WarningTriangleIcon />
+            <span className="text-yellow-400 font-bold text-xs leading-snug">
+              Warning: This token has not been verified, please trade with caution.
+            </span>
+          </div>
+        )}
+
         {/* PAY */}
         <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
           <div className="flex items-center justify-between text-xs text-slate-500">
@@ -448,20 +474,28 @@ export function TokenSwapPanel({ chainId, ca }: { chainId: string; ca: string })
         <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
           <span>Max Slippage</span>
           <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setSlippageMode('auto')}
-              className={`px-2 py-1 rounded font-bold ${slippageMode === 'auto' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}
-            >
-              Auto
-            </button>
+            {(['0.5', '1', '5'] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setSlippagePreset(p)}
+                className={`px-2 py-1 rounded font-bold ${
+                  slippagePreset === p ? 'bg-[#ccff00] text-[#211d19]' : 'bg-slate-800 text-slate-400'
+                }`}
+              >
+                {p}%
+              </button>
+            ))}
             <input
-              type="number"
-              value={slippagePct}
-              onFocus={() => setSlippageMode('custom')}
-              onChange={(e) => { setSlippageMode('custom'); setSlippagePct(e.target.value); }}
-              className={`w-14 text-right bg-slate-800 rounded px-1.5 py-1 outline-none ${slippageMode === 'custom' ? 'text-white' : 'text-slate-500'}`}
+              type="text"
+              inputMode="decimal"
+              value={slippagePreset === 'custom' ? customSlippage : ''}
+              onFocus={() => setSlippagePreset('custom')}
+              onChange={(e) => { setSlippagePreset('custom'); setCustomSlippage(e.target.value); }}
+              placeholder="Custom"
+              className={`w-16 text-right bg-slate-800 rounded px-1.5 py-1 outline-none placeholder:text-slate-500 ${
+                slippagePreset === 'custom' ? 'text-white' : 'text-slate-500'
+              }`}
             />
-            <span>%</span>
           </div>
         </div>
 
