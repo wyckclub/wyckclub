@@ -404,6 +404,11 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
     <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 border-b border-slate-800">
         <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
+          <img
+            src={chainId === 'robinhood' ? '/robinhood.svg' : '/base.svg'}
+            alt={chainId}
+            className="w-4 h-4 rounded-[3px]"
+          />
           <img src="/0x.svg" alt="0x" className="w-4 h-4" />
           SWAP
         </span>
