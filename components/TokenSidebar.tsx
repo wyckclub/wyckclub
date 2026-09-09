@@ -164,7 +164,7 @@ export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () 
         <select
           value={platformFilter}
           onChange={(e) => setPlatformFilter(e.target.value)}
-          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-300 focus:outline-none focus:border-blue-500"
+          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-2.5 text-[14px] font-semibold text-slate-300 focus:outline-none focus:border-blue-500"
         >
           <option value="all">All platforms</option>
           {platforms.map((p) => (
