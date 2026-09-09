@@ -150,6 +150,7 @@ async function runForChain(chain: 'base' | 'robinhood', origin: string) {
   const headline = buildHeadline(displayName, pctRounded, chain);
 
   let text = `${headline}
+  ${picked.ca}
 
 MarketCap: ${formatCap(oldMarketCap)} → ${formatCap(picked.dex.marketCap)} | Price: ${formatPriceShort(picked.dex.priceUsd)}`;
   for (const line of shareLines) text += `\n${line}`;
