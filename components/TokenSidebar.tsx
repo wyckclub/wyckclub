@@ -173,7 +173,7 @@ export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () 
         </select>
       </div>
 
-        <div className="flex items-center px-2.5 py-1.5 border-b border-slate-800 text-[11px] font-bold text-slate-500 tracking-wide shrink-0 relative">
+        <div className="flex items-center px-2.5 py-1.5 border-b border-slate-800 text-[12px] font-bold text-slate-500 tracking-wide shrink-0 relative">
             <div className="flex-1 pl-9 relative">
                 <button
                 onClick={() => setSortMenuOpen((v) => !v)}
