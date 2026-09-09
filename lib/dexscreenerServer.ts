@@ -93,7 +93,9 @@ export async function fetchDexscreenerBatchMap(
       const caPairs = pairs.filter(
         (p: any) => p.baseToken?.address?.toLowerCase() === caLower && p.chainId === chainId
       );
-      const pair = caPairs[0] || pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === caLower);
+      const pair =
+        [...caPairs].sort((a: any, b: any) => (Number(b.liquidity?.usd) || 0) - (Number(a.liquidity?.usd) || 0))[0] ||
+      pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === caLower);
       if (!pair) return;
 
       out[ca] = {

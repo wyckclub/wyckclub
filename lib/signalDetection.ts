@@ -4,7 +4,7 @@ import { fetchDexscreenerSingle } from '@/lib/dexscreenerServer';
 export const ROBINHOOD_CATEGORY = 5;
 export const MIN_LIQ = 20000;
 export const MIN_MARKETCAP = 80000;
-export const MIN_PCT = 50;
+export const MIN_PCT = 100;
 export const HISTORY_DEPTH = 30;
 const SIGNAL_SEARCH_DEPTH = 10;
 
