@@ -102,7 +102,7 @@ export async function GET(req: NextRequest) {
     platform: string | null;
   };
   const candidates: Candidate[] = [];
-  const MIN_LIQ = 20000;
+  const MIN_LIQ = 50000;
   const MIN_SCORE = 3;
 
   for (const { cat, data } of categories) {
