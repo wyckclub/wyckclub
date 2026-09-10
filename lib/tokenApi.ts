@@ -29,6 +29,8 @@ interface RawEntry {
   top10?: number;
   timestamp?: string;
   verified?: boolean;
+  incBull?: number;
+  decBear?: number;
 }
 
 interface RawToken {
@@ -107,6 +109,8 @@ export interface PriceHistoryEntry {
   topwhale?: string;
   top10?: number;
   timestamp?: string;
+  incBull?: number | null;
+  decBear?: number | null;
 }
 
 export async function fetchTokenHistory(category: number, ca: string): Promise<PriceHistoryEntry[]> {
@@ -127,6 +131,8 @@ export async function fetchTokenHistory(category: number, ca: string): Promise<P
     topwhale: e.topwhale,
     top10: e.top10,
     timestamp: e.timestamp,
+    incBull: e.incBull ?? null,
+    decBear: e.decBear ?? null,
   }));
 }
 

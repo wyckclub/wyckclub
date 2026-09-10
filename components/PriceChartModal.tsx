@@ -6,6 +6,8 @@ import { fetchLivePrice, getCachedDexData } from '@/lib/dexData';
 import { formatPriceShort, formatDateShort, formatCap } from '@/lib/format';
 import { PlatformBadge } from '@/components/PlatformBadge';
 
+export type OverlayMode = 'top10' | 'bullbear' | 'netbull' | 'none';
+
 interface Props {
   category: number;
   ca: string;
@@ -21,7 +23,7 @@ export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [livePrice, setLivePrice] = useState<number | null>(null);
-  const [showTop10, setShowTop10] = useState(true);
+  const [overlay, setOverlay] = useState<OverlayMode>('top10');
 
   useEffect(() => {
     fetch('/api/stats/track', {
@@ -35,7 +37,7 @@ export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base
     setLoading(true);
     fetchTokenHistory(category, ca)
       .then((history) => {
-        setEntries(history.filter((h) => h.price != null && !isNaN(h.price) && h.price > 0).slice(-35));
+        setEntries(history.filter((h) => h.price != null && !isNaN(h.price) && h.price > 0).slice(-30));
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -118,14 +120,30 @@ export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base
                   )}
                 </span>
               )}
-              <button
-                onClick={() => setShowTop10((v) => !v)}
-                className={`text-xs px-2 py-1 rounded border ${
-                  showTop10 ? 'border-purple-400 text-purple-300 bg-purple-500/10' : 'border-slate-700 text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                {showTop10 ? 'Hide' : 'Show'} Whale Accumulation Index
-              </button>
+                <button
+                  onClick={() => setOverlay((v) => (v === 'top10' ? 'none' : 'top10'))}
+                  className={`text-xs px-2 py-1 rounded border ${
+                    overlay === 'top10' ? 'border-purple-400 text-purple-300 bg-purple-500/10' : 'border-slate-700 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Whale Accumulation Index
+                </button>
+                <button
+                  onClick={() => setOverlay((v) => (v === 'bullbear' ? 'none' : 'bullbear'))}
+                  className={`text-xs px-2 py-1 rounded border ${
+                    overlay === 'bullbear' ? 'border-purple-400 text-purple-300 bg-purple-500/10' : 'border-slate-700 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Bull vs Bear
+                </button>
+                <button
+                  onClick={() => setOverlay((v) => (v === 'netbull' ? 'none' : 'netbull'))}
+                  className={`text-xs px-2 py-1 rounded border ${
+                    overlay === 'netbull' ? 'border-purple-400 text-purple-300 bg-purple-500/10' : 'border-slate-700 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Net Bull
+                </button>
             </div>
           </div>
         </div>
@@ -134,7 +152,7 @@ export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base
         {!loading && !error && (
           entries.length < 2
             ? <div className="text-center py-10 opacity-60">Not enough price data to draw a chart</div>
-            : <ChartSVG entries={entries} livePrice={livePrice} showTop10={showTop10} />
+            : <ChartSVG entries={entries} livePrice={livePrice} overlay={overlay} />
         )}
       </div>
     </div>
@@ -142,8 +160,8 @@ export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base
 }
 
 export function ChartSVG({
-  entries, livePrice, showTop10, fit = false,
-}: { entries: PriceHistoryEntry[]; livePrice: number | null; showTop10: boolean; fit?: boolean }) {
+  entries, livePrice, overlay, fit = false,
+}: { entries: PriceHistoryEntry[]; livePrice: number | null; overlay: OverlayMode; fit?: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const s = fit ? 1.3 : 1.3;
 
@@ -255,6 +273,45 @@ export function ChartSVG({
     return true;
   }
 
+  function bullBearColor(idx: number): string {
+    const p = points[idx];
+    const prev = points[idx - 1];
+    const bull = p?.incBull ?? null;
+    const bear = p?.decBear ?? null;
+    if (bull == null || bear == null) return 'fill-slate-300';
+
+    const prevBull = prev?.incBull ?? null;
+    const prevBear = prev?.decBear ?? null;
+
+    // Điều kiện 1: incBull > decBear ở entry hiện tại
+    const cond1 = bull > bear;
+
+    // Điều kiện 2: incBull tăng so với entry trước, HOẶC decBear giảm so với entry trước
+    const cond2 =
+      prevBull != null && prevBear != null && (bull > prevBull || bear < prevBear);
+
+    // Điều kiện 3: tỉ lệ incBull/decBear ở entry hiện tại > entry trước.
+    // Nếu decBear(E) = 0 hoặc decBear(E-1) = 0 thì đổi sang so sánh hiệu số
+    // (incBull - decBear) thay vì tỉ lệ, vì tỉ lệ sẽ không xác định/vô cực.
+    let cond3: boolean;
+    if (prevBull == null || prevBear == null) {
+      cond3 = false;
+    } else if (bear === 0 || prevBear === 0) {
+      cond3 = bull - bear > prevBull - prevBear;
+    } else {
+      cond3 = bull / bear > prevBull / prevBear;
+    }
+
+    if (cond1 && cond2 && cond3) return 'fill-green-400';
+
+    const condRed1 = bear > bull;
+    const condRed2 =
+      prevBull != null && prevBear != null && bear > prevBear && bull < prevBull;
+    if ((condRed1 || condRed2) && bear > 1) return 'fill-red-400';
+
+    return 'fill-slate-300';
+  }
+
   const tickCount = 4;
   const yTicks = Array.from({ length: tickCount + 1 }, (_, i) => {
     const logVal = minLog + (maxLog - minLog) * (i / tickCount);
@@ -347,6 +404,13 @@ return (
           const boxW = charWidth + 8 * s;
           const boxH = 18 * s;
 
+          const bull = p.incBull ?? null;
+          const bear = p.decBear ?? null;
+          const bullBearColorClass = bullBearColor(i);
+          const bullText = formatBullBear(bull);
+          const bearText = formatBullBear(bear);
+          const bullBearW = Math.max(bullText.length, bearText.length) * 6.5 * s + 8 * s;
+
           return (
             <g key={i}>
               {spring && (
@@ -367,7 +431,7 @@ return (
                 <tspan className={scoreColorClass}>{scoreText}</tspan>
                 {hasPlus && <tspan className="fill-green-500" dx={2}>▲</tspan>}
               </text>
-              {showTop10 && p.top10 != null && (
+              {overlay === 'top10' && p.top10 != null && (
                 <>
                   <rect
                     x={p.x - (String(p.top10).length * 7 * s + 10 * s) / 2}
@@ -396,6 +460,48 @@ return (
                   )}
                 </>
               )}
+              {overlay === 'bullbear' && (bull != null || bear != null) && (
+                <>
+                  <rect
+                    x={p.x - bullBearW / 2}
+                    y={p.y + 4 * s}
+                    width={bullBearW}
+                    height={28 * s}
+                    rx={4}
+                    fill="#05253b"
+                    fillOpacity={1}
+                  />
+                  <text x={p.x} y={p.y + 14 * s} textAnchor="middle" className={`${bullBearColorClass} font-semibold`} style={{ fontSize: 10 * s }}>
+                    {bullText}
+                  </text>
+                  <text x={p.x} y={p.y + 27 * s} textAnchor="middle" className={`${bullBearColorClass} font-semibold`} style={{ fontSize: 10 * s }}>
+                    {bearText}
+                  </text>
+                </>
+              )}
+
+              {overlay === 'netbull' && (bull != null || bear != null) && (() => {
+                const netVal = bull != null && bear != null ? bull - bear : null;
+                const netText = formatBullBear(netVal);
+                const netW = netText.length * 7 * s + 10 * s;
+                return (
+                  <>
+                    <rect
+                      x={p.x - netW / 2}
+                      y={p.y + 6 * s}
+                      width={netW}
+                      height={16 * s}
+                      rx={4}
+                      fill="#05253b"
+                      fillOpacity={1}
+                    />
+                    <text x={p.x} y={p.y + 17 * s} textAnchor="middle" className={`${bullBearColorClass} font-semibold`} style={{ fontSize: 11 * s }}>
+                      {netText}
+                    </text>
+                  </>
+                );
+              })()}
+
             </g>
           );
         })}
@@ -458,4 +564,13 @@ function WebsiteIcon() {
       <path fillRule="evenodd" clipRule="evenodd" d="M10.27 14.1a6.5 6.5 0 0 0 3.67-3.45q-1.24.21-2.7.34-.31 1.83-.97 3.1M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.48-1.52a7 7 0 0 1-.96 0H7.5a4 4 0 0 1-.84-1.32q-.38-.89-.63-2.08a40 40 0 0 0 3.92 0q-.25 1.2-.63 2.08a4 4 0 0 1-.84 1.31zm2.94-4.76q1.66-.15 2.95-.43a7 7 0 0 0 0-2.58q-1.3-.27-2.95-.43a18 18 0 0 1 0 3.44m-1.27-3.54a17 17 0 0 1 0 3.64 39 39 0 0 1-4.3 0 17 17 0 0 1 0-3.64 39 39 0 0 1 4.3 0m1.1-1.17q1.45.13 2.69.34a6.5 6.5 0 0 0-3.67-3.44q.65 1.26.98 3.1M8.48 1.5l.01.02q.41.37.84 1.31.38.89.63 2.08a40 40 0 0 0-3.92 0q.25-1.2.63-2.08a4 4 0 0 1 .85-1.32 7 7 0 0 1 .96 0m-2.75.4a6.5 6.5 0 0 0-3.67 3.44 29 29 0 0 1 2.7-.34q.31-1.83.97-3.1M4.58 6.28q-1.66.16-2.95.43a7 7 0 0 0 0 2.58q1.3.27 2.95.43a18 18 0 0 1 0-3.44m.17 4.71q-1.45-.12-2.69-.34a6.5 6.5 0 0 0 3.67 3.44q-.65-1.27-.98-3.1"/>
     </svg>
   );
+}
+
+function formatBullBear(n: number | null): string {
+  if (n == null) return '-';
+  if (Math.abs(n) >= 10) {
+    return Math.round(n).toString();
+  }
+  const rounded = Math.round(n * 10) / 10;
+  return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(1);
 }

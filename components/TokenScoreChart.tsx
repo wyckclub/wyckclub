@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { fetchTokenHistory, PriceHistoryEntry } from '@/lib/tokenApi';
 import { fetchLivePrice } from '@/lib/dexData';
-import { ChartSVG } from '@/components/PriceChartModal';
+import { ChartSVG, OverlayMode } from '@/components/PriceChartModal';
 
 function ShareIcon() {
   return (
@@ -24,7 +24,7 @@ export function TokenScoreChart({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [livePrice, setLivePrice] = useState<number | null>(null);
-  const [showTop10, setShowTop10] = useState(true);
+  const [overlay, setOverlay] = useState<OverlayMode>('top10');
   const [sharing, setSharing] = useState(false);
   const [shareMsg, setShareMsg] = useState('');
 
@@ -32,7 +32,7 @@ export function TokenScoreChart({
     if (category == null) { setLoading(false); return; }
     setLoading(true);
     fetchTokenHistory(category, ca)
-      .then((h) => setEntries(h.filter((e) => e.price != null && !isNaN(e.price) && e.price > 0).slice(-40)))
+      .then((h) => setEntries(h.filter((e) => e.price != null && !isNaN(e.price) && e.price > 0).slice(-30)))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [category, ca]);
@@ -85,14 +85,32 @@ export function TokenScoreChart({
             <ShareIcon />
           </button>
         </div>
-        <button
-          onClick={() => setShowTop10((v) => !v)}
-          className={`text-xs px-2 py-1 rounded border ${
-            showTop10 ? 'border-purple-400 text-purple-300 bg-purple-500/10' : 'border-slate-700 text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          {showTop10 ? 'Hide' : 'Show'} Whale Accumulation Index
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setOverlay((v) => (v === 'top10' ? 'none' : 'top10'))}
+            className={`text-xs px-2 py-1 rounded border ${
+              overlay === 'top10' ? 'border-purple-400 text-purple-300 bg-purple-500/10' : 'border-slate-700 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            Whale Accumulation Index
+          </button>
+          <button
+            onClick={() => setOverlay((v) => (v === 'bullbear' ? 'none' : 'bullbear'))}
+            className={`text-xs px-2 py-1 rounded border ${
+              overlay === 'bullbear' ? 'border-purple-400 text-purple-300 bg-purple-500/10' : 'border-slate-700 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            Bull vs Bear
+          </button>
+          <button
+            onClick={() => setOverlay((v) => (v === 'netbull' ? 'none' : 'netbull'))}
+            className={`text-xs px-2 py-1 rounded border ${
+              overlay === 'netbull' ? 'border-purple-400 text-purple-300 bg-purple-500/10' : 'border-slate-700 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            Net Bull
+          </button>
+        </div>
       </div>
       {shareMsg && <p className="text-[11px] text-yellow-400 mb-2">{shareMsg}</p>}
       <div className="flex-1 min-h-0 overflow-auto">
@@ -102,7 +120,7 @@ export function TokenScoreChart({
         {category != null && !loading && !error && (
           entries.length < 2
             ? <div className="text-center py-10 opacity-60 text-sm">Insufficient data to create a chart.</div>
-            : <ChartSVG entries={entries} livePrice={livePrice} showTop10={showTop10} fit />
+            : <ChartSVG entries={entries} livePrice={livePrice} overlay={overlay} fit />
         )}
       </div>
     </div>
