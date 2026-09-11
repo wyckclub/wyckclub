@@ -14,6 +14,7 @@ const NATIVE_GAS_BUFFER = parseUnits('0.0005', 18);
 const ETH_LOGO = '/eth.svg';
 const USDC_LOGO = '/usdc.svg';
 const USDG_LOGO = '/usdg.svg';
+const FEE_RATE = 0.0025;
 
 const erc20Abi = [
   { name: 'decimals', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint8' }] },
@@ -121,12 +122,11 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
   const numericChainId = CHAIN_IDS[chainId] ?? 8453;
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient({ chainId: numericChainId });
-
   const isUnverified = !!platform && platform.endsWith('_unverified');
-
   const [tokenSymbol, setTokenSymbol] = useState<string>('TOKEN');
   const [tokenDecimals, setTokenDecimals] = useState<number | null>(null);
   const [tokenLogo, setTokenLogo] = useState<string | null>(null);
+  const [ethUsdPrice, setEthUsdPrice] = useState<number | null>(null);
 
   useEffect(() => {
     const dex = getCachedDexData(ca);
@@ -140,6 +140,29 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
         .then((s) => setTokenSymbol(String(s))).catch(() => {});
     }
   }, [ca, publicClient]);
+
+  useEffect(() => {
+    let active = true;
+    function loadEthPrice() {
+      const params = new URLSearchParams({
+        chainId: '8453', // Base — luôn dùng Base để lấy giá ETH tham chiếu, thanh khoản USDC/ETH ở đây rất sâu
+        sellToken: NATIVE,
+        buyToken: USDC_BASE,
+        sellAmount: parseUnits('1', 18).toString(), // 1 ETH
+      });
+      fetch(`/api/zeroex/price?${params}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (active && d?.buyAmount) {
+            setEthUsdPrice(Number(formatUnits(BigInt(d.buyAmount), 6))); // USDC decimals = 6
+          }
+        })
+        .catch(() => {});
+    }
+    loadEthPrice();
+    const id = setInterval(loadEthPrice, 60000);
+    return () => { active = false; clearInterval(id); };
+  }, []);
 
   const assets: Asset[] = useMemo(() => {
     const list: Asset[] = [{ key: 'ETH', address: NATIVE, symbol: 'ETH', decimals: 18, logoUrl: ETH_LOGO }];
@@ -164,9 +187,15 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
   const [error, setError] = useState('');
   const [step, setStep] = useState<'idle' | 'approving' | 'swapping'>('idle');
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
-  const [slippagePreset, setSlippagePreset] = useState<SlippagePreset>('2');
+  const [slippagePreset, setSlippagePreset] = useState<SlippagePreset>('1');
   const [customSlippage, setCustomSlippage] = useState('');
   const [gasPriceWei, setGasPriceWei] = useState<bigint | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setRefreshTick((v) => v + 1), 10000); // 10s
+    return () => clearInterval(id);
+  }, []);
 
   const effectiveSlippagePct = slippagePreset === 'custom' ? customSlippage : slippagePreset;
 
@@ -216,6 +245,7 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
   }
 
   function knownUsdPrice(asset: Asset): number | null {
+    if (asset.key === 'ETH') return ethUsdPrice;
     if (asset.key === 'USDC' || asset.key === 'USDG') return 1;
     if (asset.key === 'TOKEN') return getCachedDexData(ca)?.priceUsd ?? null;
     return null;
@@ -262,28 +292,16 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
     setQuote(null);
     setError('');
     if (!amount || Number(amount) <= 0 || !address || tokenDecimals == null) return;
-    const id = setTimeout(() => {
-      setLoadingQuote(true);
-      let params: URLSearchParams;
-      try {
-        params = buildParams(address);
-      } catch (e: any) {
-        setError(e.message);
-        setLoadingQuote(false);
-        return;
-      }
-      fetch(`/api/zeroex/price?${params}`)
-        .then((r) => r.json())
-        .then((d: QuoteResp & { validationErrors?: { field: string; reason: string }[] }) => {
-          if (d.buyAmount) setQuote(d);
-          else setError(d.validationErrors?.[0]?.reason || d.reason || d.message || 'No route found');
-        })
-        .catch(() => setError('Failed to fetch price'))
-        .finally(() => setLoadingQuote(false));
-    }, 500);
+    const id = setTimeout(() => fetchQuotePrice(false), 500);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [amount, activeSide, payKey, receiveKey, address, numericChainId, tokenDecimals, effectiveSlippagePct]);
+
+  useEffect(() => {
+    const id = setInterval(() => fetchQuotePrice(true), 10000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [amount, activeSide, payKey, receiveKey, numericChainId, tokenDecimals, effectiveSlippagePct, address]);
 
   useEffect(() => {
     if (!quote?.transaction?.gas || !publicClient) return;
@@ -333,15 +351,6 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
     ? amount
     : (quote?.buyAmount ? formatUnits(BigInt(quote.buyAmount), receiveAsset.decimals) : '');
 
-  const minReceived = useMemo(() => {
-    if (!quote || activeSide !== 'pay' || !effectiveSlippagePct) return null;
-    const bps = Math.round(Number(effectiveSlippagePct) * 100);
-    if (!(bps > 0)) return null;
-    const buy = BigInt(quote.buyAmount);
-    const min = buy - (buy * BigInt(bps)) / BigInt(10000);
-    return formatUnits(min, receiveAsset.decimals);
-  }, [quote, effectiveSlippagePct, receiveAsset.decimals, activeSide]);
-
   const maxYouPay = useMemo(() => {
     if (activeSide !== 'receive' || !quote?.maxSellAmount) return null;
     return formatUnits(BigInt(quote.maxSellAmount), payAsset.decimals);
@@ -361,7 +370,15 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
     }
     return { pay: payUsd, receive: receiveUsd };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quote, payAmountDisplay, receiveAmountDisplay, payAsset, receiveAsset]);
+  }, [quote, payAmountDisplay, receiveAmountDisplay, payAsset, receiveAsset, ethUsdPrice]);
+
+  const usdDiffPct = useMemo(() => {
+    if (usdPrices.pay == null || usdPrices.receive == null) return null;
+    const payUsdTotal = usdPrices.pay * Number(payAmountDisplay || 0);
+    const receiveUsdTotal = usdPrices.receive * Number(receiveAmountDisplay || 0);
+    if (!payUsdTotal) return null;
+    return ((receiveUsdTotal - payUsdTotal) / payUsdTotal) * 100;
+  }, [usdPrices, payAmountDisplay, receiveAmountDisplay]);
 
   const insufficientBalance = useMemo(() => {
     if (!payBalance.data) return false;
@@ -380,19 +397,35 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
     }
   }, [activeSide, amount, payAsset.decimals, payBalance.data, quote]);
 
-  const tradeFeeDisplay = useMemo(() => {
-    const fee = quote?.fees?.integratorFee;
-    if (!fee || !fee.token || !fee.amount) return null;
-    const feeAsset = [payAsset, receiveAsset].find(
-      (a) => a.address.toLowerCase() === fee.token.toLowerCase()
-    );
-    const decimals = feeAsset?.decimals ?? payAsset.decimals;
-    const symbol = feeAsset?.symbol ?? payAsset.symbol;
-    const amountNum = Number(formatUnits(BigInt(fee.amount), decimals));
-    const usd = feeAsset?.key === payAsset.key ? usdPrices.pay : usdPrices.receive;
-    const usdStr = usd != null ? formatUsd(amountNum * usd) : null;
-    return `${amountNum.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${symbol}${usdStr ? ` (${usdStr})` : ''}`;
-  }, [quote, payAsset, receiveAsset, usdPrices]);
+  function formatUsd2(v: number | null) {
+    if (v == null || isNaN(v)) return '$0.00';
+    return `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
+  function fetchQuotePrice(silent = false) {
+    if (!amount || Number(amount) <= 0 || !address || tokenDecimals == null) return;
+    let params: URLSearchParams;
+    try {
+      params = buildParams(address);
+    } catch (e: any) {
+      if (!silent) setError(e.message);
+      return;
+    }
+    if (!silent) setLoadingQuote(true);
+    fetch(`/api/zeroex/price?${params}`)
+      .then((r) => r.json())
+      .then((d: QuoteResp & { validationErrors?: { field: string; reason: string }[] }) => {
+        if (d.buyAmount) {
+          setQuote(d);
+          if (!silent) setError('');
+        } else if (!silent) {
+          setError(d.validationErrors?.[0]?.reason || d.reason || d.message || 'No route found');
+        }
+        // silent refresh: nếu lỗi thì bỏ qua, giữ nguyên quote cũ, không làm phiền UI
+      })
+      .catch(() => { if (!silent) setError('Failed to fetch price'); })
+      .finally(() => { if (!silent) setLoadingQuote(false); });
+  }
 
   const networkFeeEth = useMemo(() => {
     if (!quote?.transaction?.gas || gasPriceWei == null) return null;
@@ -427,7 +460,7 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
         {/* PAY */}
         <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
           <div className="flex items-center justify-between text-s text-slate-500">
-            <span>You pay</span>
+            <span>From</span>
             <span>Balance: {payBalance.data ? Number(payBalance.data.formatted).toLocaleString(undefined, { maximumFractionDigits: 6 }) : '0'}</span>
           </div>
           <div className="flex items-center justify-between gap-2">
@@ -441,16 +474,21 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
             />
             <AssetSelect side="pay" current={payAsset} exclude={receiveKey} assets={assets} onPick={pickAsset} />
           </div>
-          <div className="flex gap-1.5">
-            {[20, 50, 100].map((p) => (
-              <button
-                key={p}
-                onClick={() => applyPercent(p)}
-                className="text-[11px] font-bold px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300"
-              >
-                {p === 100 ? 'MAX' : `${p}%`}
-              </button>
-            ))}
+          <div className="flex items-center justify-between">
+            <span className="text-[14px] font-bold text-slate-600">
+              {formatUsd2(usdPrices.pay != null ? usdPrices.pay * Number(payAmountDisplay || 0) : null)}
+            </span>
+            <div className="flex gap-1.5">
+              {[20, 50, 100].map((p) => (
+                <button
+                  key={p}
+                  onClick={() => applyPercent(p)}
+                  className="text-[11px] font-bold px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300"
+                >
+                  {p === 100 ? 'MAX' : `${p}%`}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -472,7 +510,7 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
         {/* RECEIVE */}
         <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
           <div className="flex items-center justify-between text-s text-slate-500">
-            <span>You receive</span>
+            <span>To</span>
             <span>Balance: {receiveBalance.data ? Number(receiveBalance.data.formatted).toLocaleString(undefined, { maximumFractionDigits: 6 }) : '0'}</span>
           </div>
           <div className="flex items-center justify-between gap-2">
@@ -486,7 +524,26 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
             />
             <AssetSelect side="receive" current={receiveAsset} exclude={payKey} assets={assets} onPick={pickAsset} />
           </div>
+          <div className="flex justify-start">
+            <span className="text-[14px] font-bold text-slate-500">
+              {formatUsd2(usdPrices.receive != null ? usdPrices.receive * Number(receiveAmountDisplay || 0) : null)}
+              {usdDiffPct != null && (
+                <span className={`ml-1 ${usdDiffPct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  ({usdDiffPct >= 0 ? '+' : ''}{usdDiffPct.toFixed(1)}%)
+                </span>
+              )}
+            </span>
+          </div>
         </div>
+
+        {usdDiffPct != null && Math.abs(usdDiffPct) > 5 && (
+          <div className="flex items-start gap-2 bg-yellow-500/10 border border-yellow-400/30 rounded-lg px-3 py-2">
+            <WarningTriangleIcon />
+            <span className="text-yellow-400 font-bold text-xs leading-snug">
+              Warning: USD value gap between what you pay and receive exceeds 5%, please double-check before swapping.
+            </span>
+          </div>
+        )}
 
         {/* SLIPPAGE */}
         <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
@@ -520,17 +577,17 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
         {/* DETAILS */}
         {quote && (
           <div className="text-xs text-slate-400 space-y-1 pt-2 border-t border-slate-800">
-            {minReceived && (
-              <div className="flex justify-between">
-                <span>Minimum received</span>
-                <span className="text-slate-200">
-                  {Number(minReceived).toLocaleString(undefined, { maximumFractionDigits: 6 })} {receiveAsset.symbol}
-                  {usdPrices.receive != null && (
-                    <span className="text-slate-500"> ({formatUsd(Number(minReceived) * usdPrices.receive)})</span>
-                  )}
+          <div className="flex justify-between">
+            <span>You receive (incl. fee)</span>
+            <span className="text-slate-200">
+              {Number(formatUnits(BigInt(quote.buyAmount), receiveAsset.decimals)).toLocaleString(undefined, { maximumFractionDigits: 6 })} {receiveAsset.symbol}
+              {usdPrices.receive != null && (
+                <span className="text-slate-500">
+                  {' '}({formatUsd2(Number(formatUnits(BigInt(quote.buyAmount), receiveAsset.decimals)) * usdPrices.receive)})
                 </span>
-              </div>
-            )}
+              )}
+            </span>
+          </div>
             {maxYouPay && (
               <div className="flex justify-between">
                 <span>Maximum you pay</span>
@@ -542,12 +599,10 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
                 </span>
               </div>
             )}
-            {tradeFeeDisplay && (
-              <div className="flex justify-between">
-                <span className="flex items-center gap-1"><GasIcon /> Trade fees</span>
-                <span className="text-slate-200">{tradeFeeDisplay}</span>
-              </div>
-            )}
+            <div className="flex justify-between">
+              <span>Route</span>
+              <span className="text-slate-200">0x API</span>
+            </div>
             {networkFeeEth && (
               <div className="flex justify-between"><span>Network fees (est.)</span><span className="text-slate-200">{Number(networkFeeEth).toFixed(6)} ETH</span></div>
             )}
