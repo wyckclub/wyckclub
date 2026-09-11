@@ -1,3 +1,4 @@
+// lib/walletTokens.ts
 import { TokenEntry } from './tokenApi';
 
 export interface WalletToken {
@@ -8,6 +9,8 @@ export interface WalletToken {
   category: number | null;
   platform: string;
   verified: boolean;
+  score: number | null;
+  scoreDisplay: string | null;
 }
 
 export async function getWalletHeldTokens(
@@ -34,6 +37,8 @@ export async function getWalletHeldTokens(
       category: known?.category ?? null,
       platform: known?.platform ?? 'unknown',
       verified: known?.verified ?? false,
+      score: known?.latestScore ?? null,
+      scoreDisplay: known?.latestScoreDisplay ?? null,
     };
   });
 }

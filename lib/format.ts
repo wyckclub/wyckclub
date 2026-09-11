@@ -3,7 +3,9 @@ export function formatCap(cap: number | null | undefined) {
   const n = Number(cap);
   if (n >= 1_000_000) return '$' + (n / 1_000_000).toFixed(1) + 'M';
   if (n >= 1_000) return '$' + Math.round(n / 1_000) + 'K';
-  return '$' + Math.round(n);
+  if (n >= 1) return '$' + Math.round(n);
+  if (n > 0) return '$' + n.toFixed(2);
+  return '$0';
 }
 
 export function formatPriceShort(price: number | null | undefined) {

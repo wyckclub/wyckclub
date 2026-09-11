@@ -4,12 +4,13 @@ import React, { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
 import { useTokenGate, VIP_THRESHOLD } from '@/lib/tokenGate';
 import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
-import { fetchAllCategories, fetchRobinhoodTokens, TokenEntry, CATEGORY_LABELS } from '@/lib/tokenApi';
+import { fetchAllCategories, fetchRobinhoodTokens, TokenEntry } from '@/lib/tokenApi';
 import { getWalletHeldTokens, WalletToken } from '@/lib/walletTokens';
 import { prefetchDexDataBatch, getCachedDexData } from '@/lib/dexData';
 import { PriceChartModal } from '@/components/PriceChartModal';
 import { PlatformBadge } from '@/components/PlatformBadge';
 import { formatCap } from '@/lib/format';
+import { ScoreBadge } from '@/components/ScoreBadge';
 import Link from 'next/link';
 
 type ChainKey = 'base' | 'robinhood';
@@ -44,6 +45,8 @@ interface Holding {
   category: number | null;
   platform: string;
   valueUsd: number | null;
+  score: number | null;
+  scoreDisplay: string | null;
 }
 
 const HOLDINGS_TTL = 60 * 1000;
@@ -70,13 +73,17 @@ function saveHoldingsCache(key: string, data: Holding[]) {
 
 function hasEnoughLiq(ca: string): boolean {
   const liq = getCachedDexData(ca)?.liq;
-  return liq == null || liq >= 20000;
+  return liq == null || liq >= 1000;
 }
 
 function toHolding(chainKey: ChainKey, t: WalletToken): Holding {
   const dex = getCachedDexData(t.CA);
   const valueUsd = dex?.priceUsd != null ? t.qty * dex.priceUsd : null;
-  return { chainKey, ca: t.CA, symbol: t.symbol, qty: t.qty, category: t.category, platform: t.platform, valueUsd };
+  return {
+    chainKey, ca: t.CA, symbol: t.symbol, qty: t.qty,
+    category: t.category, platform: t.platform, valueUsd,
+    score: t.score, scoreDisplay: t.scoreDisplay,
+  };
 }
 
 function useWalletHoldings(address?: string) {
@@ -87,7 +94,7 @@ function useWalletHoldings(address?: string) {
   useEffect(() => {
     if (!address) return;
     let cancelled = false;
-    const cacheKey = `wyck_holdings_v3_${address.toLowerCase()}`;
+    const cacheKey = `wyck_holdings_v5_${address.toLowerCase()}`;
 
     async function run() {
       if (!address) return;
@@ -107,24 +114,36 @@ function useWalletHoldings(address?: string) {
         const baseKnown = new Map(baseCats.map((t) => [t.CA.toLowerCase(), t] as [string, TokenEntry]));
         const rhKnown = new Map(rhTokens.map((t) => [t.CA.toLowerCase(), t] as [string, TokenEntry]));
 
+        let baseErr = '', rhErr = '';
         const [baseHeld, rhHeld] = await Promise.all([
           getWalletHeldTokens('base', addr, baseKnown).catch((e) => {
             console.error('Base wallet tokens failed', e);
+            baseErr = e.message || 'Base fetch failed';
             return [] as WalletToken[];
           }),
           getWalletHeldTokens('robinhood', addr, rhKnown).catch((e) => {
             console.error('Robinhood wallet tokens failed', e);
+            rhErr = e.message || 'Robinhood fetch failed';
             return [] as WalletToken[];
           }),
         ]);
 
+        if (!baseHeld.length && !rhHeld.length && (baseErr || rhErr)) {
+          setError([baseErr, rhErr].filter(Boolean).join(' | '));
+        }
+
         if (cancelled) return;
 
-        const allCAs = [...baseHeld.map((t) => t.CA), ...rhHeld.map((t) => t.CA)];
-        if (allCAs.length) {
-          await prefetchDexDataBatch(allCAs).catch((e) => console.error('Dex prefetch failed', e));
-        }
-        if (cancelled) return;
+        await Promise.all([
+          baseHeld.length
+            ? prefetchDexDataBatch(baseHeld.map((t) => t.CA), undefined, 'base')
+                .catch((e) => console.error('Base dex prefetch failed', e))
+            : Promise.resolve(),
+          rhHeld.length
+            ? prefetchDexDataBatch(rhHeld.map((t) => t.CA), undefined, 'robinhood')
+                .catch((e) => console.error('Robinhood dex prefetch failed', e))
+            : Promise.resolve(),
+        ]);
 
         const combined = [
           ...baseHeld.map((t) => toHolding('base', t)),
@@ -155,6 +174,8 @@ export default function PortfolioPage() {
   const { holdings, loading, error } = useWalletHoldings(hasAccess ? address : undefined);
   const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string; chainId: ChainKey; platform?: string | null } | null>(null);
 
+  console.log('[portfolio] holdings:', holdings.length, 'error:', error, 'loading:', loading, holdings);
+
   if (!isConnected) return <GateMessage title="Connect your wallet" message="Connect your wallet to check Portfolio access." />;
   if (isLoading) return <GateMessage title="Checking balance..." message="" />;
   if (!hasAccess) {
@@ -169,12 +190,16 @@ export default function PortfolioPage() {
 
   const filtered = holdings.filter((h) => hasEnoughLiq(h.ca));
 
+  console.log('[portfolio] filtered:', filtered.length);
+
   return (
     <div className="w-full px-4 py-6 space-y-6">
       <h2 className="text-2xl font-bold text-blue-400">Portfolio - Wallet Holdings</h2>
       {error && <p className="text-red-400">{error}</p>}
       {loading && <p className="text-slate-400">Tracking Your Wallet...</p>}
-      {!loading && filtered.length === 0 && <p className="text-slate-400">No tracked tokens found in this wallet.</p>}
+      {!loading && !error && filtered.length === 0 && (
+        <p className="text-slate-400">No tracked tokens found in this wallet.</p>
+      )}
 
       {!loading && filtered.length > 0 && (
         <div className="overflow-x-auto rounded-xl border border-slate-800">
@@ -191,13 +216,23 @@ export default function PortfolioPage() {
                 <th className="text-left p-3 whitespace-nowrap">Change 24h</th>
                 <th className="text-left p-3 whitespace-nowrap">Balance</th>
                 <th className="text-left p-3 whitespace-nowrap">Value (USD)</th>
+                <th className="text-left p-3 whitespace-nowrap">WYCKSCORE</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((h) => {
-                const dex = getCachedDexData(h.ca);
-                const change24h = dex?.h24;
-                const dexscreenerSlug = h.chainKey;
+            {filtered.map((h) => {
+              const dex = getCachedDexData(h.ca);
+              const change24h = dex?.h24;
+              const valueUsd = dex?.priceUsd != null ? h.qty * dex.priceUsd : null;
+
+              console.log('[row]', h.symbol, h.ca, JSON.stringify({
+                priceUsd: dex?.priceUsd,
+                marketCap: dex?.marketCap,
+                qty: h.qty,
+                valueUsd,
+              }));
+
+              const dexscreenerSlug = h.chainKey;
                 return (
                   <tr key={`${h.chainKey}-${h.ca}`} className="border-t border-slate-800">
                     <td className="p-3">
@@ -221,6 +256,10 @@ export default function PortfolioPage() {
                       <PlatformBadge platform={h.platform} />
                     </td>
                     <td className="p-3 whitespace-nowrap">
+                      <Link href={`/${h.chainKey}/${h.ca}`} className="text-blue-400 hover:underline text-xs">
+                        View Chart
+                      </Link>
+                      {' '}
                       <Link href={`/${h.chainKey}/${h.ca}`} className="font-mono text-xs text-blue-400 hover:underline">
                         {h.ca.slice(0, 6)}...{h.ca.slice(-4)}
                       </Link>
@@ -232,7 +271,15 @@ export default function PortfolioPage() {
                       {change24h == null ? 'N/A' : `${change24h >= 0 ? '+' : ''}${change24h.toFixed(1)}%`}
                     </td>
                     <td className="p-3 whitespace-nowrap">{h.qty.toLocaleString(undefined, { maximumFractionDigits: 4 })}</td>
-                    <td className="p-3 whitespace-nowrap">{h.valueUsd == null ? 'N/A' : formatCap(h.valueUsd)}</td>
+                    <td className="p-3 whitespace-nowrap">{valueUsd == null ? 'N/A' : formatCap(valueUsd)}</td>
+                    {/* 👆 đổi từ h.valueUsd thành valueUsd */}
+                    <td className="p-3 whitespace-nowrap">
+                      {h.score != null && h.scoreDisplay ? (
+                        <ScoreBadge scoreDisplay={h.scoreDisplay} score={h.score} />
+                      ) : (
+                        <span className="text-slate-500 text-xs">N/A</span>
+                      )}
+                    </td>
                   </tr>
                 );
               })}

@@ -33,8 +33,13 @@ export async function GET(req: NextRequest) {
 
   try {
     const result = await alchemyRpc(chainKey, 'alchemy_getTokenBalances', [address, 'erc20']);
+
+    console.log('[wallet-tokens]', chainKey, address, 'raw result:', JSON.stringify(result).slice(0, 500));
+
     const balances: { contractAddress: string; tokenBalance: string }[] = result?.tokenBalances ?? [];
     const nonZero = balances.filter((b) => b.tokenBalance && BigInt(b.tokenBalance) > BigInt(0));
+
+    console.log('[wallet-tokens]', chainKey, 'total balances:', balances.length, 'nonZero:', nonZero.length);
 
     const tokens = await Promise.all(
       nonZero.map(async (b) => {
@@ -50,6 +55,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ tokens });
   } catch (e: any) {
+    console.error('[wallet-tokens] ERROR', chainKey, e);
     return NextResponse.json({ error: e.message || 'Alchemy request failed' }, { status: 502 });
   }
 }
