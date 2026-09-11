@@ -27,7 +27,7 @@ export interface FullPairInfo {
   name: string | null;
   twitter: string | null;
   telegram: string | null;
-  discord: string | null;   // 👈 thêm dòng này
+  discord: string | null;
   website: string | null;
   priceChange: { m5: number | null; h1: number | null; h6: number | null; h24: number | null };
   volume: { m5: number | null; h1: number | null; h6: number | null; h24: number | null };
@@ -201,7 +201,7 @@ export async function prefetchDexDataBatch(
           },
           timestamp: Date.now(),
         });
-        setCachedImage(ca, pair?.info?.imageUrl); // 👈 thêm dòng này
+        setCachedImage(ca, pair?.info?.imageUrl);
       });
     } catch {
       failedCas.push(...chunk);

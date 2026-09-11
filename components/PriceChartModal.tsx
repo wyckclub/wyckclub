@@ -283,16 +283,11 @@ export function ChartSVG({
     const prevBull = prev?.incBull ?? null;
     const prevBear = prev?.decBear ?? null;
 
-    // Điều kiện 1: incBull > decBear ở entry hiện tại
     const cond1 = bull > bear;
 
-    // Điều kiện 2: incBull tăng so với entry trước, HOẶC decBear giảm so với entry trước
     const cond2 =
       prevBull != null && prevBear != null && (bull > prevBull || bear < prevBear);
 
-    // Điều kiện 3: tỉ lệ incBull/decBear ở entry hiện tại > entry trước.
-    // Nếu decBear(E) = 0 hoặc decBear(E-1) = 0 thì đổi sang so sánh hiệu số
-    // (incBull - decBear) thay vì tỉ lệ, vì tỉ lệ sẽ không xác định/vô cực.
     let cond3: boolean;
     if (prevBull == null || prevBear == null) {
       cond3 = false;

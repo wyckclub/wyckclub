@@ -23,17 +23,14 @@ export async function getChartViews(): Promise<number> {
 }
 
 const BASE_CATEGORY_URLS = [
-  // Clanker
   process.env.WYCK_CLANKER1_URL,
   process.env.WYCK_CLANKER2_URL,
   process.env.WYCK_CLANKER3_URL,
 
-  // Bankr
   process.env.WYCK_BANKRBOT1_URL,
   process.env.WYCK_BANKRBOT2_URL,
   process.env.WYCK_BANKRBOT3_URL,
 
-  // Virtuals
   process.env.WYCK_VIRTUALS1_URL,
   process.env.WYCK_VIRTUALS2_URL,
   process.env.WYCK_VIRTUALS3_URL,
@@ -44,26 +41,21 @@ const BASE_CATEGORY_URLS = [
   process.env.WYCK_FLAUNCH1_URL,
   process.env.WYCK_O1EXCHANGE1_URL,
 
-  // Base Other (verified)
   process.env.WYCK_B1_URL,
   process.env.WYCK_B2_URL,
   process.env.WYCK_B3_URL,
   process.env.WYCK_B4_URL,
   process.env.WYCK_2NEW_URL,
 
-  // Base Other (not verified)
   process.env.WYCK_B5_URL,
   process.env.WYCK_B6_URL,
 
-  // New
   process.env.WYCK_5NEW_URL,
 ].filter((u): u is string => !!u);
 
 const ROBINHOOD_CATEGORY_URLS = [
-  // New (not verified)
   process.env.WYCK_ROBIN_URL,
 
-  // Robinhood Other (not verified)
   process.env.WYCK_ROBIN1_URL,
   process.env.WYCK_ROBIN1A_URL,
   process.env.WYCK_ROBIN1B_URL,
@@ -72,7 +64,7 @@ const ROBINHOOD_CATEGORY_URLS = [
   process.env.WYCK_ROBIN2B_URL,
   process.env.WYCK_ROBIN3_URL,
   process.env.WYCK_ROBIN4_URL,
-  // Robinhood Other (verified)
+
   process.env.WYCK_ROBIN5_URL,
   process.env.WYCK_ROBIN6_URL,
 

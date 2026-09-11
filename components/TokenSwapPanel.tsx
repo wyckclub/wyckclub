@@ -145,16 +145,16 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
     let active = true;
     function loadEthPrice() {
       const params = new URLSearchParams({
-        chainId: '8453', // Base — luôn dùng Base để lấy giá ETH tham chiếu, thanh khoản USDC/ETH ở đây rất sâu
+        chainId: '8453',
         sellToken: NATIVE,
         buyToken: USDC_BASE,
-        sellAmount: parseUnits('1', 18).toString(), // 1 ETH
+        sellAmount: parseUnits('1', 18).toString(),
       });
       fetch(`/api/zeroex/price?${params}`)
         .then((r) => r.json())
         .then((d) => {
           if (active && d?.buyAmount) {
-            setEthUsdPrice(Number(formatUnits(BigInt(d.buyAmount), 6))); // USDC decimals = 6
+            setEthUsdPrice(Number(formatUnits(BigInt(d.buyAmount), 6)));
           }
         })
         .catch(() => {});
@@ -193,7 +193,7 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
   const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
-    const id = setInterval(() => setRefreshTick((v) => v + 1), 10000); // 10s
+    const id = setInterval(() => setRefreshTick((v) => v + 1), 10000);
     return () => clearInterval(id);
   }, []);
 
@@ -421,7 +421,6 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
         } else if (!silent) {
           setError(d.validationErrors?.[0]?.reason || d.reason || d.message || 'No route found');
         }
-        // silent refresh: nếu lỗi thì bỏ qua, giữ nguyên quote cũ, không làm phiền UI
       })
       .catch(() => { if (!silent) setError('Failed to fetch price'); })
       .finally(() => { if (!silent) setLoadingQuote(false); });
