@@ -162,54 +162,55 @@ export async function prefetchDexDataBatch(
   const failedCas: string[] = [];
 
   const BATCH_SIZE = 30;
-  for (let i = 0; i < need.length; i += BATCH_SIZE) {
-    const chunk = need.slice(i, i + BATCH_SIZE);
-    try {
-      const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${chunk.join(',')}`);
-      if (!res.ok) {
-        console.error('Dexscreener error, status:', res.status, res.statusText);
-      }
-      const json = await res.json();
-      const pairs = json.pairs || [];
-      chunk.forEach((ca) => {
-        const caPairs = pairs.filter(
-          (p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase() && p.chainId === chainId
-        );
-        const pair = caPairs[0] || pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase());
-        if (!pair) {
-          failedCas.push(ca);
-          return;
+    for (let i = 0; i < need.length; i += BATCH_SIZE) {
+      const chunk = need.slice(i, i + BATCH_SIZE);
+      try {
+        const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${chunk.join(',')}`);
+        if (!res.ok) {
+          console.error('Dexscreener error, status:', res.status, res.statusText);
         }
-        const h24 = pair?.priceChange?.h24;
-        const priceUsd = pair?.priceUsd;
-        const vol24h = caPairs.reduce((s: number, p: any) => s + (Number(p.volume?.h24) || 0), 0);
-        const liq = caPairs.reduce((s: number, p: any) => s + (Number(p.liquidity?.usd) || 0), 0);
-        const marketCap = pair?.marketCap ?? pair?.fdv;
-        cache.set(ca, {
-          data: {
-            h24: h24 == null ? null : Number(h24),
-            priceUsd: priceUsd == null ? null : Number(priceUsd),
-            vol24h: caPairs.length ? vol24h : null,
-            liq: caPairs.length ? liq : null,
-            marketCap: marketCap == null ? null : Number(marketCap),
-            twitter: extractTwitter(pair),
-            website: pair?.info?.websites?.[0]?.url ?? null,
-            imageUrl: pair?.info?.imageUrl ?? getCachedImage(ca),
-            symbol: pair?.baseToken?.symbol ?? null,
-            name: pair?.baseToken?.name ?? null,
-            pairCreatedAt: oldestPairCreatedAt(caPairs, pair),
-          },
-          timestamp: Date.now(),
+        const json = await res.json();
+        const pairs = json.pairs || [];
+        chunk.forEach((ca) => {
+          const caPairs = pairs.filter(
+            (p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase() && p.chainId === chainId
+          );
+          const pair = caPairs[0] || pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase());
+          if (!pair) {
+            failedCas.push(ca);
+            return;
+          }
+          const effectivePairs = caPairs.length ? caPairs : [pair];
+          const h24 = pair?.priceChange?.h24;
+          const priceUsd = pair?.priceUsd;
+          const vol24h = effectivePairs.reduce((s: number, p: any) => s + (Number(p.volume?.h24) || 0), 0);
+          const liq = effectivePairs.reduce((s: number, p: any) => s + (Number(p.liquidity?.usd) || 0), 0);
+          const marketCap = pair?.marketCap ?? pair?.fdv;
+          cache.set(ca, {
+            data: {
+              h24: h24 == null ? null : Number(h24),
+              priceUsd: priceUsd == null ? null : Number(priceUsd),
+              vol24h,
+              liq,
+              marketCap: marketCap == null ? null : Number(marketCap),
+              twitter: extractTwitter(pair),
+              website: pair?.info?.websites?.[0]?.url ?? null,
+              imageUrl: pair?.info?.imageUrl ?? getCachedImage(ca),
+              symbol: pair?.baseToken?.symbol ?? null,
+              name: pair?.baseToken?.name ?? null,
+              pairCreatedAt: oldestPairCreatedAt(effectivePairs, pair),
+            },
+            timestamp: Date.now(),
+          });
+          setCachedImage(ca, pair?.info?.imageUrl);
         });
-        setCachedImage(ca, pair?.info?.imageUrl);
-      });
-    } catch {
-      failedCas.push(...chunk);
+      } catch {
+        failedCas.push(...chunk);
+      }
+      saveToStorage();
+      onBatch?.();
+      if (i + BATCH_SIZE < need.length) await new Promise((r) => setTimeout(r, 300));
     }
-    saveToStorage();
-    onBatch?.();
-    if (i + BATCH_SIZE < need.length) await new Promise((r) => setTimeout(r, 300));
-  }
 
   for (const ca of failedCas) {
     try {
@@ -222,24 +223,25 @@ export async function prefetchDexDataBatch(
       );
       const pair = caPairs[0] || pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase());
       if (!pair) continue;
+      const effectivePairs = caPairs.length ? caPairs : [pair];
       const h24 = pair?.priceChange?.h24;
       const priceUsd = pair?.priceUsd;
-      const vol24h = caPairs.reduce((s: number, p: any) => s + (Number(p.volume?.h24) || 0), 0);
-      const liq = caPairs.reduce((s: number, p: any) => s + (Number(p.liquidity?.usd) || 0), 0);
+      const vol24h = effectivePairs.reduce((s: number, p: any) => s + (Number(p.volume?.h24) || 0), 0);
+      const liq = effectivePairs.reduce((s: number, p: any) => s + (Number(p.liquidity?.usd) || 0), 0);
       const marketCap = pair?.marketCap ?? pair?.fdv;
       cache.set(ca, {
         data: {
           h24: h24 == null ? null : Number(h24),
           priceUsd: priceUsd == null ? null : Number(priceUsd),
-          vol24h: caPairs.length ? vol24h : null,
-          liq: caPairs.length ? liq : null,
+          vol24h,
+          liq,
           marketCap: marketCap == null ? null : Number(marketCap),
           twitter: extractTwitter(pair),
           website: pair?.info?.websites?.[0]?.url ?? null,
           imageUrl: pair?.info?.imageUrl ?? null,
           symbol: pair?.baseToken?.symbol ?? null,
           name: pair?.baseToken?.name ?? null,
-          pairCreatedAt: oldestPairCreatedAt(caPairs, pair),
+          pairCreatedAt: oldestPairCreatedAt(effectivePairs, pair),
         },
         timestamp: Date.now(),
       });
@@ -284,8 +286,10 @@ export async function fetchFullTokenPairInfo(ca: string, chainId: string = 'base
       pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase());
     if (!pair) return null;
 
+    const effectivePairs = caPairs.length ? caPairs : [pair];
+
     const topVolumePair =
-      [...caPairs].sort((a: any, b: any) => (Number(b.volume?.h24) || 0) - (Number(a.volume?.h24) || 0))[0] ?? pair;
+      [...effectivePairs].sort((a: any, b: any) => (Number(b.volume?.h24) || 0) - (Number(a.volume?.h24) || 0))[0] ?? pair;
 
     const socials = pair.info?.socials || [];
     const tw = socials.find((s: any) => s.type === 'twitter');
@@ -293,7 +297,7 @@ export async function fetchFullTokenPairInfo(ca: string, chainId: string = 'base
     const dc = socials.find((s: any) => s.type === 'discord');
 
     const sumField = (getter: (p: any) => number | undefined) =>
-      caPairs.length ? caPairs.reduce((s: number, p: any) => s + (Number(getter(p)) || 0), 0) : null;
+      effectivePairs.reduce((s: number, p: any) => s + (Number(getter(p)) || 0), 0);
 
     return {
       pairAddress: pair.pairAddress,
@@ -304,7 +308,7 @@ export async function fetchFullTokenPairInfo(ca: string, chainId: string = 'base
       marketCap: pair.marketCap ?? pair.fdv ?? null,
       fdv: pair.fdv ?? null,
       liq: sumField((p) => p.liquidity?.usd),
-      pairCreatedAt: oldestPairCreatedAt(caPairs, pair),
+      pairCreatedAt: oldestPairCreatedAt(effectivePairs, pair),
       imageUrl: pair.info?.imageUrl ?? getCachedImage(ca),
       symbol: pair.baseToken?.symbol ?? null,
       name: pair.baseToken?.name ?? null,
@@ -325,10 +329,10 @@ export async function fetchFullTokenPairInfo(ca: string, chainId: string = 'base
         h24: sumField((p) => p.volume?.h24),
       },
       txns: {
-        m5: { buys: caPairs.reduce((s: number, p: any) => s + (p.txns?.m5?.buys ?? 0), 0), sells: caPairs.reduce((s: number, p: any) => s + (p.txns?.m5?.sells ?? 0), 0) },
-        h1: { buys: caPairs.reduce((s: number, p: any) => s + (p.txns?.h1?.buys ?? 0), 0), sells: caPairs.reduce((s: number, p: any) => s + (p.txns?.h1?.sells ?? 0), 0) },
-        h6: { buys: caPairs.reduce((s: number, p: any) => s + (p.txns?.h6?.buys ?? 0), 0), sells: caPairs.reduce((s: number, p: any) => s + (p.txns?.h6?.sells ?? 0), 0) },
-        h24: { buys: caPairs.reduce((s: number, p: any) => s + (p.txns?.h24?.buys ?? 0), 0), sells: caPairs.reduce((s: number, p: any) => s + (p.txns?.h24?.sells ?? 0), 0) },
+        m5: { buys: effectivePairs.reduce((s: number, p: any) => s + (p.txns?.m5?.buys ?? 0), 0), sells: effectivePairs.reduce((s: number, p: any) => s + (p.txns?.m5?.sells ?? 0), 0) },
+        h1: { buys: effectivePairs.reduce((s: number, p: any) => s + (p.txns?.h1?.buys ?? 0), 0), sells: effectivePairs.reduce((s: number, p: any) => s + (p.txns?.h1?.sells ?? 0), 0) },
+        h6: { buys: effectivePairs.reduce((s: number, p: any) => s + (p.txns?.h6?.buys ?? 0), 0), sells: effectivePairs.reduce((s: number, p: any) => s + (p.txns?.h6?.sells ?? 0), 0) },
+        h24: { buys: effectivePairs.reduce((s: number, p: any) => s + (p.txns?.h24?.buys ?? 0), 0), sells: effectivePairs.reduce((s: number, p: any) => s + (p.txns?.h24?.sells ?? 0), 0) },
       },
     };
   } catch {
