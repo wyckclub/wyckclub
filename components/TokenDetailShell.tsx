@@ -26,8 +26,8 @@ export function TokenDetailShell({
 
   return (
     <TokenDataProvider chain={chain}>
-      <div className="w-full px-3 py-3 lg:h-[calc(100vh-73px)] lg:overflow-hidden">
-        <div className="flex flex-col lg:flex-row gap-3 lg:h-full">
+      <div className="w-full px-1 py-1 lg:h-[calc(100vh-73px)] lg:overflow-hidden">
+        <div className="flex flex-col lg:flex-row gap-1 lg:h-full">
           {/* mobile */}
           <button
             onClick={() => setSidebarOpen(true)}

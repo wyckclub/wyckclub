@@ -15,6 +15,10 @@ const ETH_LOGO = '/eth.svg';
 const USDC_LOGO = '/usdc.svg';
 const USDG_LOGO = '/usdg.svg';
 const FEE_RATE = 0.0025;
+const EXPLORER_TX_URL: Record<string, string> = {
+  base: 'https://basescan.org/tx/',
+  robinhood: 'https://robinhoodchain.blockscout.com/tx/',
+};
 
 const erc20Abi = [
   { name: 'decimals', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint8' }] },
@@ -492,19 +496,19 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
         </div>
 
         {/* FLIP */}
-<div className="flex justify-center -my-1 relative z-10">
-  <button
-    onClick={flip}
-    className="w-[39px] h-[39px] hover:opacity-80 transition-opacity flex items-center justify-center"
-    aria-label="Flip"
-  >
-    <svg width="39" height="39" viewBox="0 0 39 39" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="39" height="39" rx="11" fill="#3c4569" />
-      <path d="M12.19 16.46C12.19 13.76 14.38 11.58 17.07 11.58H26.19M26.19 11.58L22.53 7.92M26.19 11.58L22.53 15.23" stroke="#FFFFFF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M26.81 22.53C26.81 25.23 24.62 27.42 21.93 27.42H12.81M12.81 27.42L16.47 23.77M12.81 27.42L16.47 31.08" stroke="#FFFFFF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  </button>
-</div>
+        <div className="flex justify-center -my-1 relative z-10">
+          <button
+            onClick={flip}
+            className="w-[39px] h-[39px] hover:opacity-80 transition-opacity flex items-center justify-center"
+            aria-label="Flip"
+          >
+            <svg width="39" height="39" viewBox="0 0 39 39" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="39" height="39" rx="11" fill="#3c4569" />
+              <path d="M12.19 16.46C12.19 13.76 14.38 11.58 17.07 11.58H26.19M26.19 11.58L22.53 7.92M26.19 11.58L22.53 15.23" stroke="#FFFFFF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M26.81 22.53C26.81 25.23 24.62 27.42 21.93 27.42H12.81M12.81 27.42L16.47 23.77M12.81 27.42L16.47 31.08" stroke="#FFFFFF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </div>
 
         {/* RECEIVE */}
         <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
@@ -576,17 +580,6 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
         {/* DETAILS */}
         {quote && (
           <div className="text-xs text-slate-400 space-y-1 pt-2 border-t border-slate-800">
-          <div className="flex justify-between">
-            <span>You receive (incl. fee)</span>
-            <span className="text-slate-200">
-              {Number(formatUnits(BigInt(quote.buyAmount), receiveAsset.decimals)).toLocaleString(undefined, { maximumFractionDigits: 6 })} {receiveAsset.symbol}
-              {usdPrices.receive != null && (
-                <span className="text-slate-500">
-                  {' '}({formatUsd2(Number(formatUnits(BigInt(quote.buyAmount), receiveAsset.decimals)) * usdPrices.receive)})
-                </span>
-              )}
-            </span>
-          </div>
             {maxYouPay && (
               <div className="flex justify-between">
                 <span>Maximum you pay</span>
@@ -598,10 +591,6 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
                 </span>
               </div>
             )}
-            <div className="flex justify-between">
-              <span>Route</span>
-              <span className="text-slate-200">0x API</span>
-            </div>
             {networkFeeEth && (
               <div className="flex justify-between"><span>Network fees (est.)</span><span className="text-slate-200">{Number(networkFeeEth).toFixed(6)} ETH</span></div>
             )}
@@ -609,10 +598,6 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
               <div className="flex justify-between"><span>Price impact</span><span className="text-slate-200">{quote.estimatedPriceImpact}%</span></div>
             )}
           </div>
-        )}
-
-        {insufficientBalance && (
-          <p className="text-xs text-red-400">Insufficient balance for this trade.</p>
         )}
         {error && <p className="text-xs text-red-400">{error}</p>}
         {!isConnected && <p className="text-xs text-slate-500">Connect wallet to swap.</p>}
@@ -627,9 +612,41 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
           </button>
         )}
 
+        {quote && (
+          <div className="text-xs text-slate-400 space-y-1 pt-2 border-t border-slate-800">
+            <div className="flex justify-between">
+              <span>You receive (incl. fee)</span>
+              <span className="text-slate-200">
+                {Number(formatUnits(BigInt(quote.buyAmount), receiveAsset.decimals)).toLocaleString(undefined, { maximumFractionDigits: 6 })} {receiveAsset.symbol}
+                {usdPrices.receive != null && (
+                  <span className="text-slate-500">
+                    {' '}({formatUsd2(Number(formatUnits(BigInt(quote.buyAmount), receiveAsset.decimals)) * usdPrices.receive)})
+                  </span>
+                )}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Route</span>
+              <span className="text-slate-200">0x API</span>
+            </div>
+          </div>
+        )}
+
+        {insufficientBalance && (
+          <p className="text-xs text-red-400">Insufficient balance for this trade.</p>
+        )}
+
         {receipt && txHash && (
           <p className="text-xs text-green-400 text-center">
-            Confirmed: <a href={`https://basescan.org/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="underline">{txHash.slice(0, 10)}...</a>
+            Confirmed:{' '}
+            <a
+              href={`${EXPLORER_TX_URL[chainId] ?? EXPLORER_TX_URL.base}${txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              {txHash.slice(0, 10)}...
+            </a>
           </p>
         )}
       </div>
