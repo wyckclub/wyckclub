@@ -272,7 +272,6 @@ export default function PortfolioPage() {
                     </td>
                     <td className="p-3 whitespace-nowrap">{h.qty.toLocaleString(undefined, { maximumFractionDigits: 4 })}</td>
                     <td className="p-3 whitespace-nowrap">{valueUsd == null ? 'N/A' : formatCap(valueUsd)}</td>
-                    {/* 👆 đổi từ h.valueUsd thành valueUsd */}
                     <td className="p-3 whitespace-nowrap">
                       {h.score != null && h.scoreDisplay ? (
                         <ScoreBadge scoreDisplay={h.scoreDisplay} score={h.score} />

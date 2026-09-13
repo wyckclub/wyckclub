@@ -65,6 +65,15 @@ function WhaleIcon() {
   );
 }
 
+function PotentialIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      <path d="M3 17 9 11 13 15 21 7" />
+      <path d="M21 13V7h-6" />
+    </svg>
+  );
+}
+
 function PortfolioIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
@@ -85,20 +94,12 @@ function GuideIcon() {
   );
 }
 
-function TokenIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v10M9 9.5c0-1.1 1.34-2 3-2s3 .9 3 2-1.34 2-3 2-3 .9-3 2 1.34 2 3 2 3-.9 3-2" />
-    </svg>
-  );
-}
-
 const navItems = [
   { href: '/', label: 'Home', icon: HomeIcon },
   { href: '/base', label: 'BASE', icon: BaseIcon },
   { href: '/robinhood', label: 'Robinhood', icon: RobinhoodIcon },
   { href: '/whale-hub', label: 'Whale Hub', icon: WhaleIcon },
+  //{ href: '/potential', label: 'Potential', icon: PotentialIcon },
   { href: '/portfolio', label: 'Portfolio', icon: PortfolioIcon },
   { href: '/guide', label: 'Guide', suffix: '', icon: GuideIcon },
 ];
