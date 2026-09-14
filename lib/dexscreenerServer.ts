@@ -1,4 +1,10 @@
 // lib/dexscreenerServer.ts
+import { Redis } from '@upstash/redis';
+
+const redis = new Redis({
+  url: process.env.REDIS_KV_REST_API_URL!,
+  token: process.env.REDIS_KV_REST_API_TOKEN!,
+});
 
 const DEFAULT_REVALIDATE_SECONDS = 20;
 const DEFAULT_MAX_RETRIES = 2;
@@ -6,7 +12,7 @@ const BASE_BACKOFF_MS = 1000;
 const MAX_BACKOFF_MS = 4000;
 const BATCH_SIZE = 30;
 
-/** Default lifetime of a cached per-CA market data entry, shared across all callers. */
+/** Default lifetime of a cached per-CA market data entry, shared across all callers/instances via Redis. */
 const DEFAULT_CACHE_TTL_MS = 30000;
 
 function sleep(ms: number) {
@@ -45,8 +51,10 @@ async function fetchDexscreenerWithRetry(
   return null;
 }
 
-// Dedupes concurrent requests for the exact same batch URL (e.g. two callers
-// asking for the same chunk of CAs within the same tick).
+// Dedupes concurrent requests for the exact same batch URL within this process
+// (e.g. two callers asking for the same chunk of CAs within the same tick).
+// This stays in-memory/per-instance on purpose — it only needs to protect against
+// a burst hitting the same running process before the Redis cache is populated.
 const inFlight = new Map<string, Promise<any | null>>();
 
 function fetchDeduped(url: string, revalidateSeconds: number, maxRetries: number): Promise<any | null> {
@@ -75,19 +83,51 @@ export interface DexBatchInfo {
 export interface DexFetchOpts {
   revalidateSeconds?: number;
   maxRetries?: number;
-  /** Skip the shared per-CA cache and force a fresh Dexscreener fetch for every CA. */
+  /** Skip the shared Redis cache and force a fresh Dexscreener fetch for every CA. */
   force?: boolean;
-  /** How long a cached per-CA entry stays valid (ms). Shared across all callers. Default 30s. */
+  /** How long a cached per-CA entry stays valid (ms). Shared across all callers/instances. Default 30s. */
   cacheTtlMs?: number;
 }
 
-// Shared per-CA cache. Any caller (whale-hub, whale-hub/potential, potential, etc.)
-// that asks about the same CA within the TTL window reuses this instead of hitting
-// Dexscreener again — cuts down on request volume and the odds of getting rate-limited.
-const perCaCache = new Map<string, { data: DexBatchInfo; timestamp: number }>();
-
 function cacheKey(chainId: string, ca: string) {
-  return `${chainId}:${ca.toLowerCase()}`;
+  return `wyck:dex:${chainId}:${ca.toLowerCase()}`;
+}
+
+/** Reads whatever is already cached in Redis for these CAs. Best-effort: returns {} on any Redis error. */
+async function getCachedMany(chainId: string, cas: string[]): Promise<Record<string, DexBatchInfo>> {
+  if (!cas.length) return {};
+  try {
+    const keys = cas.map((ca) => cacheKey(chainId, ca));
+    const raw = await redis.mget<(string | DexBatchInfo | null)[]>(...keys);
+    const out: Record<string, DexBatchInfo> = {};
+    cas.forEach((ca, i) => {
+      const v = raw?.[i];
+      if (v == null) return;
+      try {
+        out[ca] = typeof v === 'string' ? (JSON.parse(v) as DexBatchInfo) : v;
+      } catch {
+        // malformed cache entry — ignore, will be re-fetched
+      }
+    });
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/** Writes fresh entries to Redis with a TTL. Best-effort: failures here never block the response. */
+async function setCachedMany(chainId: string, entries: Record<string, DexBatchInfo>, ttlSeconds: number) {
+  const cas = Object.keys(entries);
+  if (!cas.length) return;
+  try {
+    const pipeline = redis.pipeline();
+    cas.forEach((ca) => {
+      pipeline.set(cacheKey(chainId, ca), JSON.stringify(entries[ca]), { ex: ttlSeconds });
+    });
+    await pipeline.exec();
+  } catch {
+    // best-effort cache write; a miss just means the next call re-fetches
+  }
 }
 
 export async function fetchDexscreenerBatchMap(
@@ -97,22 +137,20 @@ export async function fetchDexscreenerBatchMap(
 ): Promise<Record<string, DexBatchInfo>> {
   const revalidateSeconds = opts.revalidateSeconds ?? DEFAULT_REVALIDATE_SECONDS;
   const maxRetries = opts.maxRetries ?? DEFAULT_MAX_RETRIES;
-  const cacheTtlMs = opts.cacheTtlMs ?? DEFAULT_CACHE_TTL_MS;
+  const cacheTtlSeconds = Math.round((opts.cacheTtlMs ?? DEFAULT_CACHE_TTL_MS) / 1000);
   const force = opts.force ?? false;
 
   const uniqueCas = [...new Set(caList)];
   const out: Record<string, DexBatchInfo> = {};
-  const now = Date.now();
 
-  const toFetch: string[] = [];
-  for (const ca of uniqueCas) {
-    const cached = perCaCache.get(cacheKey(chainId, ca));
-    if (!force && cached && now - cached.timestamp < cacheTtlMs) {
-      out[ca] = cached.data;
-    } else {
-      toFetch.push(ca);
-    }
+  let toFetch = uniqueCas;
+  if (!force) {
+    const cached = await getCachedMany(chainId, uniqueCas);
+    Object.assign(out, cached);
+    toFetch = uniqueCas.filter((ca) => !(ca in cached));
   }
+
+  const freshEntries: Record<string, DexBatchInfo> = {};
 
   for (let i = 0; i < toFetch.length; i += BATCH_SIZE) {
     const chunk = toFetch.slice(i, i + BATCH_SIZE);
@@ -149,8 +187,12 @@ export async function fetchDexscreenerBatchMap(
       };
 
       out[ca] = info;
-      perCaCache.set(cacheKey(chainId, ca), { data: info, timestamp: now });
+      freshEntries[ca] = info;
     });
+  }
+
+  if (Object.keys(freshEntries).length) {
+    await setCachedMany(chainId, freshEntries, cacheTtlSeconds);
   }
 
   return out;
