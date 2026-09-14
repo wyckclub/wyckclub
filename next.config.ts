@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     // x
   },
   turbopack: {
-    // x
+    // xx
   },
   webpack: (config) => {
     config.externals.push(
