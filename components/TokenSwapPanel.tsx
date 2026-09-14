@@ -298,13 +298,11 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
     if (!amount || Number(amount) <= 0 || !address || tokenDecimals == null) return;
     const id = setTimeout(() => fetchQuotePrice(false), 500);
     return () => clearTimeout(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [amount, activeSide, payKey, receiveKey, address, numericChainId, tokenDecimals, effectiveSlippagePct]);
 
   useEffect(() => {
     const id = setInterval(() => fetchQuotePrice(true), 10000);
     return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [amount, activeSide, payKey, receiveKey, numericChainId, tokenDecimals, effectiveSlippagePct, address]);
 
   useEffect(() => {
@@ -373,7 +371,6 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
       receiveUsd = (payUsd * sellAmountNum) / buyAmountNum;
     }
     return { pay: payUsd, receive: receiveUsd };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quote, payAmountDisplay, receiveAmountDisplay, payAsset, receiveAsset, ethUsdPrice]);
 
   const usdDiffPct = useMemo(() => {
@@ -510,7 +507,6 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
           </button>
         </div>
 
-        {/* RECEIVE */}
         <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
           <div className="flex items-center justify-between text-s text-slate-500">
             <span>To</span>

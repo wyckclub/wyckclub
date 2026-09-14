@@ -25,9 +25,6 @@ interface Item {
 export async function GET(req: NextRequest) {
   const chain = req.nextUrl.searchParams.get('chain') === 'robinhood' ? 'robinhood' : 'base';
 
-  // Shares the same Redis-cached score data as /api/scores/*, /api/potential and
-  // /api/whale-hub — each upstream WYCK_*_URL is hit at most once per 20s for the
-  // whole app, not once per feature.
   const categories =
     chain === 'robinhood'
       ? [

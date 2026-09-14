@@ -14,10 +14,6 @@ export interface ScoreSource {
   verified: boolean;
 }
 
-// ---- Source configuration (moved here from app/api/scores/[cat]/route.ts and
-// app/api/scores/robinhood/route.ts so both the public routes and internal
-// callers share the exact same source list). ----
-
 const CATEGORY_SOURCES: Record<string, ScoreSource[]> = {
   '1': [
     { url: process.env.WYCK_CLANKER1_URL, platform: 'clanker', verified: true },
@@ -99,8 +95,6 @@ export function getRobinhoodSources(): ScoreSource[] {
   return ROBINHOOD_SOURCES.filter((s): s is ScoreSource & { url: string } => !!s.url);
 }
 
-// ---- Fetch + merge + cache ----
-
 async function fetchAndTagSource(source: ScoreSource & { url: string }): Promise<Record<string, any>> {
   const res = await fetch(source.url, { cache: 'no-store' });
   if (!res.ok) throw new Error(`Upstream error: ${source.url}`);
@@ -121,16 +115,8 @@ function cacheKey(kind: string) {
   return `wyck:scores:${kind}`;
 }
 
-// Dedupes concurrent fetches for the same kind within this process, so a burst of
-// requests arriving before the Redis cache is warm still only hits upstream once.
 const inFlight = new Map<string, Promise<Record<string, any>>>();
 
-/**
- * Fetches + merges a set of WYCK score sources, cached in Redis for CACHE_TTL_SECONDS.
- * Shared across every caller — the public /api/scores/* routes AND internal callers
- * like /api/potential, /api/whale-hub, /api/whale-hub/potential — so each upstream
- * WYCK_*_URL is hit at most once per TTL window for the whole app, not once per feature.
- */
 export async function fetchScoresCached(
   kind: string,
   sources: ScoreSource[],
@@ -148,7 +134,7 @@ export async function fetchScoresCached(
         return typeof cached === 'string' ? JSON.parse(cached) : cached;
       }
     } catch {
-      // Redis unavailable — fall through to a live fetch
+      // Redis unavailable
     }
   }
 
@@ -160,7 +146,7 @@ export async function fetchScoresCached(
     try {
       await redis.set(key, JSON.stringify(merged), { ex: CACHE_TTL_SECONDS });
     } catch {
-      // best-effort cache write; a miss just means the next call re-fetches
+      // best-effort cache write
     }
     return merged;
   })().finally(() => {

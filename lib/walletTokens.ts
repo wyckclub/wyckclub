@@ -1,4 +1,3 @@
-// lib/walletTokens.ts
 import { TokenEntry } from './tokenApi';
 
 export interface WalletToken {

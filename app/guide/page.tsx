@@ -1,4 +1,3 @@
-// app/guide/page.tsx
 import Image from "next/image"
 
 export default function GuidePage() {
@@ -22,7 +21,6 @@ export default function GuidePage() {
         />
       </div>
 
-      {/* PAGES */}
       <section className="space-y-6">
         <h2 className="text-xl font-bold text-blue-300">Pages & Features</h2>
 
@@ -62,7 +60,6 @@ export default function GuidePage() {
         />
       </section>
 
-      {/* CHART COLORS */}
       <section className="space-y-4">
         <h2 className="text-xl font-bold text-blue-300">Chart Segment Colors</h2>
         <div className="space-y-3">
@@ -84,7 +81,6 @@ export default function GuidePage() {
         </div>
       </section>
 
-      {/* CHART MARKERS */}
       <section className="space-y-4">
         <h2 className="text-xl font-bold text-blue-300">Chart Markers</h2>
         <div className="space-y-3">
@@ -116,7 +112,6 @@ export default function GuidePage() {
         </div>
       </section>
 
-      {/* VERIFY BADGE */}
       <section className="space-y-4">
         <h2 className="text-xl font-bold text-blue-300">Verify Badge (Robinhood Tracker)</h2>
         <p className="text-slate-400 text-sm">
@@ -145,7 +140,6 @@ export default function GuidePage() {
         </div>
       </section>
 
-      {/* SMARTMONEY SIGNAL LEVELS */}
       <section className="space-y-4">
         <h2 className="text-xl font-bold text-blue-300">SmartMoney Signal Levels</h2>
         <p className="text-slate-400 text-sm">

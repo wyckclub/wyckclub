@@ -35,7 +35,7 @@ export interface PotentialApiItem {
 }
 
 export async function GET(req: NextRequest) {
-  const chainParam = req.nextUrl.searchParams.get('chain'); // 'base' | 'robinhood' | null (= all)
+  const chainParam = req.nextUrl.searchParams.get('chain');
   const force = req.nextUrl.searchParams.get('force') === '1';
   const wantBase = chainParam !== 'robinhood';
   const wantRobinhood = chainParam !== 'base';
@@ -48,9 +48,6 @@ export async function GET(req: NextRequest) {
     categoryTargets.push({ cat: ROBINHOOD_CATEGORY, chain: 'robinhood' });
   }
 
-  // Shares the same Redis-cached score data as /api/scores/*, /api/whale-hub and
-  // /api/whale-hub/potential — each upstream WYCK_*_URL is hit at most once per 20s
-  // for the whole app, not once per feature.
   const categories = await Promise.all(
     categoryTargets.map(async (t) => {
       const sources = t.chain === 'robinhood' ? getRobinhoodSources() : getCategorySources(String(t.cat));
@@ -101,8 +98,6 @@ export async function GET(req: NextRequest) {
   const baseCas = partials.filter((i) => i.chain === 'base').map((i) => i.ca);
   const robinhoodCas = partials.filter((i) => i.chain === 'robinhood').map((i) => i.ca);
 
-  // Shared cache/dedup with /api/whale-hub and /api/whale-hub/potential — a token
-  // already fetched by another route within the last 30s is reused here for free.
   const [baseMarket, robinhoodMarket] = await Promise.all([
     baseCas.length
       ? fetchDexscreenerBatchMap(baseCas, 'base', { revalidateSeconds: 30, maxRetries: 2, force })

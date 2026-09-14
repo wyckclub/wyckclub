@@ -45,21 +45,18 @@ function StarIcon({ filled }: { filled: boolean }) {
   );
 }
 
-/** Plain magnitude, no +/- sign (used for Bull / Bear, which have no notion of sign). */
 function fmtPlain(v: number | null | undefined) {
   if (v == null) return '-';
   const rounded = Math.round(v * 10) / 10;
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
-/** Signed magnitude (used for Net Bull only). */
 function fmtSigned(v: number | null | undefined) {
   if (v == null) return '-';
   const rounded = Math.round(v * 10) / 10;
   return `${rounded > 0 ? '+' : ''}${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)}`;
 }
 
-/** Green if price rose since follow, red if it fell, normal color otherwise/unknown. */
 function followPriceColor(follow: NonNullable<PotentialRow['follow']>, item: PotentialApiItem): string {
   if (follow.priceUsd == null || item.priceUsd == null) return 'text-slate-400';
   if (item.priceUsd > follow.priceUsd) return 'text-green-400';
@@ -67,7 +64,6 @@ function followPriceColor(follow: NonNullable<PotentialRow['follow']>, item: Pot
   return 'text-slate-400';
 }
 
-/** Percentage change since follow, unsigned — color already conveys direction. */
 function followPctText(follow: NonNullable<PotentialRow['follow']>, item: PotentialApiItem): string {
   if (follow.priceUsd == null || item.priceUsd == null || follow.priceUsd === 0) return '';
   const pct = Math.abs(((item.priceUsd - follow.priceUsd) / follow.priceUsd) * 100);

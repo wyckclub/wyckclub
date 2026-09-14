@@ -2,16 +2,6 @@ import { isWhaleStarredAt, isSpringPointAt, getChartScoreTextColorClass } from '
 import type { PotentialApiItem, PotentialEntryRaw } from '@/app/api/potential/route';
 import type { PotentialFilters } from '@/lib/potentialFilters';
 
-/**
- * Checks a single entry (plus the ones behind it, for whale/trend lookback) against
- * every "per-entry" criterion: Min WYCKSCORE, Has Whale, Strong Buying, Price trend,
- * W.A.I trend, and Min Bull / Max Bear / Min Net Bull. All of these live on the raw
- * score entries, so they can be evaluated at any point in the token's history.
- *
- * Market Cap / Liquidity / Volume are NOT part of this — they only exist as a single
- * live snapshot from Dexscreener (no per-entry history), so they're always checked
- * separately against the token's current data regardless of the chosen window.
- */
 function entryPassesCoreChecks(entries: PotentialEntryRaw[], idx: number, f: PotentialFilters): boolean {
   const e0 = entries[idx];
   if (!e0) return false;
@@ -58,7 +48,6 @@ function entryPassesCoreChecks(entries: PotentialEntryRaw[], idx: number, f: Pot
   return true;
 }
 
-/** Evaluates a token against the user-defined custom filters. */
 export function passesFilter(item: PotentialApiItem, f: PotentialFilters): boolean {
   if (item.chain !== f.network) return false;
   const platformList = f.network === 'base' ? f.basePlatforms : f.robinhoodPlatforms;
@@ -66,9 +55,6 @@ export function passesFilter(item: PotentialApiItem, f: PotentialFilters): boole
 
   if (!item.entries[0]) return false;
 
-  // "Check over" window: passes if ANY single entry within the last N entries
-  // satisfies every per-entry criterion together (score, whale, strong buying,
-  // price trend, W.A.I trend, bull/bear/net).
   let anyEntryMatches = false;
   for (let idx = 0; idx < f.entryWindow && idx < item.entries.length; idx++) {
     if (entryPassesCoreChecks(item.entries, idx, f)) {
@@ -78,7 +64,6 @@ export function passesFilter(item: PotentialApiItem, f: PotentialFilters): boole
   }
   if (!anyEntryMatches) return false;
 
-  // Live snapshot data only — always checked against the current state, independent of "Check over".
   if (f.minMarketCap.trim() !== '') {
     const v = Number(f.minMarketCap);
     if (!isNaN(v) && (item.marketCap == null || item.marketCap < v)) return false;
@@ -107,10 +92,6 @@ export function passesFilter(item: PotentialApiItem, f: PotentialFilters): boole
   return true;
 }
 
-/**
- * Default "Potential" logic, mirroring the tier1/tier2 rules used by the
- * token sidebar's Potential tab (see app/api/whale-hub/potential/route.ts).
- */
 export function passesDefaultPotential(item: PotentialApiItem): boolean {
   const mapped = item.entries.map((e) => ({
     score: e.score,

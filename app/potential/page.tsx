@@ -25,7 +25,7 @@ const NEW_BADGE_MS = 5 * 60 * 1000;
 
 export default function PotentialPage() {
   const [tab, setTab] = useState<PotentialTab>('base');
-  const [network, setNetwork] = useState<NetworkKey>('base'); // network nhớ riêng, không đổi khi vào tab Following
+  const [network, setNetwork] = useState<NetworkKey>('base');
 
   const [formFilters, setFormFilters] = useState<PotentialFilters>(defaultFiltersFor('base'));
   const [appliedBase, setAppliedBase] = useState<PotentialFilters | null>(null);
@@ -154,7 +154,6 @@ export default function PotentialPage() {
       )
       .sort((a, b) => (b.item.entries[0]?.score ?? 0) - (a.item.entries[0]?.score ?? 0));
     setFollowingRows(followed);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, appliedBase, appliedRobinhood, follows]);
 
   function handleApply() {

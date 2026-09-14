@@ -58,14 +58,12 @@ function computeLevel(
 }
 
 export async function GET(req: NextRequest) {
+  try {
   const chain = req.nextUrl.searchParams.get('chain') === 'robinhood' ? 'robinhood' : 'base';
 
   const NOTIF_HASH_KEY = `wyck:whalehub:notifications_by_ca:${chain}`;
   const LASTSEEN_KEY = `wyck:whalehub:lastseen:${chain}`;
 
-  // Shares the same Redis-cached score data as /api/scores/*, /api/potential and
-  // /api/whale-hub/potential — each upstream WYCK_*_URL is hit at most once per 20s
-  // for the whole app, not once per feature.
   const categories =
     chain === 'robinhood'
       ? [
@@ -181,5 +179,9 @@ export async function GET(req: NextRequest) {
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
     .slice(0, MAX_NOTIFS);
 
-  return NextResponse.json(notifications);
+    return NextResponse.json(notifications);
+  } catch (e) {
+    console.error('[whale-hub] ERROR', e);
+    return NextResponse.json([], { status: 200 });
+  }
 }

@@ -47,14 +47,12 @@ export function defaultFiltersFor(network: NetworkKey): PotentialFilters {
   return { ...BASE_DEFAULTS, network };
 }
 
-// Giữ lại để tương thích ngược nếu chỗ nào còn import
 export const DEFAULT_FILTERS: PotentialFilters = defaultFiltersFor('base');
 
 const DRAFT_KEY_PREFIX = 'wyck_potential_draft_v2_';
 const APPLIED_KEY_PREFIX = 'wyck_potential_applied_v2_';
 const FOLLOW_KEY = 'wyck_potential_follow_v1';
 
-/** Giá trị đang nhập trong panel (chưa bấm "Filter tokens"), lưu riêng theo network. */
 export function loadDraftFilters(network: NetworkKey): PotentialFilters {
   if (typeof window === 'undefined') return defaultFiltersFor(network);
   try {
@@ -73,7 +71,6 @@ export function saveDraftFilters(network: NetworkKey, f: PotentialFilters) {
   } catch {}
 }
 
-/** Bộ filter đã "Apply" — quyết định bảng hiển thị gì khi vào lại tab Base/Robinhood. */
 export function loadAppliedFilters(network: NetworkKey): PotentialFilters | null {
   if (typeof window === 'undefined') return null;
   try {

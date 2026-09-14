@@ -72,7 +72,7 @@ export function TokenInfoPanel({
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      // clipboard API unavailable — fail silently
+      // clipboard API unavailable
     }
   };
 
@@ -101,7 +101,6 @@ export function TokenInfoPanel({
         </a>
       </div>
 
-      {/* Links (only if present) */}
       {(info.website || info.twitter || info.telegram || info.discord) && (
         <div className="flex items-center gap-4 text-[12px]">
           {info.website && (
@@ -139,7 +138,6 @@ export function TokenInfoPanel({
         </div>
       </div>
 
-      {/* m5 / h1 / h6 / h24 - all 4 in ONE row */}
       <div className="grid grid-cols-4 gap-1 text-center">
         {(['m5', 'h1', 'h6', 'h24'] as const).map((k) => (
           <div key={k} className="bg-[oklch(0.18_0.05_268.11)] rounded-md py-1">
@@ -149,21 +147,18 @@ export function TokenInfoPanel({
         ))}
       </div>
 
-      {/* Market Cap / FDV / Liquidity */}
       <div className="grid grid-cols-3 gap-1">
         <StatBox label="MCap" value={formatCap(info.marketCap)} />
         <StatBox label="FDV" value={formatCap(info.fdv)} />
         <StatBox label="Liq" value={formatCap(info.liq)} />
       </div>
 
-      {/* Volume 24h / 6h / 1h */}
       <div className="grid grid-cols-3 gap-1">
         <StatBox label="Vol24h" value={formatCap(info.volume.h24)} />
         <StatBox label="Vol6h" value={formatCap(info.volume.h6)} />
         <StatBox label="Vol1h" value={formatCap(info.volume.h1)} />
       </div>
 
-      {/* Buys/Sells, DEX, Pair Created */}
       <div className="flex items-center justify-between text-[14px] text-slate-400 py-0.5 border-t border-slate-800/60">
         <span className={info.txns.h24.buys >= info.txns.h24.sells ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
           {info.txns.h24.buys} / {info.txns.h24.sells} txns
@@ -172,7 +167,6 @@ export function TokenInfoPanel({
         {info.pairCreatedAt && <span>{formatAge(info.pairCreatedAt)} old</span>}
       </div>
 
-      {/* CA - click to copy */}
       <button
         type="button"
         onClick={handleCopyCA}

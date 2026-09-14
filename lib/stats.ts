@@ -6,15 +6,23 @@ const redis = new Redis({
 });
 
 export async function addConnectedWallet(address: string) {
-  await redis.sadd('wyck:stat:connected_wallets', address.toLowerCase());
+  try {
+    await redis.sadd('wyck:stat:connected_wallets', address.toLowerCase());
+  } catch (e) {
+    console.error('[stats] addConnectedWallet failed', e);
+  }
+}
+
+export async function incrChartView() {
+  try {
+    await redis.incr('wyck:stat:chart_views');
+  } catch (e) {
+    console.error('[stats] incrChartView failed', e);
+  }
 }
 
 export async function getConnectedWalletsCount(): Promise<number> {
   return await redis.scard('wyck:stat:connected_wallets');
-}
-
-export async function incrChartView() {
-  await redis.incr('wyck:stat:chart_views');
 }
 
 export async function getChartViews(): Promise<number> {
@@ -68,7 +76,6 @@ const ROBINHOOD_CATEGORY_URLS = [
   process.env.WYCK_ROBIN5_URL,
   process.env.WYCK_ROBIN6_URL,
 
-  // PonsFamily
   process.env.WYCK_ROBIN_PONSFAMILY1_URL,
   process.env.WYCK_ROBIN_PONSFAMILY2_URL,
   process.env.WYCK_ROBIN_PONSFAMILY3_URL,

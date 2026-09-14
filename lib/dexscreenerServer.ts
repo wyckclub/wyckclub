@@ -1,4 +1,3 @@
-// lib/dexscreenerServer.ts
 import { Redis } from '@upstash/redis';
 
 const redis = new Redis({
@@ -12,7 +11,6 @@ const BASE_BACKOFF_MS = 1000;
 const MAX_BACKOFF_MS = 4000;
 const BATCH_SIZE = 30;
 
-/** Default lifetime of a cached per-CA market data entry, shared across all callers/instances via Redis. */
 const DEFAULT_CACHE_TTL_MS = 30000;
 
 function sleep(ms: number) {
@@ -51,10 +49,6 @@ async function fetchDexscreenerWithRetry(
   return null;
 }
 
-// Dedupes concurrent requests for the exact same batch URL within this process
-// (e.g. two callers asking for the same chunk of CAs within the same tick).
-// This stays in-memory/per-instance on purpose — it only needs to protect against
-// a burst hitting the same running process before the Redis cache is populated.
 const inFlight = new Map<string, Promise<any | null>>();
 
 function fetchDeduped(url: string, revalidateSeconds: number, maxRetries: number): Promise<any | null> {
@@ -83,9 +77,7 @@ export interface DexBatchInfo {
 export interface DexFetchOpts {
   revalidateSeconds?: number;
   maxRetries?: number;
-  /** Skip the shared Redis cache and force a fresh Dexscreener fetch for every CA. */
   force?: boolean;
-  /** How long a cached per-CA entry stays valid (ms). Shared across all callers/instances. Default 30s. */
   cacheTtlMs?: number;
 }
 
@@ -93,7 +85,6 @@ function cacheKey(chainId: string, ca: string) {
   return `wyck:dex:${chainId}:${ca.toLowerCase()}`;
 }
 
-/** Reads whatever is already cached in Redis for these CAs. Best-effort: returns {} on any Redis error. */
 async function getCachedMany(chainId: string, cas: string[]): Promise<Record<string, DexBatchInfo>> {
   if (!cas.length) return {};
   try {
@@ -106,7 +97,7 @@ async function getCachedMany(chainId: string, cas: string[]): Promise<Record<str
       try {
         out[ca] = typeof v === 'string' ? (JSON.parse(v) as DexBatchInfo) : v;
       } catch {
-        // malformed cache entry — ignore, will be re-fetched
+        // 
       }
     });
     return out;
@@ -115,7 +106,6 @@ async function getCachedMany(chainId: string, cas: string[]): Promise<Record<str
   }
 }
 
-/** Writes fresh entries to Redis with a TTL. Best-effort: failures here never block the response. */
 async function setCachedMany(chainId: string, entries: Record<string, DexBatchInfo>, ttlSeconds: number) {
   const cas = Object.keys(entries);
   if (!cas.length) return;
@@ -126,7 +116,7 @@ async function setCachedMany(chainId: string, entries: Record<string, DexBatchIn
     });
     await pipeline.exec();
   } catch {
-    // best-effort cache write; a miss just means the next call re-fetches
+    // 
   }
 }
 
@@ -169,8 +159,6 @@ export async function fetchDexscreenerBatchMap(
         pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === caLower);
       if (!pair) return;
 
-      // Only trust liquidity/volume when we have pairs confirmed on this exact chain;
-      // otherwise fall back to 0 (matches the previous behavior for liq/vol24h).
       const sumField = (getter: (p: any) => number | undefined) =>
         caPairs.length ? caPairs.reduce((s: number, p: any) => s + (Number(getter(p)) || 0), 0) : 0;
 

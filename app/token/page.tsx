@@ -95,7 +95,6 @@ export default function TokenPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10 space-y-10">
-      {/* HERO */}
       <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-8">
         <div
           className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full bg-blue-600/20 blur-3xl"
@@ -137,7 +136,6 @@ export default function TokenPage() {
         </div>
       </div>
 
-      {/* KEY INFO */}
       <div className="grid sm:grid-cols-2 gap-4">
         <InfoCard label="Name">WYCKSCORE</InfoCard>
         <InfoCard label="Symbol">WYCK</InfoCard>
@@ -150,7 +148,6 @@ export default function TokenPage() {
         </InfoCard>
       </div>
 
-      {/* CONTRACT ADDRESS */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
         <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Contract Address</span>
         <div className="flex flex-wrap items-center gap-3">
@@ -173,7 +170,6 @@ export default function TokenPage() {
         </a>
       </div>
 
-      {/* CREATED BY */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
         <div className="flex items-center gap-2">
           <StackIcon />
@@ -192,7 +188,6 @@ export default function TokenPage() {
         </p>
       </div>
 
-      {/* UTILITY */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
         <div className="flex items-center gap-2">
           <SparkleIcon />

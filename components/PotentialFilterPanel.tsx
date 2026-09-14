@@ -137,7 +137,6 @@ export function PotentialFilterPanel({
   resultCount,
 }: {
   tab: PotentialTab;
-  /** Network hiện tại được nhớ để giữ SegButton highlight kể cả khi đang ở tab Following. */
   network: NetworkKey;
   onTabChange: (t: PotentialTab) => void;
   filters: PotentialFilters;
@@ -171,7 +170,6 @@ export function PotentialFilterPanel({
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-4">
-      {/* Network (+ Following) + Platforms */}
       <div className="grid lg:grid-cols-[auto_1fr] gap-4">
         <div className="space-y-1.5">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Network</span>
