@@ -81,24 +81,22 @@ export interface DexFetchOpts {
   cacheTtlMs?: number;
 }
 
-function cacheKey(chainId: string, ca: string) {
-  return `wyck:dex:${chainId}:${ca.toLowerCase()}`;
+function hashKey(chainId: string) {
+  return `wyck:dex:${chainId}`;
 }
 
 async function getCachedMany(chainId: string, cas: string[]): Promise<Record<string, DexBatchInfo>> {
   if (!cas.length) return {};
   try {
-    const keys = cas.map((ca) => cacheKey(chainId, ca));
-    const raw = await redis.mget<(string | DexBatchInfo | null)[]>(...keys);
+    const fields = cas.map((ca) => ca.toLowerCase());
+    const raw = await redis.hmget<Record<string, DexBatchInfo | string>>(hashKey(chainId), ...fields);
     const out: Record<string, DexBatchInfo> = {};
-    cas.forEach((ca, i) => {
-      const v = raw?.[i];
+    cas.forEach((ca) => {
+      const v = raw?.[ca.toLowerCase()];
       if (v == null) return;
       try {
         out[ca] = typeof v === 'string' ? (JSON.parse(v) as DexBatchInfo) : v;
-      } catch {
-        // 
-      }
+      } catch {}
     });
     return out;
   } catch {
@@ -110,14 +108,11 @@ async function setCachedMany(chainId: string, entries: Record<string, DexBatchIn
   const cas = Object.keys(entries);
   if (!cas.length) return;
   try {
-    const pipeline = redis.pipeline();
-    cas.forEach((ca) => {
-      pipeline.set(cacheKey(chainId, ca), JSON.stringify(entries[ca]), { ex: ttlSeconds });
-    });
-    await pipeline.exec();
-  } catch {
-    // 
-  }
+    const fields: Record<string, string> = {};
+    cas.forEach((ca) => { fields[ca.toLowerCase()] = JSON.stringify(entries[ca]); });
+    await redis.hset(hashKey(chainId), fields);
+    await redis.expire(hashKey(chainId), ttlSeconds);
+  } catch {}
 }
 
 export async function fetchDexscreenerBatchMap(
