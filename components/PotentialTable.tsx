@@ -221,9 +221,11 @@ function RowCells({
 export function PotentialTable({
   rows,
   onToggleFollow,
+  emptyMessage = 'No tokens match current filters yet. Set your criteria above and click "Filter tokens".',
 }: {
   rows: PotentialRow[];
   onToggleFollow: (row: PotentialRow) => void;
+  emptyMessage?: string;
 }) {
   const [chartTarget, setChartTarget] = useState<ChartTarget | null>(null);
 
@@ -271,7 +273,7 @@ export function PotentialTable({
             {rows.length === 0 && (
               <tr>
                 <td colSpan={15} className="p-6 text-center text-slate-500">
-                  No tokens match current filters yet. Set your criteria above and click &quot;Filter tokens&quot;.
+                  {emptyMessage}
                 </td>
               </tr>
             )}
@@ -282,9 +284,7 @@ export function PotentialTable({
       {/* Mobile cards */}
       <div className="lg:hidden space-y-2">
         {rows.length === 0 && (
-          <p className="text-slate-500 text-sm text-center py-6">
-            No tokens match current filters yet. Set your criteria above and tap &quot;Filter tokens&quot;.
-          </p>
+          <p className="text-slate-500 text-sm text-center py-6">{emptyMessage}</p>
         )}
         {rows.map((row) => {
           const { item } = row;

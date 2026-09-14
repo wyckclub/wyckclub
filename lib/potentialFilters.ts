@@ -1,7 +1,9 @@
 import type { PotentialApiItem } from '@/app/api/potential/route';
 
+export type NetworkKey = 'base' | 'robinhood';
+
 export interface PotentialFilters {
-  network: 'base' | 'robinhood';
+  network: NetworkKey;
   basePlatforms: string[];
   robinhoodPlatforms: string[];
   minScore: string;
@@ -21,8 +23,7 @@ export interface PotentialFilters {
   minVol24h: string;
 }
 
-export const DEFAULT_FILTERS: PotentialFilters = {
-  network: 'base',
+const BASE_DEFAULTS: Omit<PotentialFilters, 'network'> = {
   basePlatforms: [],
   robinhoodPlatforms: [],
   minScore: '5',
@@ -42,36 +43,53 @@ export const DEFAULT_FILTERS: PotentialFilters = {
   minVol24h: '',
 };
 
-const STORAGE_KEY = 'wyck_potential_filters_v1';
+export function defaultFiltersFor(network: NetworkKey): PotentialFilters {
+  return { ...BASE_DEFAULTS, network };
+}
+
+// Giữ lại để tương thích ngược nếu chỗ nào còn import
+export const DEFAULT_FILTERS: PotentialFilters = defaultFiltersFor('base');
+
+const DRAFT_KEY_PREFIX = 'wyck_potential_draft_v2_';
+const APPLIED_KEY_PREFIX = 'wyck_potential_applied_v2_';
 const FOLLOW_KEY = 'wyck_potential_follow_v1';
 
-export function loadFilters(): PotentialFilters {
-  if (typeof window === 'undefined') return DEFAULT_FILTERS;
+/** Giá trị đang nhập trong panel (chưa bấm "Filter tokens"), lưu riêng theo network. */
+export function loadDraftFilters(network: NetworkKey): PotentialFilters {
+  if (typeof window === 'undefined') return defaultFiltersFor(network);
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_FILTERS;
-    return { ...DEFAULT_FILTERS, ...JSON.parse(raw) };
+    const raw = localStorage.getItem(DRAFT_KEY_PREFIX + network);
+    if (!raw) return defaultFiltersFor(network);
+    return { ...defaultFiltersFor(network), ...JSON.parse(raw), network };
   } catch {
-    return DEFAULT_FILTERS;
+    return defaultFiltersFor(network);
   }
 }
 
-export function saveFilters(f: PotentialFilters) {
+export function saveDraftFilters(network: NetworkKey, f: PotentialFilters) {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(f));
+    localStorage.setItem(DRAFT_KEY_PREFIX + network, JSON.stringify(f));
   } catch {}
 }
 
-export function hasSavedFilters(): boolean {
-  if (typeof window === 'undefined') return false;
-  return localStorage.getItem(STORAGE_KEY) != null;
+/** Bộ filter đã "Apply" — quyết định bảng hiển thị gì khi vào lại tab Base/Robinhood. */
+export function loadAppliedFilters(network: NetworkKey): PotentialFilters | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(APPLIED_KEY_PREFIX + network);
+    if (!raw) return null;
+    return { ...defaultFiltersFor(network), ...JSON.parse(raw), network };
+  } catch {
+    return null;
+  }
 }
 
-export function clearFilters() {
+export function saveAppliedFilters(network: NetworkKey, f: PotentialFilters | null) {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    if (f) localStorage.setItem(APPLIED_KEY_PREFIX + network, JSON.stringify(f));
+    else localStorage.removeItem(APPLIED_KEY_PREFIX + network);
   } catch {}
 }
 

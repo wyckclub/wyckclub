@@ -2,20 +2,21 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PotentialApiItem } from '@/app/api/potential/route';
-import { PotentialFilterPanel } from '@/components/PotentialFilterPanel';
+import { PotentialFilterPanel, PotentialTab } from '@/components/PotentialFilterPanel';
 import { PotentialTable } from '@/components/PotentialTable';
 import {
-  DEFAULT_FILTERS,
   PotentialFilters,
   PotentialRow,
   FollowSnapshot,
-  loadFilters,
-  saveFilters,
-  clearFilters,
+  NetworkKey,
+  defaultFiltersFor,
+  loadDraftFilters,
+  saveDraftFilters,
+  loadAppliedFilters,
+  saveAppliedFilters,
   loadFollows,
   saveFollows,
   followKey,
-  hasSavedFilters,
 } from '@/lib/potentialFilters';
 import { passesFilter } from '@/lib/potentialEngine';
 
@@ -23,36 +24,49 @@ const POLL_MS = 60000;
 const NEW_BADGE_MS = 5 * 60 * 1000;
 
 export default function PotentialPage() {
-  const [formFilters, setFormFilters] = useState<PotentialFilters>(DEFAULT_FILTERS);
-  const [appliedFilters, setAppliedFilters] = useState<PotentialFilters | null>(null);
+  const [tab, setTab] = useState<PotentialTab>('base');
+  const [network, setNetwork] = useState<NetworkKey>('base'); // network nhớ riêng, không đổi khi vào tab Following
+
+  const [formFilters, setFormFilters] = useState<PotentialFilters>(defaultFiltersFor('base'));
+  const [appliedBase, setAppliedBase] = useState<PotentialFilters | null>(null);
+  const [appliedRobinhood, setAppliedRobinhood] = useState<PotentialFilters | null>(null);
+
   const [items, setItems] = useState<PotentialApiItem[]>([]);
-  const [rows, setRows] = useState<PotentialRow[]>([]);
+  const [baseRows, setBaseRows] = useState<PotentialRow[]>([]);
+  const [robinhoodRows, setRobinhoodRows] = useState<PotentialRow[]>([]);
+  const [followingRows, setFollowingRows] = useState<PotentialRow[]>([]);
   const [follows, setFollows] = useState<Record<string, FollowSnapshot>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   const followsRef = useRef(follows);
   followsRef.current = follows;
 
-  const prevPassingRef = useRef<Set<string>>(new Set());
   const hasPolledOnceRef = useRef(false);
-  const newSinceRef = useRef<Map<string, number>>(new Map());
+  const prevPassingBaseRef = useRef<Set<string>>(new Set());
+  const prevPassingRobinhoodRef = useRef<Set<string>>(new Set());
+  const newSinceBaseRef = useRef<Map<string, number>>(new Map());
+  const newSinceRobinhoodRef = useRef<Map<string, number>>(new Map());
 
-  // Restore persisted filters + follow list on mount.
-  // If the user has previously applied a filter (saved to storage), re-apply it
-  // automatically; otherwise the table stays empty until "Filter tokens" is clicked.
   useEffect(() => {
-    const saved = loadFilters();
-    setFormFilters(saved);
-    if (hasSavedFilters()) setAppliedFilters(saved);
+    setAppliedBase(loadAppliedFilters('base'));
+    setAppliedRobinhood(loadAppliedFilters('robinhood'));
     setFollows(loadFollows());
+    setFormFilters(loadDraftFilters('base'));
   }, []);
 
-  const [refreshing, setRefreshing] = useState(false);
+  function handleTabChange(t: PotentialTab) {
+    setTab(t);
+    if (t !== 'following') {
+      setNetwork(t);
+      setFormFilters(loadDraftFilters(t));
+    }
+  }
 
-  const load = useCallback(async (network: PotentialFilters['network'], force = false) => {
+  const load = useCallback(async (force = false) => {
     try {
-      const url = `/api/potential?chain=${network}${force ? '&force=1' : ''}`;
+      const url = `/api/potential${force ? '?force=1' : ''}`;
       const res = await fetch(url, { cache: 'no-store' });
       const data = await res.json();
       setItems(Array.isArray(data.items) ? data.items : []);
@@ -65,82 +79,105 @@ export default function PotentialPage() {
     }
   }, []);
 
-  const activeNetwork = (appliedFilters ?? formFilters).network;
-
   useEffect(() => {
-    load(activeNetwork);
-    const id = setInterval(() => load(activeNetwork), POLL_MS);
+    load();
+    const id = setInterval(() => load(), POLL_MS);
     return () => clearInterval(id);
-  }, [activeNetwork, load]);
+  }, [load]);
 
-  // Recompute rows whenever fresh data, filters, or follow state changes.
   useEffect(() => {
     if (!items.length) {
-      setRows([]);
+      setBaseRows([]);
+      setRobinhoodRows([]);
+      setFollowingRows([]);
       return;
     }
 
-    // No filter has ever been applied -> nothing passes (followed tokens still show, handled below).
-    const evaluate = appliedFilters ? (i: PotentialApiItem) => passesFilter(i, appliedFilters) : () => false;
+    function computeChainRows(
+      chain: NetworkKey,
+      applied: PotentialFilters | null,
+      prevPassingRef: React.MutableRefObject<Set<string>>,
+      newSinceRef: React.MutableRefObject<Map<string, number>>
+    ): PotentialRow[] {
+      const chainItems = items.filter((i) => i.chain === chain);
 
-    const currentPassing = new Set<string>();
-    items.forEach((i) => {
-      if (evaluate(i)) currentPassing.add(followKey(i.chain, i.ca));
-    });
+      if (!applied) {
+        prevPassingRef.current = new Set();
+        return [];
+      }
 
-    if (hasPolledOnceRef.current) {
-      currentPassing.forEach((k) => {
-        if (!prevPassingRef.current.has(k)) newSinceRef.current.set(k, Date.now());
+      const currentPassing = new Set<string>();
+      chainItems.forEach((i) => {
+        if (passesFilter(i, applied)) currentPassing.add(i.ca);
       });
-      newSinceRef.current.forEach((ts, k) => {
-        if (Date.now() - ts > NEW_BADGE_MS) newSinceRef.current.delete(k);
-      });
+
+      if (hasPolledOnceRef.current) {
+        currentPassing.forEach((ca) => {
+          if (!prevPassingRef.current.has(ca)) newSinceRef.current.set(ca, Date.now());
+        });
+        newSinceRef.current.forEach((ts, ca) => {
+          if (Date.now() - ts > NEW_BADGE_MS) newSinceRef.current.delete(ca);
+        });
+      }
+      prevPassingRef.current = currentPassing;
+
+      return chainItems
+        .filter((i) => currentPassing.has(i.ca))
+        .map((item) => {
+          const key = followKey(item.chain, item.ca);
+          return {
+            item,
+            passes: true,
+            isNew: newSinceRef.current.has(item.ca),
+            isFollowed: !!followsRef.current[key],
+            follow: followsRef.current[key],
+          } as PotentialRow;
+        })
+        .sort((a, b) => (b.item.entries[0]?.score ?? 0) - (a.item.entries[0]?.score ?? 0));
     }
-    prevPassingRef.current = currentPassing;
+
+    setBaseRows(computeChainRows('base', appliedBase, prevPassingBaseRef, newSinceBaseRef));
+    setRobinhoodRows(computeChainRows('robinhood', appliedRobinhood, prevPassingRobinhoodRef, newSinceRobinhoodRef));
     hasPolledOnceRef.current = true;
 
-    const currentFollows = followsRef.current;
-    const nextRows: PotentialRow[] = items
-      .map((item) => {
-        const key = followKey(item.chain, item.ca);
-        const passes = currentPassing.has(key);
-        const isFollowed = !!currentFollows[key];
-        return {
-          item,
-          passes,
-          isNew: newSinceRef.current.has(key),
-          isFollowed,
-          follow: currentFollows[key],
-        } as PotentialRow;
-      })
-      .filter((r) => r.isFollowed || r.passes)
-      .sort((a, b) => {
-        if (a.isFollowed !== b.isFollowed) return a.isFollowed ? -1 : 1;
-        const sa = a.item.entries[0]?.score ?? 0;
-        const sb = b.item.entries[0]?.score ?? 0;
-        return sb - sa;
-      });
-
-    setRows(nextRows);
+    const followed = items
+      .filter((i) => !!followsRef.current[followKey(i.chain, i.ca)])
+      .map(
+        (item) =>
+          ({
+            item,
+            passes: true,
+            isNew: false,
+            isFollowed: true,
+            follow: followsRef.current[followKey(item.chain, item.ca)],
+          } as PotentialRow)
+      )
+      .sort((a, b) => (b.item.entries[0]?.score ?? 0) - (a.item.entries[0]?.score ?? 0));
+    setFollowingRows(followed);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, appliedFilters, follows]);
+  }, [items, appliedBase, appliedRobinhood, follows]);
 
   function handleApply() {
-    saveFilters(formFilters);
-    setAppliedFilters(formFilters);
+    saveDraftFilters(network, formFilters);
+    saveAppliedFilters(network, formFilters);
+    if (network === 'base') setAppliedBase(formFilters);
+    else setAppliedRobinhood(formFilters);
   }
 
   function handleReset() {
-    setFormFilters((prev) => ({
-      ...DEFAULT_FILTERS,
-      network: prev.network,
-      basePlatforms: prev.basePlatforms,
-      robinhoodPlatforms: prev.robinhoodPlatforms,
-    }));
-    setAppliedFilters(null);
-    clearFilters();
-    prevPassingRef.current = new Set();
-    newSinceRef.current = new Map();
+    const cleared = defaultFiltersFor(network);
+    setFormFilters(cleared);
+    saveDraftFilters(network, cleared);
+    saveAppliedFilters(network, null);
+    if (network === 'base') {
+      setAppliedBase(null);
+      prevPassingBaseRef.current = new Set();
+      newSinceBaseRef.current = new Map();
+    } else {
+      setAppliedRobinhood(null);
+      prevPassingRobinhoodRef.current = new Set();
+      newSinceRobinhoodRef.current = new Map();
+    }
   }
 
   function handleToggleFollow(row: PotentialRow) {
@@ -170,10 +207,10 @@ export default function PotentialPage() {
 
   function handleRefreshClick() {
     setRefreshing(true);
-    load(activeNetwork, true);
+    load(true);
   }
 
-  const passCount = rows.filter((r) => r.passes).length;
+  const activeRows = tab === 'following' ? followingRows : tab === 'base' ? baseRows : robinhoodRows;
 
   return (
     <div className="w-full px-4 py-6 max-w-[1600px] mx-auto space-y-5">
@@ -192,18 +229,29 @@ export default function PotentialPage() {
       </div>
 
       <PotentialFilterPanel
+        tab={tab}
+        network={network}
+        onTabChange={handleTabChange}
         filters={formFilters}
         onChange={setFormFilters}
         onApply={handleApply}
         onReset={handleReset}
-        resultCount={passCount}
+        resultCount={activeRows.length}
       />
 
       {error && <p className="text-red-400 text-sm">{error}</p>}
       {loading ? (
         <p className="text-slate-400">Loading potential tokens...</p>
       ) : (
-        <PotentialTable rows={rows} onToggleFollow={handleToggleFollow} />
+        <PotentialTable
+          rows={activeRows}
+          onToggleFollow={handleToggleFollow}
+          emptyMessage={
+            tab === 'following'
+              ? 'You are not following any tokens yet. Tap the star icon on a token to follow it.'
+              : 'No tokens match current filters yet. Set your criteria above and click "Filter tokens".'
+          }
+        />
       )}
     </div>
   );
