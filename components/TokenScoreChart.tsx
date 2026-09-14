@@ -92,7 +92,7 @@ export function TokenScoreChart({
               overlay === 'top10' ? 'border-purple-400 text-purple-300 bg-purple-500/10' : 'border-slate-700 text-slate-400 hover:text-slate-200'
             }`}
           >
-            Whale Accumulation Index
+            W.A.I
           </button>
           <button
             onClick={() => setOverlay((v) => (v === 'bullbear' ? 'none' : 'bullbear'))}
