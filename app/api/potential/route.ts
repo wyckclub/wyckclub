@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchDexscreenerBatchMap, DexBatchInfo } from '@/lib/dexscreenerServer';
+import { getCategorySources, getRobinhoodSources, fetchScoresCached } from '@/lib/scoresServer';
 
 const ROBINHOOD_CATEGORY = 5;
 const ENTRY_DEPTH = 8;
@@ -34,28 +35,31 @@ export interface PotentialApiItem {
 }
 
 export async function GET(req: NextRequest) {
-  const origin = req.nextUrl.origin;
   const chainParam = req.nextUrl.searchParams.get('chain'); // 'base' | 'robinhood' | null (= all)
   const force = req.nextUrl.searchParams.get('force') === '1';
   const wantBase = chainParam !== 'robinhood';
   const wantRobinhood = chainParam !== 'base';
 
-  const categorySources: { cat: number; chain: 'base' | 'robinhood'; url: string }[] = [];
+  const categoryTargets: { cat: number; chain: 'base' | 'robinhood' }[] = [];
   if (wantBase) {
-    [1, 2, 3, 4].forEach((cat) => categorySources.push({ cat, chain: 'base', url: `${origin}/api/scores/${cat}` }));
+    [1, 2, 3, 4].forEach((cat) => categoryTargets.push({ cat, chain: 'base' }));
   }
   if (wantRobinhood) {
-    categorySources.push({ cat: ROBINHOOD_CATEGORY, chain: 'robinhood', url: `${origin}/api/scores/robinhood` });
+    categoryTargets.push({ cat: ROBINHOOD_CATEGORY, chain: 'robinhood' });
   }
 
+  // Shares the same Redis-cached score data as /api/scores/*, /api/whale-hub and
+  // /api/whale-hub/potential — each upstream WYCK_*_URL is hit at most once per 20s
+  // for the whole app, not once per feature.
   const categories = await Promise.all(
-    categorySources.map(async (s) => {
+    categoryTargets.map(async (t) => {
+      const sources = t.chain === 'robinhood' ? getRobinhoodSources() : getCategorySources(String(t.cat));
+      const key = t.chain === 'robinhood' ? 'robinhood' : `cat:${t.cat}`;
       try {
-        const res = await fetch(s.url, { cache: 'no-store' });
-        if (!res.ok) return { ...s, data: {} as Record<string, any> };
-        return { ...s, data: (await res.json()) as Record<string, any> };
+        const data = await fetchScoresCached(key, sources);
+        return { ...t, data };
       } catch {
-        return { ...s, data: {} as Record<string, any> };
+        return { ...t, data: {} as Record<string, any> };
       }
     })
   );

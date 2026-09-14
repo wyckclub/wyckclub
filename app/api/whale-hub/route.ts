@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Redis } from '@upstash/redis';
 import { getWhaleStarredScore, getChartScoreTextColorClass } from '@/lib/format';
 import { fetchDexscreenerBatchMap } from '@/lib/dexscreenerServer';
+import { getCategorySources, getRobinhoodSources, fetchScoresCached } from '@/lib/scoresServer';
 
 const redis = new Redis({
   url: process.env.REDIS_KV_REST_API_URL!,
@@ -57,33 +58,29 @@ function computeLevel(
 }
 
 export async function GET(req: NextRequest) {
-  const origin = req.nextUrl.origin;
   const chain = req.nextUrl.searchParams.get('chain') === 'robinhood' ? 'robinhood' : 'base';
 
   const NOTIF_HASH_KEY = `wyck:whalehub:notifications_by_ca:${chain}`;
   const LASTSEEN_KEY = `wyck:whalehub:lastseen:${chain}`;
 
+  // Shares the same Redis-cached score data as /api/scores/*, /api/potential and
+  // /api/whale-hub/potential — each upstream WYCK_*_URL is hit at most once per 20s
+  // for the whole app, not once per feature.
   const categories =
     chain === 'robinhood'
-      ? await (async () => {
-          try {
-            const res = await fetch(`${origin}/api/scores/robinhood`, { cache: 'no-store' });
-            if (!res.ok) return [{ cat: ROBINHOOD_CATEGORY, data: {} as Record<string, any> }];
-            return [{ cat: ROBINHOOD_CATEGORY, data: (await res.json()) as Record<string, any> }];
-          } catch {
-            return [{ cat: ROBINHOOD_CATEGORY, data: {} as Record<string, any> }];
-          }
-        })()
+      ? [
+          {
+            cat: ROBINHOOD_CATEGORY,
+            data: await fetchScoresCached('robinhood', getRobinhoodSources()).catch(() => ({} as Record<string, any>)),
+          },
+        ]
       : await Promise.all(
-          [1, 2, 3, 4].map(async (cat) => {
-            try {
-              const res = await fetch(`${origin}/api/scores/${cat}`, { cache: 'no-store' });
-              if (!res.ok) return { cat, data: {} as Record<string, any> };
-              return { cat, data: (await res.json()) as Record<string, any> };
-            } catch {
-              return { cat, data: {} as Record<string, any> };
-            }
-          })
+          [1, 2, 3, 4].map(async (cat) => ({
+            cat,
+            data: await fetchScoresCached(`cat:${cat}`, getCategorySources(String(cat))).catch(
+              () => ({} as Record<string, any>)
+            ),
+          }))
         );
 
   const lastSeen = (await redis.hgetall<Record<string, string>>(LASTSEEN_KEY)) || {};
