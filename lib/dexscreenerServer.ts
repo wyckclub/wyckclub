@@ -10,8 +10,8 @@ const DEFAULT_MAX_RETRIES = 2;
 const BASE_BACKOFF_MS = 1000;
 const MAX_BACKOFF_MS = 4000;
 const BATCH_SIZE = 30;
-
-const DEFAULT_CACHE_TTL_MS = 30000;
+const DEFAULT_CACHE_TTL_MS = 45000;
+const MEM_TTL_MS = 8000;
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -95,6 +95,37 @@ function hashKey(chainId: string) {
   return `wyck:dex:${chainId}`;
 }
 
+/* ---------- RAM cache (per CA, per chain) ---------- */
+
+interface MemEntry {
+  data: DexBatchInfo;
+  expires: number;
+}
+const memCache = new Map<string, MemEntry>();
+
+function memKey(chainId: string, ca: string) {
+  return `${chainId}:${ca.toLowerCase()}`;
+}
+
+function memGetMany(chainId: string, cas: string[]): Record<string, DexBatchInfo> {
+  const out: Record<string, DexBatchInfo> = {};
+  const now = Date.now();
+  for (const ca of cas) {
+    const e = memCache.get(memKey(chainId, ca));
+    if (e && now <= e.expires) out[ca] = e.data;
+  }
+  return out;
+}
+
+function memSetMany(chainId: string, entries: Record<string, DexBatchInfo>, ttlMs = MEM_TTL_MS) {
+  const expires = Date.now() + ttlMs;
+  for (const [ca, data] of Object.entries(entries)) {
+    memCache.set(memKey(chainId, ca), { data, expires });
+  }
+}
+
+/* ---------- Redis cache ---------- */
+
 async function getCachedMany(chainId: string, cas: string[]): Promise<Record<string, DexBatchInfo>> {
   if (!cas.length) return {};
   try {
@@ -139,10 +170,20 @@ export async function fetchDexscreenerBatchMap(
   const out: Record<string, DexBatchInfo> = {};
 
   let toFetch = uniqueCas;
+
   if (!force) {
-    const cached = await getCachedMany(chainId, uniqueCas);
-    Object.assign(out, cached);
-    toFetch = uniqueCas.filter((ca) => !(ca in cached));
+    // 1) RAM trước
+    const memHit = memGetMany(chainId, uniqueCas);
+    Object.assign(out, memHit);
+    toFetch = uniqueCas.filter((ca) => !(ca in memHit));
+
+    // 2) Redis cho phần còn thiếu
+    if (toFetch.length) {
+      const cached = await getCachedMany(chainId, toFetch);
+      Object.assign(out, cached);
+      memSetMany(chainId, cached);
+      toFetch = toFetch.filter((ca) => !(ca in cached));
+    }
   }
 
   const freshEntries: Record<string, DexBatchInfo> = {};
@@ -177,7 +218,7 @@ export async function fetchDexscreenerBatchMap(
         priceUsd: pair.priceUsd == null ? null : Number(pair.priceUsd),
         h24: pair.priceChange?.h24 == null ? null : Number(pair.priceChange.h24),
         name: pair.baseToken?.name ?? null,
-        pairCreatedAt: oldestPairCreatedAt(caPairs, pair), // + thêm
+        pairCreatedAt: oldestPairCreatedAt(caPairs, pair),
       };
 
       out[ca] = info;
@@ -187,6 +228,7 @@ export async function fetchDexscreenerBatchMap(
 
   if (Object.keys(freshEntries).length) {
     await setCachedMany(chainId, freshEntries, cacheTtlSeconds);
+    memSetMany(chainId, freshEntries);
   }
 
   return out;

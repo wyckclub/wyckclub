@@ -5,8 +5,28 @@ const redis = new Redis({
   token: process.env.REDIS_KV_REST_API_TOKEN!,
 });
 
-/** Matches the revalidate window the individual /api/scores/* routes used before. */
-const CACHE_TTL_SECONDS = 20;
+const CACHE_TTL_SECONDS = 45;
+const MEM_TTL_MS = 8000;
+
+interface MemEntry {
+  data: Record<string, any>;
+  expires: number;
+}
+const memCache = new Map<string, MemEntry>();
+
+function memGet(key: string): Record<string, any> | undefined {
+  const e = memCache.get(key);
+  if (!e) return undefined;
+  if (Date.now() > e.expires) {
+    memCache.delete(key);
+    return undefined;
+  }
+  return e.data;
+}
+
+function memSet(key: string, data: Record<string, any>) {
+  memCache.set(key, { data, expires: Date.now() + MEM_TTL_MS });
+}
 
 export interface ScoreSource {
   url: string | undefined;
@@ -128,10 +148,17 @@ export async function fetchScoresCached(
   const key = cacheKey(kind);
 
   if (!force) {
+    // 1) RAM cache trước — không tốn round-trip Redis nếu đã có request
+    // khác (page khác, user khác) hỏi đúng key này trong vài giây gần đây.
+    const mem = memGet(key);
+    if (mem) return mem;
+
     try {
       const cached = await redis.get<string | Record<string, any> | null>(key);
       if (cached != null) {
-        return typeof cached === 'string' ? JSON.parse(cached) : cached;
+        const parsed = typeof cached === 'string' ? JSON.parse(cached) : cached;
+        memSet(key, parsed);
+        return parsed;
       }
     } catch {
       // Redis unavailable
@@ -143,6 +170,7 @@ export async function fetchScoresCached(
 
   const p = (async () => {
     const merged = await fetchMergedSources(validSources);
+    memSet(key, merged);
     try {
       await redis.set(key, JSON.stringify(merged), { ex: CACHE_TTL_SECONDS });
     } catch {

@@ -16,12 +16,12 @@ export interface PotentialFilters {
   maxBear: string;
   minNetBull: string;
   entryWindow: 1 | 2 | 3;
-  minAge: string;        // + thêm (hour)
-  maxAge: string;        // + thêm (hour)
+  minAge: string;
+  maxAge: string;
   minMarketCap: string;
   maxMarketCap: string;
   minLiq: string;
-  maxChange24h: string;  // + thêm
+  maxChange24h: string;
   minVol1h: string;
   minVol6h: string;
   minVol24h: string;

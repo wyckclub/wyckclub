@@ -31,8 +31,8 @@ export interface PotentialApiItem {
   vol1h: number;
   vol6h: number;
   vol24h: number;
-  change24h: number | null;   // + thêm
-  pairCreatedAt: number | null; // + thêm
+  change24h: number | null;
+  pairCreatedAt: number | null;
   entries: PotentialEntryRaw[];
 }
 
@@ -122,8 +122,8 @@ export async function GET(req: NextRequest) {
       vol1h: m?.vol1h ?? 0,
       vol6h: m?.vol6h ?? 0,
       vol24h: m?.vol24h ?? 0,
-      change24h: m?.h24 ?? null,        // + thêm
-      pairCreatedAt: m?.pairCreatedAt ?? null, // + thêm
+      change24h: m?.h24 ?? null,
+      pairCreatedAt: m?.pairCreatedAt ?? null,
     };
   });
 
