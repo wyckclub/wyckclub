@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PotentialApiItem } from '@/app/api/potential/route';
 import { PotentialFilterPanel, PotentialTab } from '@/components/PotentialFilterPanel';
 import { PotentialTable } from '@/components/PotentialTable';
+import { prefetchDexDataBatch } from '@/lib/dexData';
 import {
   PotentialFilters,
   PotentialRow,
@@ -84,6 +85,14 @@ export default function PotentialPage() {
     const id = setInterval(() => load(), POLL_MS);
     return () => clearInterval(id);
   }, [load]);
+
+  useEffect(() => {
+    if (!items.length) return;
+    const baseCas = items.filter((i) => i.chain === 'base').map((i) => i.ca);
+    const rhCas = items.filter((i) => i.chain === 'robinhood').map((i) => i.ca);
+    if (baseCas.length) prefetchDexDataBatch(baseCas, undefined, 'base');
+    if (rhCas.length) prefetchDexDataBatch(rhCas, undefined, 'robinhood');
+  }, [items]);
 
   useEffect(() => {
     if (!items.length) {

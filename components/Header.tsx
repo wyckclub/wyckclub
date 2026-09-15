@@ -155,7 +155,7 @@ export function Header() {
             ))}
           </nav>          
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5">
           <ConnectButton chainStatus="icon" showBalance={false} />
           <button
             onClick={() => setMenuOpen((v) => !v)}

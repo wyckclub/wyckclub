@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { formatCap, formatPriceShort } from '@/lib/format';
+import { formatCap, formatPriceShort, formatAge } from '@/lib/format';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { PlatformBadge } from '@/components/PlatformBadge';
 import { NetworkIcon } from '@/components/NetworkIcon';
@@ -57,6 +57,14 @@ function fmtSigned(v: number | null | undefined) {
   return `${rounded > 0 ? '+' : ''}${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)}`;
 }
 
+function change24hClass(v: number | null) {
+  return v == null ? 'text-slate-500' : v >= 0 ? 'text-green-400' : 'text-red-400';
+}
+
+function change24hText(v: number | null) {
+  return v == null ? 'N/A' : `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+}
+
 function followPriceColor(follow: NonNullable<PotentialRow['follow']>, item: PotentialApiItem): string {
   if (follow.priceUsd == null || item.priceUsd == null) return 'text-slate-400';
   if (item.priceUsd > follow.priceUsd) return 'text-green-400';
@@ -109,10 +117,15 @@ function RowCells({
   const netBull = e0?.incBull != null && e0?.decBear != null ? e0.incBull - e0.decBear : null;
   const detailHref = `/${item.chain}/${item.ca}`;
 
+  function handleStarClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    onToggleFollow();
+  }
+
   return (
     <>
       <td className="p-2.5">
-        <button onClick={onToggleFollow} aria-label="Toggle follow">
+        <button onClick={handleStarClick} aria-label="Toggle follow">
           <StarIcon filled={row.isFollowed} />
         </button>
       </td>
@@ -131,7 +144,7 @@ function RowCells({
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <button
-                onClick={() => onOpenChart(item)}
+                onClick={(e) => { e.stopPropagation(); onOpenChart(item); }}
                 className="text-sm font-bold text-blue-400 hover:text-blue-300 truncate"
               >
                 {item.symbol}
@@ -158,19 +171,19 @@ function RowCells({
       </td>
       <td className="p-2.5 whitespace-nowrap">
         <button
-          onClick={() => {
-            navigator.clipboard?.writeText(item.ca);
-          }}
+          onClick={(e) => { e.stopPropagation(); navigator.clipboard?.writeText(item.ca); }}
           className="font-mono text-xs text-slate-400 hover:text-blue-300"
           title="Click to copy"
         >
           {item.ca.slice(0, 6)}...{item.ca.slice(-4)}
         </button>
       </td>
+      <td className="p-2.5 whitespace-nowrap text-sm text-slate-400">{formatAge(item.pairCreatedAt)}</td>
       <td className="p-2.5 whitespace-nowrap">
         <PlatformBadge platform={item.platform} size="sm" />
       </td>
       <td className={`p-2.5 whitespace-nowrap font-mono text-sm ${priceColor}`}>{formatPriceShort(item.priceUsd)}</td>
+      <td className={`p-2.5 whitespace-nowrap text-sm ${change24hClass(item.change24h)}`}>{change24hText(item.change24h)}</td>
       <td className="p-2.5 whitespace-nowrap text-sm">{formatCap(item.marketCap)}</td>
       <td className="p-2.5 whitespace-nowrap text-sm">{formatCap(item.liq)}</td>
       <td className="p-2.5 whitespace-nowrap text-sm">{formatCap(item.vol1h)}</td>
@@ -205,6 +218,7 @@ function RowCells({
           href={detailHref}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
           className="inline-block px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-blue-400 hover:text-blue-300"
         >
           Detail
@@ -239,8 +253,10 @@ export function PotentialTable({
               <th className="text-left p-2.5"></th>
               <th className="text-left p-2.5">Token</th>
               <th className="text-left p-2.5">CA</th>
+              <th className="text-left p-2.5">Age</th>
               <th className="text-left p-2.5">Platform</th>
               <th className="text-left p-2.5">Price</th>
+              <th className="text-left p-2.5">Change24h</th>
               <th className="text-left p-2.5">Market Cap</th>
               <th className="text-left p-2.5">Liquidity</th>
               <th className="text-left p-2.5">Vol 1h</th>
@@ -259,7 +275,8 @@ export function PotentialTable({
             {rows.map((row) => (
               <tr
                 key={`${row.item.chain}-${row.item.ca}`}
-                className={`border-t border-slate-800 hover:bg-slate-800/50 transition-colors ${
+                onClick={() => openChart(row.item)}
+                className={`border-t border-slate-800 hover:bg-slate-800/50 transition-colors cursor-pointer ${
                   row.isFollowed ? 'bg-yellow-500/[0.06]' : ''
                 }`}
               >
@@ -268,7 +285,7 @@ export function PotentialTable({
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={15} className="p-6 text-center text-slate-500">
+                <td colSpan={17} className="p-6 text-center text-slate-500">
                   {emptyMessage}
                 </td>
               </tr>
@@ -303,7 +320,8 @@ export function PotentialTable({
           return (
             <div
               key={`${item.chain}-${item.ca}`}
-              className={`rounded-xl border border-slate-800 p-3 space-y-2 transition-colors hover:bg-slate-800/40 ${
+              onClick={() => openChart(item)}
+              className={`rounded-xl border border-slate-800 p-3 space-y-2 transition-colors hover:bg-slate-800/40 cursor-pointer ${
                 row.isFollowed ? 'bg-yellow-500/[0.06]' : 'bg-slate-900'
               }`}
             >
@@ -321,7 +339,7 @@ export function PotentialTable({
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <button onClick={() => openChart(item)} className="text-sm font-bold text-blue-400 truncate">
+                      <button onClick={(e) => { e.stopPropagation(); openChart(item); }} className="text-sm font-bold text-blue-400 truncate">
                         {item.symbol}
                       </button>
                       {row.isNew && (
@@ -337,7 +355,7 @@ export function PotentialTable({
                       </div>
                     ) : (
                       <button
-                        onClick={() => navigator.clipboard?.writeText(item.ca)}
+                        onClick={(e) => { e.stopPropagation(); navigator.clipboard?.writeText(item.ca); }}
                         className="text-[11px] text-slate-500 font-mono"
                       >
                         {item.ca.slice(0, 6)}...{item.ca.slice(-4)}
@@ -345,12 +363,13 @@ export function PotentialTable({
                     )}
                   </div>
                 </div>
-                <button onClick={() => onToggleFollow(row)} className="shrink-0">
+                <button onClick={(e) => { e.stopPropagation(); onToggleFollow(row); }} className="shrink-0">
                   <StarIcon filled={row.isFollowed} />
                 </button>
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] text-slate-500">{formatAge(item.pairCreatedAt)}</span>
                 <PlatformBadge platform={item.platform} size="sm" />
                 <ScoreBadge scoreDisplay={e0?.display ?? '0'} score={e0?.score ?? 0} />
                 {hasWhale && <span>🐋</span>}
@@ -361,6 +380,10 @@ export function PotentialTable({
                 <div className="bg-slate-950 rounded-md py-1">
                   <div className="text-slate-500">Price</div>
                   <div className={`font-bold font-mono ${priceColor}`}>{formatPriceShort(item.priceUsd)}</div>
+                </div>
+                <div className="bg-slate-950 rounded-md py-1">
+                  <div className="text-slate-500">Change24h</div>
+                  <div className={`font-bold ${change24hClass(item.change24h)}`}>{change24hText(item.change24h)}</div>
                 </div>
                 <div className="bg-slate-950 rounded-md py-1">
                   <div className="text-slate-500">MCap</div>
@@ -411,6 +434,7 @@ export function PotentialTable({
                 href={detailHref}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
                 className="block text-center w-full py-1.5 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-blue-400"
               >
                 Detail

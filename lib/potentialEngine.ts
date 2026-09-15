@@ -12,12 +12,15 @@ function entryPassesCoreChecks(entries: PotentialEntryRaw[], idx: number, f: Pot
     if (!isNaN(min) && e0.score < min) return false;
   }
 
-  if (f.hasWhale) {
-    const mapped = entries.slice(idx).map((e) => ({ score: e.score, topwhale: e.topwhale }));
-    if (!isWhaleStarredAt(mapped, 0)) return false;
-  }
+  const mapped = entries.slice(idx).map((e) => ({ score: e.score, topwhale: e.topwhale }));
+  const whaleOk = isWhaleStarredAt(mapped, 0);
+  const strongOk = !!e0.display?.endsWith('+');
 
-  if (f.strongBuying && !e0.display?.endsWith('+')) return false;
+  if (f.bothRequired) {
+    if (!(whaleOk && strongOk)) return false;
+  } else if (f.hasWhale && f.strongBuying) {
+    if (!(whaleOk || strongOk)) return false;
+  }
 
   if (f.priceTrend !== 'any') {
     if (!e1 || e0.price == null || e1.price == null) return false;
@@ -87,6 +90,24 @@ export function passesFilter(item: PotentialApiItem, f: PotentialFilters): boole
   if (f.minVol24h.trim() !== '') {
     const v = Number(f.minVol24h);
     if (!isNaN(v) && item.vol24h < v) return false;
+  }
+
+  if (f.maxChange24h.trim() !== '') {
+    const v = Number(f.maxChange24h);
+    if (!isNaN(v) && (item.change24h == null || item.change24h > v)) return false;
+  }
+
+  if (f.minAge.trim() !== '' || f.maxAge.trim() !== '') {
+    if (item.pairCreatedAt == null) return false;
+    const ageHours = (Date.now() - item.pairCreatedAt) / (1000 * 60 * 60);
+    if (f.minAge.trim() !== '') {
+      const v = Number(f.minAge);
+      if (!isNaN(v) && ageHours < v) return false;
+    }
+    if (f.maxAge.trim() !== '') {
+      const v = Number(f.maxAge);
+      if (!isNaN(v) && ageHours > v) return false;
+    }
   }
 
   return true;

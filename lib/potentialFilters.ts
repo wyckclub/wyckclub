@@ -9,15 +9,19 @@ export interface PotentialFilters {
   minScore: string;
   hasWhale: boolean;
   strongBuying: boolean;
+  bothRequired: boolean;
   priceTrend: 'any' | 'down' | 'up';
   waiTrend: 'any' | 'notdown' | 'down';
   minBull: string;
   maxBear: string;
   minNetBull: string;
   entryWindow: 1 | 2 | 3;
+  minAge: string;        // + thêm (hour)
+  maxAge: string;        // + thêm (hour)
   minMarketCap: string;
   maxMarketCap: string;
   minLiq: string;
+  maxChange24h: string;  // + thêm
   minVol1h: string;
   minVol6h: string;
   minVol24h: string;
@@ -29,18 +33,22 @@ const BASE_DEFAULTS: Omit<PotentialFilters, 'network'> = {
   minScore: '5',
   hasWhale: false,
   strongBuying: false,
+  bothRequired: false,
   priceTrend: 'any',
   waiTrend: 'any',
   minBull: '5',
   maxBear: '1',
   minNetBull: '5',
   entryWindow: 1,
+  minAge: '',
+  maxAge: '',
   minMarketCap: '50000',
   maxMarketCap: '',
   minLiq: '20000',
+  maxChange24h: '',
   minVol1h: '',
   minVol6h: '',
-  minVol24h: '',
+  minVol24h: '1000',
 };
 
 export function defaultFiltersFor(network: NetworkKey): PotentialFilters {

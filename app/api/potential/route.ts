@@ -31,6 +31,8 @@ export interface PotentialApiItem {
   vol1h: number;
   vol6h: number;
   vol24h: number;
+  change24h: number | null;   // + thêm
+  pairCreatedAt: number | null; // + thêm
   entries: PotentialEntryRaw[];
 }
 
@@ -61,9 +63,10 @@ export async function GET(req: NextRequest) {
     })
   );
 
+
   type PartialItem = Omit<
     PotentialApiItem,
-    'name' | 'imageUrl' | 'priceUsd' | 'marketCap' | 'liq' | 'vol1h' | 'vol6h' | 'vol24h'
+    'name' | 'imageUrl' | 'priceUsd' | 'marketCap' | 'liq' | 'vol1h' | 'vol6h' | 'vol24h' | 'change24h' | 'pairCreatedAt'
   >;
   const partials: PartialItem[] = [];
 
@@ -119,6 +122,8 @@ export async function GET(req: NextRequest) {
       vol1h: m?.vol1h ?? 0,
       vol6h: m?.vol6h ?? 0,
       vol24h: m?.vol24h ?? 0,
+      change24h: m?.h24 ?? null,        // + thêm
+      pairCreatedAt: m?.pairCreatedAt ?? null, // + thêm
     };
   });
 

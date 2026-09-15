@@ -11,28 +11,30 @@ function NumberField({
   value,
   onChange,
   placeholder = 'Not set',
+  className = '',
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  className?: string;
 }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">{label}</span>
+    <label className={`flex flex-col gap-1 ${className}`}>
+      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide whitespace-nowrap">{label}</span>
       <input
         type="text"
         inputMode="decimal"
         value={value}
-        onChange={(e) => onChange(e.target.value.replace(/[^0-9.]/g, ''))}
+        onChange={(e) => onChange(e.target.value.replace(/[^0-9.\-]/g, ''))}
         placeholder={placeholder}
-        className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-blue-500"
+        className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-blue-500"
       />
     </label>
   );
 }
 
-function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+function Toggle({ label, checked, onChange }: { label: React.ReactNode; checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <label className="flex items-center gap-2 text-sm font-semibold text-slate-300 cursor-pointer select-none">
       <input
@@ -224,7 +226,12 @@ export function PotentialFilterPanel({
             <NumberField label="Min WYCKSCORE" value={filters.minScore} onChange={(v) => set('minScore', v)} />
             <div className="flex flex-col gap-1.5 justify-end pb-1.5">
               <Toggle label="Has Whale 🐋" checked={filters.hasWhale} onChange={(v) => set('hasWhale', v)} />
-              <Toggle label="Strong buying ▲" checked={filters.strongBuying} onChange={(v) => set('strongBuying', v)} />
+              <Toggle label={<>Strong buying<span className="text-green-500">▲</span></>} checked={filters.strongBuying} onChange={(v) => set('strongBuying', v)} />
+              <Toggle
+                label={<>Both 🐋 +<span className="text-green-500">▲</span></>}
+                checked={filters.bothRequired}
+                onChange={(v) => set('bothRequired', v)}
+              />
             </div>
             <div className="space-y-1">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Price trend</span>
@@ -259,12 +266,9 @@ export function PotentialFilterPanel({
 
           <div className="h-px bg-slate-800" />
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
-            <NumberField label="Min Bull" value={filters.minBull} onChange={(v) => set('minBull', v)} />
-            <NumberField label="Max Bear" value={filters.maxBear} onChange={(v) => set('maxBear', v)} />
-            <NumberField label="Min Net Bull" value={filters.minNetBull} onChange={(v) => set('minNetBull', v)} />
-            <div className="space-y-1">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Check over</span>
+          <div className="flex flex-wrap lg:grid-cols-6 items-end gap-3">
+            <div className="space-y-1 shrink-0">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide whitespace-nowrap">Check over</span>
               <SegButton
                 options={[
                   { key: 1 as const, label: 'Current entry' },
@@ -275,14 +279,20 @@ export function PotentialFilterPanel({
                 onChange={(v) => set('entryWindow', v)}
               />
             </div>
+            <NumberField label="Min Bull" value={filters.minBull} onChange={(v) => set('minBull', v)} />
+            <NumberField label="Max Bear" value={filters.maxBear} onChange={(v) => set('maxBear', v)} />
+            <NumberField label="Min Net Bull" value={filters.minNetBull} onChange={(v) => set('minNetBull', v)} />
+            <NumberField label="Min Age" value={filters.minAge} onChange={(v) => set('minAge', v)} placeholder="hour" />
+            <NumberField label="Max Age" value={filters.maxAge} onChange={(v) => set('maxAge', v)} placeholder="hour" />
           </div>
 
           <div className="h-px bg-slate-800" />
 
-          <div className="grid sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="grid sm:grid-cols-3 lg:grid-cols-7 gap-3">
             <NumberField label="Min Market Cap" value={filters.minMarketCap} onChange={(v) => set('minMarketCap', v)} />
             <NumberField label="Max Market Cap" value={filters.maxMarketCap} onChange={(v) => set('maxMarketCap', v)} />
             <NumberField label="Min Liquidity" value={filters.minLiq} onChange={(v) => set('minLiq', v)} />
+            <NumberField label="Max Change24h (%)" value={filters.maxChange24h} onChange={(v) => set('maxChange24h', v)} />
             <NumberField label="Min Vol 1h" value={filters.minVol1h} onChange={(v) => set('minVol1h', v)} />
             <NumberField label="Min Vol 6h" value={filters.minVol6h} onChange={(v) => set('minVol6h', v)} />
             <NumberField label="Min Vol 24h" value={filters.minVol24h} onChange={(v) => set('minVol24h', v)} />

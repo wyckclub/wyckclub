@@ -72,6 +72,7 @@ export interface DexBatchInfo {
   priceUsd: number | null;
   h24: number | null;
   name: string | null;
+  pairCreatedAt: number | null;
 }
 
 export interface DexFetchOpts {
@@ -79,6 +80,15 @@ export interface DexFetchOpts {
   maxRetries?: number;
   force?: boolean;
   cacheTtlMs?: number;
+}
+
+function oldestPairCreatedAt(pairs: any[], fallback: any): number | null {
+  if (!pairs.length) return fallback?.pairCreatedAt ?? null;
+  return pairs.reduce((min: number | null, p: any) => {
+    const t = p.pairCreatedAt ?? null;
+    if (t == null) return min;
+    return min == null ? t : Math.min(min, t);
+  }, null as number | null);
 }
 
 function hashKey(chainId: string) {
@@ -167,6 +177,7 @@ export async function fetchDexscreenerBatchMap(
         priceUsd: pair.priceUsd == null ? null : Number(pair.priceUsd),
         h24: pair.priceChange?.h24 == null ? null : Number(pair.priceChange.h24),
         name: pair.baseToken?.name ?? null,
+        pairCreatedAt: oldestPairCreatedAt(caPairs, pair), // + thêm
       };
 
       out[ca] = info;
