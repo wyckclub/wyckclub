@@ -6,7 +6,7 @@ import { fetchLivePrice, getCachedDexData } from '@/lib/dexData';
 import { formatPriceShort, formatDateShort, formatCap } from '@/lib/format';
 import { PlatformBadge } from '@/components/PlatformBadge';
 
-export type OverlayMode = 'top10' | 'bullbear' | 'netbull' | 'none';
+export type OverlayMode = 'top10' | 'bigwhale' | 'bullbear' | 'netbull' | 'none';
 
 interface Props {
   category: number;
@@ -127,6 +127,14 @@ export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base
                   }`}
                 >
                   W.A.I
+                </button>
+                <button
+                  onClick={() => setOverlay((v) => (v === 'bigwhale' ? 'none' : 'bigwhale'))}
+                  className={`text-xs px-2 py-1 rounded border ${
+                    overlay === 'bigwhale' ? 'border-amber-400 text-amber-300 bg-amber-500/10' : 'border-slate-700 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Big Whale
                 </button>
                 <button
                   onClick={() => setOverlay((v) => (v === 'bullbear' ? 'none' : 'bullbear'))}
@@ -453,6 +461,23 @@ return (
                       ▼
                     </text>
                   )}
+                </>
+              )}
+
+              {overlay === 'bigwhale' && p.bigwhale != null && (
+                <>
+                  <rect
+                    x={p.x - (String(p.bigwhale).length * 7 * s + 10 * s) / 2}
+                    y={p.y + 6 * s}
+                    width={String(p.bigwhale).length * 7 * s + 10 * s}
+                    height={16 * s}
+                    rx={4}
+                    fill="#3f2a05"
+                    fillOpacity={1}
+                  />
+                  <text x={p.x} y={p.y + 17 * s} textAnchor="middle" className="fill-amber-400 font-semibold" style={{ fontSize: 11 * s }}>
+                    {p.bigwhale}
+                  </text>
                 </>
               )}
               {overlay === 'bullbear' && (bull != null || bear != null) && (

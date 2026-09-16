@@ -31,6 +31,7 @@ interface RawEntry {
   verified?: boolean;
   incBull?: number;
   decBear?: number;
+  bigwhale?: number | null;
 }
 
 interface RawToken {
@@ -108,6 +109,7 @@ export interface PriceHistoryEntry {
   scoreDisplay: string | null;
   topwhale?: string;
   top10?: number;
+  bigwhale?: number | null;
   timestamp?: string;
   incBull?: number | null;
   decBear?: number | null;
@@ -130,6 +132,7 @@ export async function fetchTokenHistory(category: number, ca: string): Promise<P
     scoreDisplay: e.display,
     topwhale: e.topwhale,
     top10: e.top10,
+    bigwhale: e.bigwhale ?? null,
     timestamp: e.timestamp,
     incBull: e.incBull ?? null,
     decBear: e.decBear ?? null,

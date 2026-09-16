@@ -222,7 +222,7 @@ export function PotentialFilterPanel({
         <>
           <div className="h-px bg-slate-800" />
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <NumberField label="Min WYCKSCORE" value={filters.minScore} onChange={(v) => set('minScore', v)} />
             <div className="flex flex-col gap-1.5 justify-end pb-1.5">
               <Toggle label="Has Whale 🐋" checked={filters.hasWhale} onChange={(v) => set('hasWhale', v)} />
@@ -232,6 +232,10 @@ export function PotentialFilterPanel({
                 checked={filters.bothRequired}
                 onChange={(v) => set('bothRequired', v)}
               />
+            </div>
+            <div className="flex flex-col gap-1.5 justify-end pb-1.5">
+              <Toggle label="Bulls increase" checked={filters.bullsIncrease} onChange={(v) => set('bullsIncrease', v)} />
+              <Toggle label="Bears decrease" checked={filters.bearsDecrease} onChange={(v) => set('bearsDecrease', v)} />
             </div>
             <div className="space-y-1">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Price trend</span>

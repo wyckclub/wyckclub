@@ -13,13 +13,22 @@ function entryPassesCoreChecks(entries: PotentialEntryRaw[], idx: number, f: Pot
   }
 
   const mapped = entries.slice(idx).map((e) => ({ score: e.score, topwhale: e.topwhale }));
+
   const whaleOk = isWhaleStarredAt(mapped, 0);
   const strongOk = !!e0.display?.endsWith('+');
 
-  if (f.bothRequired) {
-    if (!(whaleOk && strongOk)) return false;
-  } else if (f.hasWhale && f.strongBuying) {
-    if (!(whaleOk || strongOk)) return false;
+  if (f.hasWhale && !whaleOk) return false;
+  if (f.strongBuying && !strongOk) return false;
+  if (f.bothRequired && !(whaleOk && strongOk)) return false;
+
+  if (f.bullsIncrease) {
+    if (!e1 || e0.incBull == null || e1.incBull == null) return false;
+    if (!(e0.incBull >= e1.incBull)) return false;
+  }
+
+  if (f.bearsDecrease) {
+    if (!e1 || e0.decBear == null || e1.decBear == null) return false;
+    if (!(e0.decBear === 0 || e0.decBear < e1.decBear)) return false;
   }
 
   if (f.priceTrend !== 'any') {

@@ -10,6 +10,8 @@ export interface PotentialFilters {
   hasWhale: boolean;
   strongBuying: boolean;
   bothRequired: boolean;
+  bullsIncrease: boolean;   // NEW
+  bearsDecrease: boolean;   // NEW
   priceTrend: 'any' | 'down' | 'up';
   waiTrend: 'any' | 'notdown' | 'down';
   minBull: string;
@@ -34,6 +36,8 @@ const BASE_DEFAULTS: Omit<PotentialFilters, 'network'> = {
   hasWhale: false,
   strongBuying: false,
   bothRequired: false,
+  bullsIncrease: false,
+  bearsDecrease: false,
   priceTrend: 'any',
   waiTrend: 'any',
   minBull: '5',

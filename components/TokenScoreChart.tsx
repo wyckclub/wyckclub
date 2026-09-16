@@ -94,6 +94,16 @@ export function TokenScoreChart({
           >
             W.A.I
           </button>
+
+          <button
+            onClick={() => setOverlay((v) => (v === 'bigwhale' ? 'none' : 'bigwhale'))}
+            className={`text-xs px-2 py-1 rounded border ${
+              overlay === 'bigwhale' ? 'border-amber-400 text-amber-300 bg-amber-500/10' : 'border-slate-700 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            Big Whale
+          </button>
+
           <button
             onClick={() => setOverlay((v) => (v === 'bullbear' ? 'none' : 'bullbear'))}
             className={`text-xs px-2 py-1 rounded border ${
