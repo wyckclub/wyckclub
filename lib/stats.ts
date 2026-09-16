@@ -64,9 +64,9 @@ const BASE_CATEGORY_URLS = [
 const ROBINHOOD_CATEGORY_URLS = [
   process.env.WYCK_ROBIN_URL,
 
-  process.env.WYCK_ROBIN1_URL,
-  process.env.WYCK_ROBIN1A_URL,
-  process.env.WYCK_ROBIN1B_URL,
+  // process.env.WYCK_ROBIN1_URL,
+  // process.env.WYCK_ROBIN1A_URL,
+  // process.env.WYCK_ROBIN1B_URL,
   process.env.WYCK_ROBIN2_URL,
   process.env.WYCK_ROBIN2A_URL,
   process.env.WYCK_ROBIN2B_URL,
@@ -82,13 +82,13 @@ const ROBINHOOD_CATEGORY_URLS = [
   process.env.WYCK_ROBIN_PONSFAMILY4_URL,
   process.env.WYCK_ROBIN_PONSFAMILY5_URL,
   process.env.WYCK_ROBIN_PONSFAMILY6_URL,
-  process.env.WYCK_ROBIN_PONSFAMILY7_URL,
-  process.env.WYCK_ROBIN_PONSFAMILY8_URL,
+  // process.env.WYCK_ROBIN_PONSFAMILY7_URL,
+  // process.env.WYCK_ROBIN_PONSFAMILY8_URL,
 
   process.env.WYCK_ROBIN_LONG1_URL,
   process.env.WYCK_ROBIN_LONG2_URL,
   process.env.WYCK_ROBIN_LONG3_URL,
-  process.env.WYCK_ROBIN_LONG4_URL,
+  // process.env.WYCK_ROBIN_LONG4_URL,
 
   process.env.WYCK_ROBIN_NOXA1_URL,
   process.env.WYCK_ROBIN_STONKBROKERS1_URL,
