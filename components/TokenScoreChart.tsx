@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { fetchTokenHistory, PriceHistoryEntry } from '@/lib/tokenApi';
 import { fetchLivePrice } from '@/lib/dexData';
-import { ChartSVG, OverlayMode } from '@/components/PriceChartModal';
+import { ChartSVG, OverlayMode, trendUpDown, bullBearTrend, netBullTrendState, trendTextClassHtml } from '@/components/PriceChartModal';
 
 function ShareIcon() {
   return (
@@ -47,6 +47,21 @@ export function TokenScoreChart({
     return () => { active = false; clearInterval(id); };
   }, [ca, chainId]);
 
+  const lastHist = entries[entries.length - 1];
+  const prevHist = entries[entries.length - 2];
+  const isFirstOverall = entries.length < 2;
+  const waiTrend = trendUpDown(lastHist?.top10 ?? null, prevHist?.top10 ?? null);
+  const bigwhaleTrend = trendUpDown(lastHist?.bigwhale ?? null, prevHist?.bigwhale ?? null);
+  const bullBearBtnTrend = bullBearTrend(
+    lastHist?.incBull ?? null, lastHist?.decBear ?? null,
+    prevHist?.incBull ?? null, prevHist?.decBear ?? null,
+    isFirstOverall
+  );
+  const netBullBtnTrend = netBullTrendState(
+    lastHist?.incBull ?? null, lastHist?.decBear ?? null,
+    prevHist?.incBull ?? null, prevHist?.decBear ?? null
+  );
+
   async function handleShare() {
     if (sharing) return;
     setSharing(true);
@@ -86,40 +101,38 @@ export function TokenScoreChart({
           </button>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => setOverlay((v) => (v === 'top10' ? 'none' : 'top10'))}
-            className={`text-xs px-2 py-1 rounded border ${
-              overlay === 'top10' ? 'border-purple-400 text-purple-300 bg-purple-500/10' : 'border-slate-700 text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            W.A.I
-          </button>
-
-          <button
-            onClick={() => setOverlay((v) => (v === 'bigwhale' ? 'none' : 'bigwhale'))}
-            className={`text-xs px-2 py-1 rounded border ${
-              overlay === 'bigwhale' ? 'border-amber-400 text-amber-300 bg-amber-500/10' : 'border-slate-700 text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Big Whale
-          </button>
-
-          <button
-            onClick={() => setOverlay((v) => (v === 'bullbear' ? 'none' : 'bullbear'))}
-            className={`text-xs px-2 py-1 rounded border ${
-              overlay === 'bullbear' ? 'border-purple-400 text-purple-300 bg-purple-500/10' : 'border-slate-700 text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Bull vs Bear
-          </button>
-          <button
-            onClick={() => setOverlay((v) => (v === 'netbull' ? 'none' : 'netbull'))}
-            className={`text-xs px-2 py-1 rounded border ${
-              overlay === 'netbull' ? 'border-purple-400 text-purple-300 bg-purple-500/10' : 'border-slate-700 text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Net Bull
-          </button>
+                <button
+                  onClick={() => setOverlay((v) => (v === 'top10' ? 'none' : 'top10'))}
+                  className={`text-xs px-2 py-1 rounded border ${trendTextClassHtml(waiTrend)} ${
+                    overlay === 'top10' ? 'border-purple-400 bg-purple-300/10' : 'border-slate-700 hover:opacity-80'
+                  }`}
+                >
+                  W.A.I
+                </button>
+                <button
+                  onClick={() => setOverlay((v) => (v === 'bigwhale' ? 'none' : 'bigwhale'))}
+                  className={`text-xs px-2 py-1 rounded border ${trendTextClassHtml(bigwhaleTrend)} ${
+                    overlay === 'bigwhale' ? 'border-purple-400 bg-amber-300/10' : 'border-slate-700 hover:opacity-80'
+                  }`}
+                >
+                  Big Whale
+                </button>
+                <button
+                  onClick={() => setOverlay((v) => (v === 'bullbear' ? 'none' : 'bullbear'))}
+                  className={`text-xs px-2 py-1 rounded border ${trendTextClassHtml(bullBearBtnTrend)} ${
+                    overlay === 'bullbear' ? 'border-purple-400 bg-purple-300/10' : 'border-slate-700 hover:opacity-80'
+                  }`}
+                >
+                  Bull vs Bear
+                </button>
+                <button
+                  onClick={() => setOverlay((v) => (v === 'netbull' ? 'none' : 'netbull'))}
+                  className={`text-xs px-2 py-1 rounded border ${trendTextClassHtml(netBullBtnTrend)} ${
+                    overlay === 'netbull' ? 'border-purple-400 bg-purple-300/10' : 'border-slate-700 hover:opacity-80'
+                  }`}
+                >
+                  Net Bull
+                </button>
         </div>
       </div>
       {shareMsg && <p className="text-[11px] text-yellow-400 mb-2">{shareMsg}</p>}

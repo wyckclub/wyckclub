@@ -14,6 +14,7 @@ export interface PotentialEntryRaw {
   top10: number | null;
   incBull: number | null;
   decBear: number | null;
+  bigwhale: number | null;
   timestamp?: string;
 }
 
@@ -84,6 +85,7 @@ export async function GET(req: NextRequest) {
         top10: e.top10 ?? null,
         incBull: e.incBull ?? null,
         decBear: e.decBear ?? null,
+        bigwhale: e.bigwhale ?? null,
         timestamp: e.timestamp,
       }));
       partials.push({

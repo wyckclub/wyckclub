@@ -5,7 +5,7 @@ import { formatCap, formatPriceShort, formatAge } from '@/lib/format';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { PlatformBadge } from '@/components/PlatformBadge';
 import { NetworkIcon } from '@/components/NetworkIcon';
-import { PriceChartModal } from '@/components/PriceChartModal';
+import { PriceChartModal, trendUpDown, bullBearTrend, netBullTrendState, trendTextClassHtml } from '@/components/PriceChartModal';
 import { PotentialRow } from '@/lib/potentialFilters';
 import type { PotentialApiItem } from '@/app/api/potential/route';
 
@@ -115,6 +115,13 @@ function RowCells({
   const strongBuy = e0?.display?.endsWith('+');
   const hasWhale = e0?.topwhale === 'y';
   const netBull = e0?.incBull != null && e0?.decBear != null ? e0.incBull - e0.decBear : null;
+  const bullBearColorClass = trendTextClassHtml(
+    bullBearTrend(e0?.incBull ?? null, e0?.decBear ?? null, e1?.incBull ?? null, e1?.decBear ?? null, !e1)
+  );
+  const netBullColorClass = trendTextClassHtml(
+    netBullTrendState(e0?.incBull ?? null, e0?.decBear ?? null, e1?.incBull ?? null, e1?.decBear ?? null)
+  );
+  const bigWhaleColorClass = trendTextClassHtml(trendUpDown(e0?.bigwhale ?? null, e1?.bigwhale ?? null));
   const detailHref = `/${item.chain}/${item.ca}`;
 
   function handleStarClick(e: React.MouseEvent) {
@@ -209,10 +216,11 @@ function RowCells({
           </span>
         )}
       </td>
-      <td className="p-2.5 whitespace-nowrap text-sm">
+      <td className={`p-2.5 whitespace-nowrap text-sm ${bullBearColorClass}`}>
         {fmtPlain(e0?.incBull)} / {fmtPlain(e0?.decBear)}
       </td>
-      <td className="p-2.5 whitespace-nowrap text-sm">{fmtSigned(netBull)}</td>
+      <td className={`p-2.5 whitespace-nowrap text-sm ${netBullColorClass}`}>{fmtSigned(netBull)}</td>
+      <td className={`p-2.5 whitespace-nowrap text-sm ${bigWhaleColorClass}`}>{fmtPlain(e0?.bigwhale)}</td>
       <td className="p-2.5 whitespace-nowrap">
         <a
           href={detailHref}
@@ -268,6 +276,7 @@ export function PotentialTable({
               </th>
               <th className="text-left p-2.5">Bull / Bear</th>
               <th className="text-left p-2.5">Net</th>
+              <th className="text-left p-2.5">BigWhale</th>
               <th className="text-left p-2.5"></th>
             </tr>
           </thead>
@@ -285,7 +294,7 @@ export function PotentialTable({
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={17} className="p-6 text-center text-slate-500">
+                <td colSpan={18} className="p-6 text-center text-slate-500">
                   {emptyMessage}
                 </td>
               </tr>
@@ -315,6 +324,13 @@ export function PotentialTable({
                 : 'text-slate-300'
               : 'text-slate-300';
           const netBull = e0?.incBull != null && e0?.decBear != null ? e0.incBull - e0.decBear : null;
+          const bullBearColorClass = trendTextClassHtml(
+            bullBearTrend(e0?.incBull ?? null, e0?.decBear ?? null, e1?.incBull ?? null, e1?.decBear ?? null, !e1)
+          );
+          const netBullColorClass = trendTextClassHtml(
+            netBullTrendState(e0?.incBull ?? null, e0?.decBear ?? null, e1?.incBull ?? null, e1?.decBear ?? null)
+          );
+          const bigWhaleColorClass = trendTextClassHtml(trendUpDown(e0?.bigwhale ?? null, e1?.bigwhale ?? null));
           const detailHref = `/${item.chain}/${item.ca}`;
 
           return (
@@ -420,13 +436,17 @@ export function PotentialTable({
                 </div>
                 <div className="bg-slate-950 rounded-md py-1">
                   <div className="text-slate-500">Bull/Bear</div>
-                  <div className="font-bold">
+                  <div className={bullBearColorClass}>
                     {fmtPlain(e0?.incBull)} / {fmtPlain(e0?.decBear)}
                   </div>
                 </div>
                 <div className="bg-slate-950 rounded-md py-1">
                   <div className="text-slate-500">Net</div>
-                  <div className="font-bold">{fmtSigned(netBull)}</div>
+                  <div className={netBullColorClass}>{fmtSigned(netBull)}</div>
+                </div>
+                <div className="bg-slate-950 rounded-md py-1">
+                  <div className="text-slate-500">BigWhale</div>
+                  <div className={bigWhaleColorClass}>{fmtPlain(e0?.bigwhale)}</div>
                 </div>
               </div>
 

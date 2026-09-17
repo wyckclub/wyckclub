@@ -8,6 +8,54 @@ import { PlatformBadge } from '@/components/PlatformBadge';
 
 export type OverlayMode = 'top10' | 'bigwhale' | 'bullbear' | 'netbull' | 'none';
 
+type TrendState = 'up' | 'down' | 'neutral';
+
+export function trendUpDown(cur: number | null | undefined, prev: number | null | undefined): TrendState {
+  if (cur == null || prev == null) return 'neutral';
+  if (cur > prev) return 'up';
+  if (cur < prev) return 'down';
+  return 'neutral';
+}
+
+export function bullBearTrend(
+  bull: number | null | undefined,
+  bear: number | null | undefined,
+  prevBull: number | null | undefined,
+  prevBear: number | null | undefined,
+  isFirst: boolean
+): TrendState {
+  if (isFirst) return 'up';
+  if (bull == null || bear == null || prevBull == null || prevBear == null) return 'neutral';
+  if (bull > prevBull && bear < prevBear) return 'up';
+  if (bull < prevBull && bear > prevBear) return 'down';
+  return 'neutral';
+}
+
+export function netBullTrendState(
+  bull: number | null | undefined,
+  bear: number | null | undefined,
+  prevBull: number | null | undefined,
+  prevBear: number | null | undefined
+): TrendState {
+  const net = bull != null && bear != null ? bull - bear : null;
+  const prevNet = prevBull != null && prevBear != null ? prevBull - prevBear : null;
+  const t = trendUpDown(net, prevNet);
+  if (t === 'down' && bear === 0) return 'neutral';
+  return t;
+}
+
+export function trendTextClassHtml(t: TrendState): string {
+  if (t === 'up') return 'text-green-400 font-extrabold';
+  if (t === 'down') return 'text-red-400 font-extrabold';
+  return 'text-slate-400 font-semibold';
+}
+
+function trendFillClass(t: TrendState): string {
+  if (t === 'up') return 'fill-green-400 font-extrabold';
+  if (t === 'down') return 'fill-red-400 font-extrabold';
+  return 'fill-slate-300 font-semibold';
+}
+
 interface Props {
   category: number;
   ca: string;
@@ -60,6 +108,21 @@ export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base
 
   const e0Price = entries[entries.length - 1]?.price ?? null;
   const isUp = livePrice != null && e0Price != null ? livePrice >= e0Price : true;
+
+  const lastHist = entries[entries.length - 1];
+  const prevHist = entries[entries.length - 2];
+  const isFirstOverall = entries.length < 2;
+  const waiTrend = trendUpDown(lastHist?.top10 ?? null, prevHist?.top10 ?? null);
+  const bigwhaleTrend = trendUpDown(lastHist?.bigwhale ?? null, prevHist?.bigwhale ?? null);
+  const bullBearBtnTrend = bullBearTrend(
+    lastHist?.incBull ?? null, lastHist?.decBear ?? null,
+    prevHist?.incBull ?? null, prevHist?.decBear ?? null,
+    isFirstOverall
+  );
+  const netBullBtnTrend = netBullTrendState(
+    lastHist?.incBull ?? null, lastHist?.decBear ?? null,
+    prevHist?.incBull ?? null, prevHist?.decBear ?? null
+  );
 
   return (
     <div
@@ -122,32 +185,32 @@ export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base
               )}
                 <button
                   onClick={() => setOverlay((v) => (v === 'top10' ? 'none' : 'top10'))}
-                  className={`text-xs px-2 py-1 rounded border ${
-                    overlay === 'top10' ? 'border-purple-400 text-purple-300 bg-purple-500/10' : 'border-slate-700 text-slate-400 hover:text-slate-200'
+                  className={`text-xs px-2 py-1 rounded border ${trendTextClassHtml(waiTrend)} ${
+                    overlay === 'top10' ? 'border-purple-400 bg-purple-300/10' : 'border-slate-700 hover:opacity-80'
                   }`}
                 >
                   W.A.I
                 </button>
                 <button
                   onClick={() => setOverlay((v) => (v === 'bigwhale' ? 'none' : 'bigwhale'))}
-                  className={`text-xs px-2 py-1 rounded border ${
-                    overlay === 'bigwhale' ? 'border-amber-400 text-amber-300 bg-amber-500/10' : 'border-slate-700 text-slate-400 hover:text-slate-200'
+                  className={`text-xs px-2 py-1 rounded border ${trendTextClassHtml(bigwhaleTrend)} ${
+                    overlay === 'bigwhale' ? 'border-purple-400 bg-amber-300/10' : 'border-slate-700 hover:opacity-80'
                   }`}
                 >
                   Big Whale
                 </button>
                 <button
                   onClick={() => setOverlay((v) => (v === 'bullbear' ? 'none' : 'bullbear'))}
-                  className={`text-xs px-2 py-1 rounded border ${
-                    overlay === 'bullbear' ? 'border-purple-400 text-purple-300 bg-purple-500/10' : 'border-slate-700 text-slate-400 hover:text-slate-200'
+                  className={`text-xs px-2 py-1 rounded border ${trendTextClassHtml(bullBearBtnTrend)} ${
+                    overlay === 'bullbear' ? 'border-purple-400 bg-purple-300/10' : 'border-slate-700 hover:opacity-80'
                   }`}
                 >
                   Bull vs Bear
                 </button>
                 <button
                   onClick={() => setOverlay((v) => (v === 'netbull' ? 'none' : 'netbull'))}
-                  className={`text-xs px-2 py-1 rounded border ${
-                    overlay === 'netbull' ? 'border-purple-400 text-purple-300 bg-purple-500/10' : 'border-slate-700 text-slate-400 hover:text-slate-200'
+                  className={`text-xs px-2 py-1 rounded border ${trendTextClassHtml(netBullBtnTrend)} ${
+                    overlay === 'netbull' ? 'border-purple-400 bg-purple-300/10' : 'border-slate-700 hover:opacity-80'
                   }`}
                 >
                   Net Bull
@@ -281,40 +344,6 @@ export function ChartSVG({
     return true;
   }
 
-  function bullBearColor(idx: number): string {
-    const p = points[idx];
-    const prev = points[idx - 1];
-    const bull = p?.incBull ?? null;
-    const bear = p?.decBear ?? null;
-    if (bull == null || bear == null) return 'fill-slate-300';
-
-    const prevBull = prev?.incBull ?? null;
-    const prevBear = prev?.decBear ?? null;
-
-    const cond1 = bull > bear;
-
-    const cond2 =
-      prevBull != null && prevBear != null && (bull > prevBull || bear < prevBear);
-
-    let cond3: boolean;
-    if (prevBull == null || prevBear == null) {
-      cond3 = false;
-    } else if (bear === 0 || prevBear === 0) {
-      cond3 = bull - bear > prevBull - prevBear;
-    } else {
-      cond3 = bull / bear > prevBull / prevBear;
-    }
-
-    if (cond1 && cond2 && cond3) return 'fill-green-400';
-
-    const condRed1 = bear > bull;
-    const condRed2 =
-      prevBull != null && prevBear != null && bear > prevBear && bull < prevBull;
-    if ((condRed1 || condRed2) && bear > 1) return 'fill-red-400';
-
-    return 'fill-slate-300';
-  }
-
   const tickCount = 4;
   const yTicks = Array.from({ length: tickCount + 1 }, (_, i) => {
     const logVal = minLog + (maxLog - minLog) * (i / tickCount);
@@ -409,10 +438,15 @@ return (
 
           const bull = p.incBull ?? null;
           const bear = p.decBear ?? null;
-          const bullBearColorClass = bullBearColor(i);
+          const prevBull = points[i - 1]?.incBull ?? null;
+          const prevBear = points[i - 1]?.decBear ?? null;
+          const bullBearColorClass = trendFillClass(bullBearTrend(bull, bear, prevBull, prevBear, i === 0));
           const bullText = formatBullBear(bull);
           const bearText = formatBullBear(bear);
           const bullBearW = Math.max(bullText.length, bearText.length) * 6.5 * s + 8 * s;
+
+          const netVal = bull != null && bear != null ? bull - bear : null;
+          const netBullColorClass = trendFillClass(netBullTrendState(bull, bear, prevBull, prevBear));
 
           return (
             <g key={i}>
@@ -447,7 +481,7 @@ return (
                     stroke="#1b043100"
                     strokeWidth={1}
                   />
-                  <text x={p.x} y={p.y + 17 * s} textAnchor="middle" className="fill-blue-500 font-semibold" style={{ fontSize: 11 * s }}>
+                  <text x={p.x} y={p.y + 17 * s} textAnchor="middle" className={trendFillClass(trendUpDown(p.top10, points[i - 1]?.top10 ?? null))} style={{ fontSize: 11 * s }}>
                     {p.top10}
                   </text>
                   {wyckSell && (
@@ -472,10 +506,10 @@ return (
                     width={String(p.bigwhale).length * 7 * s + 10 * s}
                     height={16 * s}
                     rx={4}
-                    fill="#3f2a05"
+                    fill="#05253b"
                     fillOpacity={1}
                   />
-                  <text x={p.x} y={p.y + 17 * s} textAnchor="middle" className="fill-amber-400 font-semibold" style={{ fontSize: 11 * s }}>
+                  <text x={p.x} y={p.y + 17 * s} textAnchor="middle" className={trendFillClass(trendUpDown(p.bigwhale, points[i - 1]?.bigwhale ?? null))} style={{ fontSize: 11 * s }}>
                     {p.bigwhale}
                   </text>
                 </>
@@ -491,17 +525,16 @@ return (
                     fill="#05253b"
                     fillOpacity={1}
                   />
-                  <text x={p.x} y={p.y + 14 * s} textAnchor="middle" className={`${bullBearColorClass} font-semibold`} style={{ fontSize: 10 * s }}>
+                  <text x={p.x} y={p.y + 14 * s} textAnchor="middle" className={bullBearColorClass} style={{ fontSize: 10 * s }}>
                     {bullText}
                   </text>
-                  <text x={p.x} y={p.y + 27 * s} textAnchor="middle" className={`${bullBearColorClass} font-semibold`} style={{ fontSize: 10 * s }}>
+                  <text x={p.x} y={p.y + 27 * s} textAnchor="middle" className={bullBearColorClass} style={{ fontSize: 10 * s }}>
                     {bearText}
                   </text>
                 </>
               )}
 
               {overlay === 'netbull' && (bull != null || bear != null) && (() => {
-                const netVal = bull != null && bear != null ? bull - bear : null;
                 const netText = formatBullBear(netVal);
                 const netW = netText.length * 7 * s + 10 * s;
                 return (
@@ -515,7 +548,7 @@ return (
                       fill="#05253b"
                       fillOpacity={1}
                     />
-                    <text x={p.x} y={p.y + 17 * s} textAnchor="middle" className={`${bullBearColorClass} font-semibold`} style={{ fontSize: 11 * s }}>
+                    <text x={p.x} y={p.y + 17 * s} textAnchor="middle" className={netBullColorClass} style={{ fontSize: 11 * s }}>
                       {netText}
                     </text>
                   </>
