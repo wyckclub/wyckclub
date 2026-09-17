@@ -108,11 +108,11 @@ const ROBINHOOD_SOURCES: ScoreSource[] = [
 ];
 
 const ARC_SOURCES: ScoreSource[] = [
-  { url: process.env.WYCK_ARC1_URL, platform: 'arc_verified', verified: true },
-  { url: process.env.WYCK_ARC2_URL, platform: 'arc_verified', verified: true },
-  { url: process.env.WYCK_ARC3_URL, platform: 'arc_verified', verified: true },
-  { url: process.env.WYCK_ARC4_URL, platform: 'arc_verified', verified: true },
-  { url: process.env.WYCK_ARC5_URL, platform: 'arc_verified', verified: true },
+  { url: process.env.WYCK_ARC1_URL, platform: 'arc_unverified', verified: false },
+  { url: process.env.WYCK_ARC2_URL, platform: 'arc_unverified', verified: false },
+  { url: process.env.WYCK_ARC3_URL, platform: 'arc_unverified', verified: false },
+  { url: process.env.WYCK_ARC4_URL, platform: 'arc_unverified', verified: false },
+  { url: process.env.WYCK_ARC5_URL, platform: 'arc_unverified', verified: false },
 ];
 
 export function getCategorySources(cat: string): ScoreSource[] {
