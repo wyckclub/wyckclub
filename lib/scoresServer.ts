@@ -113,6 +113,9 @@ const ARC_SOURCES: ScoreSource[] = [
   { url: process.env.WYCK_ARC3_URL, platform: 'arc_unverified', verified: false },
   { url: process.env.WYCK_ARC4_URL, platform: 'arc_unverified', verified: false },
   { url: process.env.WYCK_ARC5_URL, platform: 'arc_unverified', verified: false },
+  { url: process.env.WYCK_ARC_ARGUS1_URL, platform: 'argus', verified: true },
+  { url: process.env.WYCK_ARC_O1EXCHANGE1_URL, platform: 'o1exchange', verified: true },
+  { url: process.env.WYCK_ARC_VERIFY1_URL, platform: 'verify', verified: true },
 ];
 
 export function getCategorySources(cat: string): ScoreSource[] {

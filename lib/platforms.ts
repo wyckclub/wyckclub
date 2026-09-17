@@ -7,7 +7,7 @@ export const ROBINHOOD_PLATFORMS = [
   'robinhood_verified', 'robinhood_unverified'
 ];
 
-export const ARC_PLATFORMS = ['arc_verified', 'arc_unverified'];
+export const ARC_PLATFORMS = ['argus', 'o1exchange', 'arc_verified', 'arc_unverified'];
 
 export const PLATFORM_LABELS: Record<string, string> = {
   clanker: 'Clanker',
@@ -31,6 +31,9 @@ export const PLATFORM_LABELS: Record<string, string> = {
   lunchfun: 'Lunch.fun',
   pairfund: 'Pair.fund',
   sentry: 'Sentry',
+
+  // arc
+  argus: 'Argus',
   
   base_verified: 'Other',
   base_unverified: 'Unknown',
