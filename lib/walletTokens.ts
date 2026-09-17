@@ -11,9 +11,8 @@ export interface WalletToken {
   score: number | null;
   scoreDisplay: string | null;
 }
-
 export async function getWalletHeldTokens(
-  chainKey: 'base' | 'robinhood',
+  chainKey: 'base' | 'robinhood' | 'arc',
   address: string,
   knownTokens: Map<string, TokenEntry>
 ): Promise<WalletToken[]> {

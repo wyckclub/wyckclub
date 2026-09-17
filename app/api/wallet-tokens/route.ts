@@ -6,12 +6,13 @@ function requireEnv(key: string): string {
   return v;
 }
 
-const ALCHEMY_URLS: Record<'base' | 'robinhood', string> = {
+const ALCHEMY_URLS: Record<'base' | 'robinhood' | 'arc', string> = {
   base: requireEnv('WYCK_A_BASE'),
   robinhood: requireEnv('WYCK_A_ROBINHOOD'),
+  arc: requireEnv('WYCK_A_ARC'),
 };
 
-async function alchemyRpc(chainKey: 'base' | 'robinhood', method: string, params: any[]) {
+async function alchemyRpc(chainKey: 'base' | 'robinhood' | 'arc', method: string, params: any[]) {
   const res = await fetch(ALCHEMY_URLS[chainKey], {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -25,9 +26,9 @@ async function alchemyRpc(chainKey: 'base' | 'robinhood', method: string, params
 
 export async function GET(req: NextRequest) {
   const address = req.nextUrl.searchParams.get('address');
-  const chainKey = req.nextUrl.searchParams.get('chain') as 'base' | 'robinhood' | null;
+  const chainKey = req.nextUrl.searchParams.get('chain') as 'base' | 'robinhood' | 'arc' | null;
 
-  if (!address || (chainKey !== 'base' && chainKey !== 'robinhood')) {
+  if (!address || (chainKey !== 'base' && chainKey !== 'robinhood' && chainKey !== 'arc')) {
     return NextResponse.json({ error: 'Missing or invalid address/chain' }, { status: 400 });
   }
 

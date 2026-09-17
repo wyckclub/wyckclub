@@ -5,9 +5,9 @@ import { useAccount, useSwitchChain } from 'wagmi';
 import { TokenSidebar } from '@/components/TokenSidebar';
 import { TokenDataProvider } from '@/components/TokenDataContext';
 
-type Chain = 'base' | 'robinhood';
+type Chain = 'base' | 'robinhood' | 'arc';
 
-const CHAIN_IDS: Record<Chain, number> = { base: 8453, robinhood: 4663 };
+const CHAIN_IDS: Record<Chain, number> = { base: 8453, robinhood: 4663, arc: 5042 };
 
 export function TokenDetailShell({
   chain, children,

@@ -7,6 +7,8 @@ export const ROBINHOOD_PLATFORMS = [
   'robinhood_verified', 'robinhood_unverified'
 ];
 
+export const ARC_PLATFORMS = ['arc_verified', 'arc_unverified'];
+
 export const PLATFORM_LABELS: Record<string, string> = {
   clanker: 'Clanker',
   bankr: 'Bankr.bot',
@@ -16,10 +18,6 @@ export const PLATFORM_LABELS: Record<string, string> = {
   thestonks: 'TheStonks',
   flaunch: 'Flaunch.gg',
   zora: 'Zora',
-  base_verified: 'Other',
-  base_unverified: 'Unknown',
-  robinhood_verified: 'Other',
-  robinhood_unverified: 'Unknown',
   poolsfun: 'Pools.fun',
   poolstrade: 'Pools.trade',
   flap: 'Flap.sh',
@@ -33,6 +31,13 @@ export const PLATFORM_LABELS: Record<string, string> = {
   lunchfun: 'Lunch.fun',
   pairfund: 'Pair.fund',
   sentry: 'Sentry',
+  
+  base_verified: 'Other',
+  base_unverified: 'Unknown',
+  robinhood_verified: 'Other',
+  robinhood_unverified: 'Unknown',
+  arc_verified: 'Other',
+  arc_unverified: 'Unknown',
 };
 
 export const FILTER_LABELS: Record<string, string> = {
@@ -41,6 +46,8 @@ export const FILTER_LABELS: Record<string, string> = {
   base_unverified: 'Unknown - Not Verified',
   robinhood_verified: 'Other - Verified',
   robinhood_unverified: 'Unknown - Not Verified',
+  arc_verified: 'Other - Verified',
+  arc_unverified: 'Unknown - Not Verified',
 };
 
 export function platformShareLines(platform: string | null | undefined): string[] {

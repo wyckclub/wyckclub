@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { formatCap, formatPriceShort, getWhaleStarredScore, getChartScoreTextColorClass } from '@/lib/format';
 import { platformShareLines } from '@/lib/platforms';
 import { ROBINHOOD_CATEGORY, RawToken, fetchDexInfo } from '@/lib/signalDetection';
-
+const ARC_CATEGORY = 6;
 async function findToken(
-  chain: 'base' | 'robinhood',
+  chain: 'base' | 'robinhood' | 'arc',
   ca: string,
   origin: string
 ): Promise<{ cat: number; token: RawToken } | null> {
@@ -16,7 +16,14 @@ async function findToken(
     if (!key) return null;
     return { cat: ROBINHOOD_CATEGORY, token: data[key] };
   }
-
+  if (chain === 'arc') {
+    const res = await fetch(`${origin}/api/scores/arc`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const data: Record<string, RawToken> = await res.json();
+    const key = Object.keys(data).find((k) => k.toLowerCase() === ca.toLowerCase());
+    if (!key) return null;
+    return { cat: ARC_CATEGORY, token: data[key] };
+  }
   for (const cat of [1, 2, 3, 4]) {
     const res = await fetch(`${origin}/api/scores/${cat}`, { cache: 'no-store' });
     if (!res.ok) continue;
@@ -29,7 +36,7 @@ async function findToken(
 
 export async function POST(req: NextRequest) {
   const { chain, ca } = await req.json();
-  if ((chain !== 'base' && chain !== 'robinhood') || !ca || typeof ca !== 'string') {
+  if ((chain !== 'base' && chain !== 'robinhood' && chain !== 'arc') || !ca || typeof ca !== 'string') {
     return NextResponse.json({ ok: false, reason: 'Invalid params' }, { status: 400 });
   }
 
@@ -51,7 +58,7 @@ export async function POST(req: NextRequest) {
   const dex = await fetchDexInfo(ca, chain);
 
   const nameTag = dex?.name ? ` (${dex.name})` : '';
-  const networkLabel = chain === 'robinhood' ? 'robinhood' : 'base';
+  const networkLabel = chain;
 
   const curTop10 = latest.top10 ?? null;
   const prevTop10 = prevEntry?.top10 ?? null;

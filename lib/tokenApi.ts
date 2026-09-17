@@ -116,11 +116,13 @@ export interface PriceHistoryEntry {
 }
 
 export async function fetchTokenHistory(category: number, ca: string): Promise<PriceHistoryEntry[]> {
-  const raw = category === ROBINHOOD_CATEGORY ? await fetchRobinhoodRaw() : (
-    (rawCache.get(category) && Date.now() - rawCache.get(category)!.timestamp < RAW_TTL)
+  const raw =
+    category === ROBINHOOD_CATEGORY ? await fetchRobinhoodRaw() : 
+    category === ARC_CATEGORY ? await fetchArcRaw() :
+    ((rawCache.get(category) && Date.now() - rawCache.get(category)!.timestamp < RAW_TTL)
       ? rawCache.get(category)!.data
-      : await fetchCategoryRaw(category)
-  );
+      : await fetchCategoryRaw(category));
+
   const key = Object.keys(raw).find((k) => k.toLowerCase() === ca.toLowerCase());
   const token = key ? raw[key] : undefined;
 
@@ -149,9 +151,7 @@ export interface HistoryEntry {
 
 export const ROBINHOOD_CATEGORY = 5;
 CATEGORY_LABELS[ROBINHOOD_CATEGORY] = 'Robinhood';
-
 let robinRawCache: { data: RawCategoryData; timestamp: number } | null = null;
-
 async function fetchRobinhoodRaw(): Promise<RawCategoryData> {
   if (robinRawCache && Date.now() - robinRawCache.timestamp < RAW_TTL) return robinRawCache.data;
   const res = await fetch('/api/scores/robinhood', { cache: 'no-store' });
@@ -160,10 +160,27 @@ async function fetchRobinhoodRaw(): Promise<RawCategoryData> {
   robinRawCache = { data, timestamp: Date.now() };
   return data;
 }
-
 export async function fetchRobinhoodTokens(): Promise<TokenEntry[]> {
   const raw = await fetchRobinhoodRaw();
   return Object.entries(raw)
     .map(([ca, token]) => toTokenEntry(ca, token, ROBINHOOD_CATEGORY))
+    .sort((a, b) => b.latestScore - a.latestScore);
+}
+
+export const ARC_CATEGORY = 6;
+CATEGORY_LABELS[ARC_CATEGORY] = 'Arc';
+let arcRawCache: { data: RawCategoryData; timestamp: number } | null = null;
+async function fetchArcRaw(): Promise<RawCategoryData> {
+  if (arcRawCache && Date.now() - arcRawCache.timestamp < RAW_TTL) return arcRawCache.data;
+  const res = await fetch('/api/scores/arc', { cache: 'no-store' });
+  if (!res.ok) throw new Error('ERROR arc');
+  const data: RawCategoryData = await res.json();
+  arcRawCache = { data, timestamp: Date.now() };
+  return data;
+}
+export async function fetchArcTokens(): Promise<TokenEntry[]> {
+  const raw = await fetchArcRaw();
+  return Object.entries(raw)
+    .map(([ca, token]) => toTokenEntry(ca, token, ARC_CATEGORY))
     .sort((a, b) => b.latestScore - a.latestScore);
 }

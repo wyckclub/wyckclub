@@ -7,7 +7,11 @@ const BLOCKSCOUT_BASE_URL: Record<string, string> = {
 
 export async function GET(req: NextRequest) {
   const ca = req.nextUrl.searchParams.get('ca');
-  const chain = req.nextUrl.searchParams.get('chain') === 'robinhood' ? 'robinhood' : 'base';
+  const chainParam = req.nextUrl.searchParams.get('chain');
+
+  if (chainParam === 'arc') return NextResponse.json({ holders: null }); // tạm bỏ qua Blockscout Arc
+
+  const chain = chainParam === 'robinhood' ? 'robinhood' : 'base';
 
   if (!ca) return NextResponse.json({ error: 'Missing ca' }, { status: 400 });
 

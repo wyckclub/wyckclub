@@ -5,11 +5,13 @@ import { useAccount, usePublicClient, useBalance, useSendTransaction, useWriteCo
 import { parseUnits, formatUnits, maxUint256 } from 'viem';
 import { getCachedDexData } from '@/lib/dexData';
 
-const CHAIN_IDS: Record<string, number> = { base: 8453, robinhood: 4663 };
+const CHAIN_IDS: Record<string, number> = { base: 8453, robinhood: 4663, arc: 5042 };
 const NATIVE = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+const NATIVE_ARC_USDC = '0x3600000000000000000000000000000000000000';
 const USDG_ROBINHOOD = '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168';
 const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const NATIVE_GAS_BUFFER = parseUnits('0.0005', 18);
+const NATIVE_GAS_BUFFER_ARC = parseUnits('0.5', 6);
 
 const ETH_LOGO = '/eth.svg';
 const USDC_LOGO = '/usdc.svg';
@@ -18,6 +20,7 @@ const FEE_RATE = 0.0025;
 const EXPLORER_TX_URL: Record<string, string> = {
   base: 'https://basescan.org/tx/',
   robinhood: 'https://robinhoodchain.blockscout.com/tx/',
+  arc: 'https://arc.etherscan.io/tx/',
 };
 
 const erc20Abi = [
@@ -169,11 +172,16 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
   }, []);
 
   const assets: Asset[] = useMemo(() => {
-    const list: Asset[] = [{ key: 'ETH', address: NATIVE, symbol: 'ETH', decimals: 18, logoUrl: ETH_LOGO }];
-    if (chainId === 'robinhood') {
-      list.push({ key: 'USDG', address: USDG_ROBINHOOD, symbol: 'USDG', decimals: 6, logoUrl: USDG_LOGO });
+    const list: Asset[] = [];
+    if (chainId === 'arc') {
+      list.push({ key: 'ETH', address: NATIVE_ARC_USDC, symbol: 'USDC', decimals: 6, logoUrl: USDC_LOGO });
     } else {
-      list.push({ key: 'USDC', address: USDC_BASE, symbol: 'USDC', decimals: 6, logoUrl: USDC_LOGO });
+      list.push({ key: 'ETH', address: NATIVE, symbol: 'ETH', decimals: 18, logoUrl: ETH_LOGO });
+      if (chainId === 'robinhood') {
+        list.push({ key: 'USDG', address: USDG_ROBINHOOD, symbol: 'USDG', decimals: 6, logoUrl: USDG_LOGO });
+      } else {
+        list.push({ key: 'USDC', address: USDC_BASE, symbol: 'USDC', decimals: 6, logoUrl: USDC_LOGO });
+      }
     }
     list.push({ key: 'TOKEN', address: ca, symbol: tokenSymbol, decimals: tokenDecimals ?? 18, logoUrl: tokenLogo });
     return list;
@@ -241,15 +249,17 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
   function applyPercent(pct: number) {
     if (!payBalance.data) return;
     let raw = (payBalance.data.value * BigInt(pct)) / BigInt(100);
-    if (payAsset.address === NATIVE) {
-      raw = raw > NATIVE_GAS_BUFFER ? raw - (pct === 100 ? NATIVE_GAS_BUFFER : BigInt(0)) : BigInt(0);
+    const isGasAsset = payAsset.address === NATIVE || payAsset.address === NATIVE_ARC_USDC;
+    if (isGasAsset) {
+      const buffer = chainId === 'arc' ? NATIVE_GAS_BUFFER_ARC : NATIVE_GAS_BUFFER;
+      raw = raw > buffer ? raw - (pct === 100 ? buffer : BigInt(0)) : BigInt(0);
     }
     setActiveSide('pay');
     setAmount(formatUnits(raw, payAsset.decimals));
   }
 
   function knownUsdPrice(asset: Asset): number | null {
-    if (asset.key === 'ETH') return ethUsdPrice;
+    if (asset.key === 'ETH') return chainId === 'arc' ? 1 : ethUsdPrice;
     if (asset.key === 'USDC' || asset.key === 'USDG') return 1;
     if (asset.key === 'TOKEN') return getCachedDexData(ca)?.priceUsd ?? null;
     return null;
@@ -437,11 +447,11 @@ export function TokenSwapPanel({ chainId, ca, platform }: { chainId: string; ca:
     <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 border-b border-slate-800">
         <span className="flex items-center gap-1.5 text-sm font-bold text-slate-400">
-          <img
-            src={chainId === 'robinhood' ? '/robinhood.svg' : '/base.svg'}
-            alt={chainId}
-            className="w-4 h-4 rounded-[3px]"
-          />
+        <img
+          src={chainId === 'robinhood' ? '/robinhood.svg' : chainId === 'arc' ? '/arc.svg' : '/base.svg'}
+          alt={chainId}
+          className="w-4 h-4 rounded-[3px]"
+        />
           <img src="/0x.svg" alt="0x" className="w-4 h-4" />
           SWAP
         </span>

@@ -9,7 +9,7 @@ import { useTokenData } from '@/components/TokenDataContext';
 import { formatCap, formatAge } from '@/lib/format';
 import { BASE_PLATFORMS, ROBINHOOD_PLATFORMS, FILTER_LABELS } from '@/lib/platforms';
 
-type Chain = 'base' | 'robinhood';
+type Chain = 'base' | 'robinhood' | 'arc';
 type Tab = 'star' | 'all' | 'potential' | 'new';
 
 interface Row {

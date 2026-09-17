@@ -107,12 +107,24 @@ const ROBINHOOD_SOURCES: ScoreSource[] = [
   { url: process.env.WYCK_ROBIN_SENTRY1_URL, platform: 'sentry', verified: true },
 ];
 
+const ARC_SOURCES: ScoreSource[] = [
+  { url: process.env.WYCK_ARC1_URL, platform: 'arc_verified', verified: true },
+  { url: process.env.WYCK_ARC2_URL, platform: 'arc_verified', verified: true },
+  { url: process.env.WYCK_ARC3_URL, platform: 'arc_verified', verified: true },
+  { url: process.env.WYCK_ARC4_URL, platform: 'arc_verified', verified: true },
+  { url: process.env.WYCK_ARC5_URL, platform: 'arc_verified', verified: true },
+];
+
 export function getCategorySources(cat: string): ScoreSource[] {
   return (CATEGORY_SOURCES[cat] || []).filter((s): s is ScoreSource & { url: string } => !!s.url);
 }
 
 export function getRobinhoodSources(): ScoreSource[] {
   return ROBINHOOD_SOURCES.filter((s): s is ScoreSource & { url: string } => !!s.url);
+}
+
+export function getArcSources(): ScoreSource[] {
+  return ARC_SOURCES.filter((s): s is ScoreSource & { url: string } => !!s.url);
 }
 
 async function fetchAndTagSource(source: ScoreSource & { url: string }): Promise<Record<string, any>> {

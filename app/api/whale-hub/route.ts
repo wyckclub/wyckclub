@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Redis } from '@upstash/redis';
 import { getWhaleStarredScore, getChartScoreTextColorClass } from '@/lib/format';
 import { fetchDexscreenerBatchMap } from '@/lib/dexscreenerServer';
-import { getCategorySources, getRobinhoodSources, fetchScoresCached } from '@/lib/scoresServer';
+import { getCategorySources, getRobinhoodSources, fetchScoresCached, getArcSources } from '@/lib/scoresServer';
 
 const redis = new Redis({
   url: process.env.REDIS_KV_REST_API_URL!,
@@ -12,6 +12,7 @@ const redis = new Redis({
 const MAX_NOTIFS = 50;
 const MIN_VOL24H = 1000;
 const ROBINHOOD_CATEGORY = 5;
+const ARC_CATEGORY = 6;
 
 type Level = 'inflow' | 'medium' | 'strong' | 'super';
 
@@ -59,25 +60,21 @@ function computeLevel(
 
 export async function GET(req: NextRequest) {
   try {
-  const chain = req.nextUrl.searchParams.get('chain') === 'robinhood' ? 'robinhood' : 'base';
+  const chainParam = req.nextUrl.searchParams.get('chain');
+  const chain = chainParam === 'robinhood' ? 'robinhood' : chainParam === 'arc' ? 'arc' : 'base';
 
   const NOTIF_HASH_KEY = `wyck:whalehub:notifications_by_ca:${chain}`;
   const LASTSEEN_KEY = `wyck:whalehub:lastseen:${chain}`;
 
   const categories =
     chain === 'robinhood'
-      ? [
-          {
-            cat: ROBINHOOD_CATEGORY,
-            data: await fetchScoresCached('robinhood', getRobinhoodSources()).catch(() => ({} as Record<string, any>)),
-          },
-        ]
+      ? [{ cat: ROBINHOOD_CATEGORY, data: await fetchScoresCached('robinhood', getRobinhoodSources()).catch(() => ({} as Record<string, any>)) }]
+      : chain === 'arc'
+      ? [{ cat: ARC_CATEGORY, data: await fetchScoresCached('arc', getArcSources()).catch(() => ({} as Record<string, any>)) }]
       : await Promise.all(
           [1, 2, 3, 4].map(async (cat) => ({
             cat,
-            data: await fetchScoresCached(`cat:${cat}`, getCategorySources(String(cat))).catch(
-              () => ({} as Record<string, any>)
-            ),
+            data: await fetchScoresCached(`cat:${cat}`, getCategorySources(String(cat))).catch(() => ({} as Record<string, any>)),
           }))
         );
 

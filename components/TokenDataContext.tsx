@@ -1,10 +1,10 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { fetchAllCategories, fetchRobinhoodTokens, TokenEntry } from '@/lib/tokenApi';
+import { fetchAllCategories, fetchRobinhoodTokens, fetchArcTokens, TokenEntry } from '@/lib/tokenApi';
 import { prefetchDexDataBatch } from '@/lib/dexData';
 
-type Chain = 'base' | 'robinhood';
+type Chain = 'base' | 'robinhood' | 'arc';
 
 export interface PotentialItem {
   ca: string;
@@ -59,7 +59,10 @@ export function TokenDataProvider({ chain, children }: { chain: Chain; children:
   const load = useCallback(() => {
     setLoading(true);
     setDexReady(false);
-    const loadAll = chain === 'robinhood' ? fetchRobinhoodTokens() : fetchAllCategories();
+    const loadAll =
+      chain === 'robinhood' ? fetchRobinhoodTokens() :
+      chain === 'arc' ? fetchArcTokens() :
+      fetchAllCategories();
 
     Promise.all([
       loadAll,

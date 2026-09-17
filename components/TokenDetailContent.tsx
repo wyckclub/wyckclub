@@ -3,14 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
-import { ROBINHOOD_CATEGORY } from '@/lib/tokenApi';
 import { fetchFullTokenPairInfo, fetchHoldersCount, fetchFactoryWallets, FullPairInfo } from '@/lib/dexData';
 import { TokenScoreChart } from '@/components/TokenScoreChart';
 import { TokenInfoPanel } from '@/components/TokenInfoPanel';
 import { TokenSwapPanel } from '@/components/TokenSwapPanel';
 import { useTokenData } from '@/components/TokenDataContext';
+import { ROBINHOOD_CATEGORY, ARC_CATEGORY } from '@/lib/tokenApi';
 
-type Chain = 'base' | 'robinhood';
+type Chain = 'base' | 'robinhood' | 'arc';
 
 function WalletIcon() {
   return (
@@ -46,7 +46,7 @@ export function TokenDetailContent({ chain, ca }: { chain: Chain; ca: string }) 
     return () => { active = false; clearInterval(id); };
   }, [ca, chain]);
 
-  const category = token?.category ?? (chain === 'robinhood' ? ROBINHOOD_CATEGORY : null);
+  const category = token?.category ?? (chain === 'robinhood' ? ROBINHOOD_CATEGORY : chain === 'arc' ? ARC_CATEGORY : null);
   const symbol = pairInfo?.symbol ?? token?.symbol ?? ca.slice(0, 6);
   const dexscreenerUrl = pairInfo
     ? `https://dexscreener.com/${chain}/${pairInfo.topVolumePairAddress ?? pairInfo.pairAddress}?embed=1&theme=dark&trades=0&info=0&interval=${getDexscreenerInterval(pairInfo.pairCreatedAt)}`

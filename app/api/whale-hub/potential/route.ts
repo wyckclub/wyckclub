@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isWhaleStarredAt, isSpringPointAt, getChartScoreTextColorClass } from '@/lib/format';
 import { fetchDexscreenerBatchMap } from '@/lib/dexscreenerServer';
-import { getCategorySources, getRobinhoodSources, fetchScoresCached } from '@/lib/scoresServer';
+import { getCategorySources, getRobinhoodSources, getArcSources, fetchScoresCached } from '@/lib/scoresServer';
 
 const ROBINHOOD_CATEGORY = 5;
+const ARC_CATEGORY = 6;
 const MIN_LIQ = 20000;
 
 interface Item {
@@ -23,22 +24,18 @@ interface Item {
 }
 
 export async function GET(req: NextRequest) {
-  const chain = req.nextUrl.searchParams.get('chain') === 'robinhood' ? 'robinhood' : 'base';
+  const chainParam = req.nextUrl.searchParams.get('chain');
+  const chain = chainParam === 'robinhood' ? 'robinhood' : chainParam === 'arc' ? 'arc' : 'base';
 
   const categories =
     chain === 'robinhood'
-      ? [
-          {
-            cat: ROBINHOOD_CATEGORY,
-            data: await fetchScoresCached('robinhood', getRobinhoodSources()).catch(() => ({} as Record<string, any>)),
-          },
-        ]
+      ? [{ cat: ROBINHOOD_CATEGORY, data: await fetchScoresCached('robinhood', getRobinhoodSources()).catch(() => ({} as Record<string, any>)) }]
+      : chain === 'arc'
+      ? [{ cat: ARC_CATEGORY, data: await fetchScoresCached('arc', getArcSources()).catch(() => ({} as Record<string, any>)) }]
       : await Promise.all(
           [1, 2, 3, 4].map(async (cat) => ({
             cat,
-            data: await fetchScoresCached(`cat:${cat}`, getCategorySources(String(cat))).catch(
-              () => ({} as Record<string, any>)
-            ),
+            data: await fetchScoresCached(`cat:${cat}`, getCategorySources(String(cat))).catch(() => ({} as Record<string, any>)),
           }))
         );
 

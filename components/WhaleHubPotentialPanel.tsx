@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { formatCap } from '@/lib/format';
 
-type Chain = 'base' | 'robinhood';
+type Chain = 'base' | 'robinhood' | 'arc';
 
 interface Item {
   ca: string;
