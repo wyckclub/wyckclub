@@ -105,6 +105,17 @@ const ROBINHOOD_CATEGORY_URLS = [
   process.env.WYCK_ROBIN_FLAP1_URL,
   process.env.WYCK_ROBIN_LEMON1_URL,
   process.env.WYCK_ROBIN_LETSCASH1_URL,
+
+  process.env.WYCK_ARC1_URL,
+  process.env.WYCK_ARC2_URL,
+  process.env.WYCK_ARC3_URL,
+  process.env.WYCK_ARC4_URL,
+  process.env.WYCK_ARC5_URL,
+  process.env.WYCK_ARC_ARGUS1_URL,
+  process.env.WYCK_ARC_ARGUS2_URL,
+  process.env.WYCK_ARC_ARGUS3_URL,
+  process.env.WYCK_ARC_O1EXCHANGE1_URL,
+  process.env.WYCK_ARC_VERIFY1_URL,
 ].filter((u): u is string => !!u);
 
 async function countTokensFromUrls(urls: string[]): Promise<number> {
