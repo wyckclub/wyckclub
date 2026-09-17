@@ -62,7 +62,10 @@ function entryPassesCoreChecks(entries: PotentialEntryRaw[], idx: number, f: Pot
 
 export function passesFilter(item: PotentialApiItem, f: PotentialFilters): boolean {
   if (item.chain !== f.network) return false;
-  const platformList = f.network === 'base' ? f.basePlatforms : f.robinhoodPlatforms;
+  const platformList =
+  f.network === 'base' ? f.basePlatforms :
+  f.network === 'robinhood' ? f.robinhoodPlatforms :
+  f.arcPlatforms;
   if (platformList.length && !platformList.includes(item.platform)) return false;
 
   if (!item.entries[0]) return false;

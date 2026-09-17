@@ -13,7 +13,7 @@ interface ChartTarget {
   category: number;
   ca: string;
   symbol: string;
-  chain: 'base' | 'robinhood';
+  chain: 'base' | 'robinhood' | 'arc';
   platform: string | null;
 }
 

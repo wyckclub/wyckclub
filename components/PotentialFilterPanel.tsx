@@ -1,6 +1,6 @@
 'use client';
 
-import { BASE_PLATFORMS, ROBINHOOD_PLATFORMS, FILTER_LABELS } from '@/lib/platforms';
+import { BASE_PLATFORMS, ROBINHOOD_PLATFORMS, ARC_PLATFORMS, FILTER_LABELS } from '@/lib/platforms';
 import { PotentialFilters, NetworkKey } from '@/lib/potentialFilters';
 import { NetworkIcon } from '@/components/NetworkIcon';
 
@@ -154,21 +154,32 @@ export function PotentialFilterPanel({
   }
 
   function togglePlatform(p: string) {
-    const key = filters.network === 'base' ? 'basePlatforms' : 'robinhoodPlatforms';
+    const key = filters.network === 'base' ? 'basePlatforms'
+      : filters.network === 'robinhood' ? 'robinhoodPlatforms'
+      : 'arcPlatforms';
     const list = filters[key];
     const has = list.includes(p);
     set(key, has ? list.filter((x) => x !== p) : [...list, p]);
   }
 
   function toggleGroupAll(list: string[]) {
-    const key = filters.network === 'base' ? 'basePlatforms' : 'robinhoodPlatforms';
+    const key = filters.network === 'base' ? 'basePlatforms'
+      : filters.network === 'robinhood' ? 'robinhoodPlatforms'
+      : 'arcPlatforms';
     const current = filters[key];
     const allSelected = list.length > 0 && list.every((p) => current.includes(p));
     set(key, allSelected ? [] : [...list]);
   }
 
-  const activePlatformList = filters.network === 'base' ? BASE_PLATFORMS : ROBINHOOD_PLATFORMS;
-  const activeSelected = filters.network === 'base' ? filters.basePlatforms : filters.robinhoodPlatforms;
+  const activePlatformList =
+    filters.network === 'base' ? BASE_PLATFORMS :
+    filters.network === 'robinhood' ? ROBINHOOD_PLATFORMS :
+    ARC_PLATFORMS;
+
+  const activeSelected =
+    filters.network === 'base' ? filters.basePlatforms :
+    filters.network === 'robinhood' ? filters.robinhoodPlatforms :
+    filters.arcPlatforms;
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-4">
@@ -196,6 +207,7 @@ export function PotentialFilterPanel({
                   label: 'Robinhood',
                   icon: <NetworkIcon chain="robinhood" className="w-3.5 h-3.5" />,
                 },
+                { key: 'arc' as const, label: 'Arc', icon: <NetworkIcon chain="arc" className="w-3.5 h-3.5" /> },
               ]}
               value={network}
               onChange={(v) => onTabChange(v)}
@@ -206,7 +218,7 @@ export function PotentialFilterPanel({
         {!isFollowing && (
           <div className="space-y-3">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">
-              Platform ({network === 'base' ? 'Base' : 'Robinhood'})
+              Platform ({network === 'base' ? 'Base' : network === 'robinhood' ? 'Robinhood' : 'Arc'})
             </span>
             <PlatformGroup
               list={activePlatformList}

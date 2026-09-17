@@ -1,11 +1,12 @@
 import type { PotentialApiItem } from '@/app/api/potential/route';
 
-export type NetworkKey = 'base' | 'robinhood';
+export type NetworkKey = 'base' | 'robinhood' | 'arc';
 
 export interface PotentialFilters {
   network: NetworkKey;
   basePlatforms: string[];
   robinhoodPlatforms: string[];
+  arcPlatforms: string[];
   minScore: string;
   hasWhale: boolean;
   strongBuying: boolean;
@@ -32,6 +33,7 @@ export interface PotentialFilters {
 const BASE_DEFAULTS: Omit<PotentialFilters, 'network'> = {
   basePlatforms: [],
   robinhoodPlatforms: [],
+  arcPlatforms: [],
   minScore: '5',
   hasWhale: false,
   strongBuying: false,
@@ -104,7 +106,7 @@ export function saveAppliedFilters(network: NetworkKey, f: PotentialFilters | nu
 
 export interface FollowSnapshot {
   ca: string;
-  chain: 'base' | 'robinhood';
+  chain: 'base' | 'robinhood' | 'arc';
   followedAt: number;
   priceUsd: number | null;
   marketCap: number | null;

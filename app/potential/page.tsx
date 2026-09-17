@@ -41,6 +41,11 @@ export default function PotentialPage() {
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
+  const [appliedArc, setAppliedArc] = useState<PotentialFilters | null>(null);
+  const [arcRows, setArcRows] = useState<PotentialRow[]>([]);
+  const prevPassingArcRef = useRef<Set<string>>(new Set());
+  const newSinceArcRef = useRef<Map<string, number>>(new Map());
+
   const followsRef = useRef(follows);
   followsRef.current = follows;
 
@@ -53,6 +58,7 @@ export default function PotentialPage() {
   useEffect(() => {
     setAppliedBase(loadAppliedFilters('base'));
     setAppliedRobinhood(loadAppliedFilters('robinhood'));
+    setAppliedArc(loadAppliedFilters('arc'));
     setFollows(loadFollows());
     setFormFilters(loadDraftFilters('base'));
   }, []);
@@ -90,14 +96,17 @@ export default function PotentialPage() {
     if (!items.length) return;
     const baseCas = items.filter((i) => i.chain === 'base').map((i) => i.ca);
     const rhCas = items.filter((i) => i.chain === 'robinhood').map((i) => i.ca);
+    const arcCas = items.filter((i) => i.chain === 'arc').map((i) => i.ca);
     if (baseCas.length) prefetchDexDataBatch(baseCas, undefined, 'base');
     if (rhCas.length) prefetchDexDataBatch(rhCas, undefined, 'robinhood');
+    if (arcCas.length) prefetchDexDataBatch(arcCas, undefined, 'arc');
   }, [items]);
 
   useEffect(() => {
     if (!items.length) {
       setBaseRows([]);
       setRobinhoodRows([]);
+      setArcRows([]);
       setFollowingRows([]);
       return;
     }
@@ -147,6 +156,7 @@ export default function PotentialPage() {
 
     setBaseRows(computeChainRows('base', appliedBase, prevPassingBaseRef, newSinceBaseRef));
     setRobinhoodRows(computeChainRows('robinhood', appliedRobinhood, prevPassingRobinhoodRef, newSinceRobinhoodRef));
+    setArcRows(computeChainRows('arc', appliedArc, prevPassingArcRef, newSinceArcRef));
     hasPolledOnceRef.current = true;
 
     const followed = items
@@ -163,13 +173,14 @@ export default function PotentialPage() {
       )
       .sort((a, b) => (b.item.entries[0]?.score ?? 0) - (a.item.entries[0]?.score ?? 0));
     setFollowingRows(followed);
-  }, [items, appliedBase, appliedRobinhood, follows]);
+  }, [items, appliedBase, appliedRobinhood, appliedArc, follows]);
 
   function handleApply() {
     saveDraftFilters(network, formFilters);
     saveAppliedFilters(network, formFilters);
     if (network === 'base') setAppliedBase(formFilters);
-    else setAppliedRobinhood(formFilters);
+    else if (network === 'robinhood') setAppliedRobinhood(formFilters);
+    else setAppliedArc(formFilters);
   }
 
   function handleReset() {
@@ -181,10 +192,14 @@ export default function PotentialPage() {
       setAppliedBase(null);
       prevPassingBaseRef.current = new Set();
       newSinceBaseRef.current = new Map();
-    } else {
+    } else if (network === 'robinhood') {
       setAppliedRobinhood(null);
       prevPassingRobinhoodRef.current = new Set();
       newSinceRobinhoodRef.current = new Map();
+    } else {
+      setAppliedArc(null);
+      prevPassingArcRef.current = new Set();
+      newSinceArcRef.current = new Map();
     }
   }
 
@@ -218,7 +233,11 @@ export default function PotentialPage() {
     load(true);
   }
 
-  const activeRows = tab === 'following' ? followingRows : tab === 'base' ? baseRows : robinhoodRows;
+  const activeRows =
+    tab === 'following' ? followingRows :
+    tab === 'base' ? baseRows :
+    tab === 'robinhood' ? robinhoodRows :
+    arcRows;
 
   return (
     <div className="w-full px-4 py-6 max-w-[1600px] mx-auto space-y-5">

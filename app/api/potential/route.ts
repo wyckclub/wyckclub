@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchDexscreenerBatchMap, DexBatchInfo } from '@/lib/dexscreenerServer';
-import { getCategorySources, getRobinhoodSources, fetchScoresCached } from '@/lib/scoresServer';
+import { getCategorySources, getRobinhoodSources, getArcSources, fetchScoresCached } from '@/lib/scoresServer';
 
 const ROBINHOOD_CATEGORY = 5;
+const ARC_CATEGORY = 6;
 const ENTRY_DEPTH = 8;
 
 export interface PotentialEntryRaw {
@@ -21,7 +22,7 @@ export interface PotentialApiItem {
   symbol: string;
   name: string | null;
   category: number;
-  chain: 'base' | 'robinhood';
+  chain: 'base' | 'robinhood' | 'arc';
   platform: string;
   verified: boolean;
   imageUrl: string | null;
@@ -39,21 +40,22 @@ export interface PotentialApiItem {
 export async function GET(req: NextRequest) {
   const chainParam = req.nextUrl.searchParams.get('chain');
   const force = req.nextUrl.searchParams.get('force') === '1';
-  const wantBase = chainParam !== 'robinhood';
-  const wantRobinhood = chainParam !== 'base';
+  const wantBase = chainParam == null || chainParam === 'base';
+  const wantRobinhood = chainParam == null || chainParam === 'robinhood';
+  const wantArc = chainParam == null || chainParam === 'arc';
 
-  const categoryTargets: { cat: number; chain: 'base' | 'robinhood' }[] = [];
-  if (wantBase) {
-    [1, 2, 3, 4].forEach((cat) => categoryTargets.push({ cat, chain: 'base' }));
-  }
-  if (wantRobinhood) {
-    categoryTargets.push({ cat: ROBINHOOD_CATEGORY, chain: 'robinhood' });
-  }
+  const categoryTargets: { cat: number; chain: 'base' | 'robinhood' | 'arc' }[] = [];
+  if (wantBase) [1, 2, 3, 4].forEach((cat) => categoryTargets.push({ cat, chain: 'base' }));
+  if (wantRobinhood) categoryTargets.push({ cat: ROBINHOOD_CATEGORY, chain: 'robinhood' });
+  if (wantArc) categoryTargets.push({ cat: ARC_CATEGORY, chain: 'arc' });
 
   const categories = await Promise.all(
     categoryTargets.map(async (t) => {
-      const sources = t.chain === 'robinhood' ? getRobinhoodSources() : getCategorySources(String(t.cat));
-      const key = t.chain === 'robinhood' ? 'robinhood' : `cat:${t.cat}`;
+      const sources =
+        t.chain === 'robinhood' ? getRobinhoodSources() :
+        t.chain === 'arc' ? getArcSources() :
+        getCategorySources(String(t.cat));
+      const key = t.chain === 'robinhood' ? 'robinhood' : t.chain === 'arc' ? 'arc' : `cat:${t.cat}`;
       try {
         const data = await fetchScoresCached(key, sources);
         return { ...t, data };
@@ -100,18 +102,22 @@ export async function GET(req: NextRequest) {
 
   const baseCas = partials.filter((i) => i.chain === 'base').map((i) => i.ca);
   const robinhoodCas = partials.filter((i) => i.chain === 'robinhood').map((i) => i.ca);
+  const arcCas = partials.filter((i) => i.chain === 'arc').map((i) => i.ca);
 
-  const [baseMarket, robinhoodMarket] = await Promise.all([
+  const [baseMarket, robinhoodMarket, arcMarket] = await Promise.all([
     baseCas.length
       ? fetchDexscreenerBatchMap(baseCas, 'base', { revalidateSeconds: 30, maxRetries: 2, force })
       : Promise.resolve({} as Record<string, DexBatchInfo>),
     robinhoodCas.length
       ? fetchDexscreenerBatchMap(robinhoodCas, 'robinhood', { revalidateSeconds: 30, maxRetries: 2, force })
       : Promise.resolve({} as Record<string, DexBatchInfo>),
+    arcCas.length
+      ? fetchDexscreenerBatchMap(arcCas, 'arc', { revalidateSeconds: 30, maxRetries: 2, force })
+      : Promise.resolve({} as Record<string, DexBatchInfo>),
   ]);
 
   const items: PotentialApiItem[] = partials.map((i) => {
-    const m = (i.chain === 'base' ? baseMarket : robinhoodMarket)[i.ca];
+    const m = i.chain === 'base' ? baseMarket[i.ca] : i.chain === 'robinhood' ? robinhoodMarket[i.ca] : arcMarket[i.ca];
     return {
       ...i,
       name: m?.name ?? null,
