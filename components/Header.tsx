@@ -109,7 +109,7 @@ const navItems = [
   { href: '/robinhood', label: 'Robinhood', icon: RobinhoodIcon },
   { href: '/arc', label: 'Arc', icon: ArcIcon },
   { href: '/whale-hub', label: 'Whale Hub', icon: WhaleIcon },
-  // { href: '/potential', label: 'Potential', icon: PotentialIcon },
+  { href: '/potential', label: 'Potential', icon: PotentialIcon },
   { href: '/portfolio', label: 'Portfolio', icon: PortfolioIcon },
   { href: '/guide', label: 'Guide', suffix: '', icon: GuideIcon },
 ];

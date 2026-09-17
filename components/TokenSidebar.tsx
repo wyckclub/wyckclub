@@ -7,7 +7,7 @@ import { PlatformBadge } from '@/components/PlatformBadge';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTokenData } from '@/components/TokenDataContext';
 import { formatCap, formatAge } from '@/lib/format';
-import { BASE_PLATFORMS, ROBINHOOD_PLATFORMS, FILTER_LABELS } from '@/lib/platforms';
+import { BASE_PLATFORMS, ROBINHOOD_PLATFORMS, ARC_PLATFORMS, FILTER_LABELS } from '@/lib/platforms';
 
 type Chain = 'base' | 'robinhood' | 'arc';
 type Tab = 'star' | 'all' | 'potential' | 'new';
@@ -49,7 +49,7 @@ export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () 
   const [platformFilter, setPlatformFilter] = useState<string>('all');
   const listRef = useRef<HTMLDivElement>(null);
 
-  const platforms = chain === 'robinhood' ? ROBINHOOD_PLATFORMS : BASE_PLATFORMS;
+  const platforms = chain === 'robinhood' ? ROBINHOOD_PLATFORMS : chain === 'arc' ? ARC_PLATFORMS : BASE_PLATFORMS;
 
   useEffect(() => {
     setPlatformFilter('all');
