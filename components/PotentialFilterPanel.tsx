@@ -322,7 +322,7 @@ export function PotentialFilterPanel({
             <NumberField label="Min Vol 24h" value={filters.minVol24h} onChange={(v) => set('minVol24h', v)} />
           </div>
 
-          <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
+          <div className="flex items-center justify-end pt-1 flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <button
                 onClick={onReset}
