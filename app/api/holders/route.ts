@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   const ca = req.nextUrl.searchParams.get('ca');
   const chainParam = req.nextUrl.searchParams.get('chain');
 
-  if (chainParam === 'arc') return NextResponse.json({ holders: null }); // tạm bỏ qua Blockscout Arc
+  if (chainParam === 'arc') return NextResponse.json({ holders: null });
 
   const chain = chainParam === 'robinhood' ? 'robinhood' : 'base';
 

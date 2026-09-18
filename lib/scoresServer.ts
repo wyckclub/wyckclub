@@ -165,8 +165,6 @@ export async function fetchScoresCached(
   const key = cacheKey(kind);
 
   if (!force) {
-    // 1) RAM cache trước — không tốn round-trip Redis nếu đã có request
-    // khác (page khác, user khác) hỏi đúng key này trong vài giây gần đây.
     const mem = memGet(key);
     if (mem) return mem;
 
@@ -178,7 +176,7 @@ export async function fetchScoresCached(
         return parsed;
       }
     } catch {
-      // Redis unavailable
+      // unavailable
     }
   }
 

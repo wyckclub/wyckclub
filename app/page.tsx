@@ -39,7 +39,6 @@ function ArcIcon({ className = 'w-8 h-8' }: { className?: string }) {
   );
 }
 
-// ---- icon tinh tế cho phần thống kê ----
 function LayersIcon({ className = 'w-5 h-5' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
@@ -79,7 +78,6 @@ function WhaleGlyph({ className = '' }: { className?: string }) {
   );
 }
 
-// nền dạng lưới mạng (network) rất mờ, gợi ý "công nghệ / dòng chảy dữ liệu"
 function NetworkGrid({ className = '' }: { className?: string }) {
   return (
     <svg className={className} xmlns="http://www.w3.org/2000/svg">

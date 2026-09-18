@@ -172,12 +172,10 @@ export async function fetchDexscreenerBatchMap(
   let toFetch = uniqueCas;
 
   if (!force) {
-    // 1) RAM trước
     const memHit = memGetMany(chainId, uniqueCas);
     Object.assign(out, memHit);
     toFetch = uniqueCas.filter((ca) => !(ca in memHit));
 
-    // 2) Redis cho phần còn thiếu
     if (toFetch.length) {
       const cached = await getCachedMany(chainId, toFetch);
       Object.assign(out, cached);

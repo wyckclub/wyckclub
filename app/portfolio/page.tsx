@@ -161,7 +161,6 @@ function useWalletHoldings(address?: string) {
   return { holdings, loading, error };
 }
 
-// ---- dữ liệu bổ sung (Age, Vol1h/6h, W.A.I, Bull/Bear, Net, BigWhale) lấy từ /api/potential (dữ liệu thật, cùng nguồn với trang Potential) ----
 function usePotentialMap() {
   const [map, setMap] = useState<Record<string, PotentialApiItem>>({});
   useEffect(() => {
