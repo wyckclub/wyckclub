@@ -126,7 +126,7 @@ export default async function Home() {
           WYCKSCORE
         </h1>
         <p className="text-slate-400 max-w-2xl mx-auto text-lg">
-          🐋 Smart Money Tracking tool 🐋 trên các mạng Base, Robinhood và Arc.
+          🐋 Smart Money Tracking tool 🐋 on Base, Robinhood and Arc networks.
         </p>
 
         <div className="flex flex-wrap justify-center gap-4 pt-4">
@@ -174,37 +174,37 @@ export default async function Home() {
       <section className="space-y-6">
         <h2 className="text-3xl font-bold text-center text-white">Networks We Track</h2>
         <div className="grid md:grid-cols-3 gap-6">
-          <NetworkCard
-            icon={<BaseIcon />}
-            name="Base"
-            desc="Coinbase's L2 network built on the OP Stack. WYCKSCORE covers Clanker & Bankr launches, Virtuals agent tokens, và các token native trên Base, chấm điểm tích lũy và hoạt động cá voi theo thời gian thực."
-            href="/base"
-            cta="Open BASE Tracker"
-            accent="text-blue-400"
-          />
-          <NetworkCard
-            icon={<RobinhoodIcon />}
-            name="Robinhood"
-            desc="Mạng onchain của Robinhood cho tài sản tokenized. WYCKSCORE áp dụng cùng bộ chấm điểm Wyckoff và phát hiện dòng SmartMoney cho các token trên chain của Robinhood."
-            href="/robinhood"
-            cta="Open Robinhood Tracker"
-            accent="text-[#ccff00]"
-          />
-          <NetworkCard
-            icon={<ArcIcon />}
-            name="Arc"
-            desc="Mạng L2 mới tích hợp thanh khoản USDC native. WYCKSCORE mở rộng phát hiện tích lũy và dòng tiền thông minh sang các token launch trên Arc."
-            href="/arc"
-            cta="Open Arc Tracker"
-            accent="text-purple-300"
-          />
+        <NetworkCard
+          icon={<BaseIcon />}
+          name="Base"
+          desc="Coinbase's L2 network built on the OP Stack. WYCKSCORE covers Clanker & Bankr launches, Virtuals agent tokens, and general Base-native tokens, scoring accumulation and whale activity in real time."
+          href="/base"
+          cta="Open BASE Tracker"
+          accent="text-blue-400"
+        />
+        <NetworkCard
+          icon={<RobinhoodIcon />}
+          name="Robinhood"
+          desc="Robinhood's onchain network for tokenized assets. WYCKSCORE applies the same Wyckoff-style scoring and SmartMoney flow detection to tokens launched and traded on Robinhood's chain."
+          href="/robinhood"
+          cta="Open Robinhood Tracker"
+          accent="text-[#ccff00]"
+        />
+        <NetworkCard
+          icon={<ArcIcon />}
+          name="Arc"
+          desc="A new L2 network with native USDC liquidity. WYCKSCORE extends its accumulation and SmartMoney flow detection to tokens launched on Arc."
+          href="/arc"
+          cta="Open Arc Tracker"
+          accent="text-purple-300"
+        />
         </div>
       </section>
 
       <section className="grid md:grid-cols-3 gap-6">
-        <FeatureCard title="24/7 Tracking" desc="Giám sát liên tục hoạt động token trên Base, Robinhood và Arc, không gián đoạn." />
-        <FeatureCard title="Wyckoff Detection" desc="Phát hiện các mẫu tích lũy và phân phối do dòng tiền lớn dẫn dắt." />
-        <FeatureCard title="Actionable Signals" desc="Hệ thống chấm điểm trực tiếp xếp hạng token để bạn chỉ tập trung vào setup mạnh nhất." />
+        <FeatureCard title="24/7 Tracking" desc="Continuous monitoring of token activity across Base, Robinhood and Arc, no downtime." />
+        <FeatureCard title="Wyckoff Detection" desc="Spot accumulation and distribution patterns driven by strong holders." />
+        <FeatureCard title="Actionable Signals" desc="A live scoring system ranks tokens so you focus only on the strongest setups." />
       </section>
 
       <section className="space-y-6">
@@ -222,10 +222,10 @@ export default async function Home() {
       </section>
 
       <section className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <PlanCard name="BASE Tracker" requirement="WYCK · Base" desc="Mở khóa toàn bộ bảng tracker, kết hợp dữ liệu từ mọi category trên Base." />
-        <PlanCard name="Robinhood Tracker" requirement="WYCK · Robinhood" desc="Theo dõi token được launch và giao dịch trên mạng Robinhood." />
-        <PlanCard name="Arc Tracker" requirement="WYCK · Arc" desc="Theo dõi token trên mạng Arc với cùng bộ chấm điểm SmartMoney." />
-        <PlanCard name="VIP Plan" requirement="WYCK" desc="Portfolio tracking cao cấp và tính năng whale momentum mạnh." />
+        <PlanCard name="BASE Tracker" requirement="WYCK · Base" desc="Unlock the full token tracker table, combining data from all monitored Base categories." />
+        <PlanCard name="Robinhood Tracker" requirement="WYCK · Robinhood" desc="Track tokens launched and traded on the Robinhood network." />
+        <PlanCard name="Arc Tracker" requirement="WYCK · Arc" desc="Track tokens on the Arc network using the same SmartMoney scoring system." />
+        <PlanCard name="VIP Plan" requirement="WYCK" desc="Premium portfolio tracking and strong-momentum whale features." />
       </section>
     </main>
   );
