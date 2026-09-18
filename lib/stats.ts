@@ -105,7 +105,9 @@ const ROBINHOOD_CATEGORY_URLS = [
   process.env.WYCK_ROBIN_FLAP1_URL,
   process.env.WYCK_ROBIN_LEMON1_URL,
   process.env.WYCK_ROBIN_LETSCASH1_URL,
+].filter((u): u is string => !!u);
 
+const ARC_CATEGORY_URLS = [
   process.env.WYCK_ARC1_URL,
   process.env.WYCK_ARC2_URL,
   process.env.WYCK_ARC3_URL,
@@ -133,6 +135,10 @@ async function countTokensFromUrls(urls: string[]): Promise<number> {
   return Object.keys(Object.assign({}, ...results)).length;
 }
 
+export async function getArcTotalTokens(): Promise<number> {
+  return countTokensFromUrls(ARC_CATEGORY_URLS);
+}
+
 export async function getBaseTotalTokens(): Promise<number> {
   return countTokensFromUrls(BASE_CATEGORY_URLS);
 }
@@ -142,6 +148,6 @@ export async function getRobinhoodTotalTokens(): Promise<number> {
 }
 
 export async function getTotalTokens(): Promise<number> {
-  const [base, robinhood] = await Promise.all([getBaseTotalTokens(), getRobinhoodTotalTokens()]);
-  return base + robinhood;
+  const [base, robinhood, arc] = await Promise.all([getBaseTotalTokens(), getRobinhoodTotalTokens(), getArcTotalTokens()]);
+  return base + robinhood + arc;
 }

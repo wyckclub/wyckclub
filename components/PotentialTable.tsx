@@ -157,7 +157,7 @@ function RowCells({
                 {item.symbol}
               </button>
               {row.isNew && (
-                <span className="text-[9px] font-extrabold uppercase tracking-wide px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                   New
                 </span>
               )}
@@ -189,7 +189,7 @@ function RowCells({
       <td className="p-2.5 whitespace-nowrap">
         <PlatformBadge platform={item.platform} size="sm" />
       </td>
-      <td className={`p-2.5 whitespace-nowrap font-mono text-sm ${priceColor}`}>{formatPriceShort(item.priceUsd)}</td>
+      <td className={`p-2.5 whitespace-nowrap text-sm ${priceColor}`}>{formatPriceShort(item.priceUsd)}</td>
       <td className={`p-2.5 whitespace-nowrap text-sm ${change24hClass(item.change24h)}`}>{change24hText(item.change24h)}</td>
       <td className="p-2.5 whitespace-nowrap text-sm">{formatCap(item.marketCap)}</td>
       <td className="p-2.5 whitespace-nowrap text-sm">{formatCap(item.liq)}</td>
@@ -265,8 +265,8 @@ export function PotentialTable({
               <th className="text-left p-2.5">Platform</th>
               <th className="text-left p-2.5">Price</th>
               <th className="text-left p-2.5">Change24h</th>
-              <th className="text-left p-2.5">Market Cap</th>
-              <th className="text-left p-2.5">Liquidity</th>
+              <th className="text-left p-2.5">MCap</th>
+              <th className="text-left p-2.5">Liq</th>
               <th className="text-left p-2.5">Vol 1h</th>
               <th className="text-left p-2.5">Vol 6h</th>
               <th className="text-left p-2.5">Vol 24h</th>
@@ -359,7 +359,7 @@ export function PotentialTable({
                         {item.symbol}
                       </button>
                       {row.isNew && (
-                        <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                           New
                         </span>
                       )}

@@ -45,14 +45,14 @@ export function netBullTrendState(
 }
 
 export function trendTextClassHtml(t: TrendState): string {
-  if (t === 'up') return 'text-green-400 font-extrabold';
-  if (t === 'down') return 'text-red-400 font-extrabold';
+  if (t === 'up') return 'text-green-400 font-bold';
+  if (t === 'down') return 'text-red-400 font-bold';
   return 'text-slate-400 font-semibold';
 }
 
 function trendFillClass(t: TrendState): string {
-  if (t === 'up') return 'fill-green-400 font-extrabold';
-  if (t === 'down') return 'fill-red-400 font-extrabold';
+  if (t === 'up') return 'fill-green-400 font-bold';
+  if (t === 'down') return 'fill-red-400 font-bold';
   return 'fill-slate-300 font-semibold';
 }
 
