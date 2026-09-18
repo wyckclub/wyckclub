@@ -101,18 +101,18 @@ function PlatformGroup({
   onToggleOne: (p: string) => void;
   onToggleAll: (list: string[]) => void;
 }) {
-  const allSelected = selected.length === 0 || (list.length > 0 && list.every((p) => selected.includes(p)));
+  const allSelected = list.length > 0 && list.every((p) => selected.includes(p));
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-      <label className="flex items-center gap-1.5 text-xs font-extrabold text-blue-300 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={allSelected}
-          onChange={() => onToggleAll(list)}
-          className="wyck-checkbox wyck-checkbox-sm"
-        />
-        All
-      </label>
+      <button
+        type="button"
+        onClick={() => onToggleAll(list)}
+        className={`text-xs font-bold px-2 py-1 rounded transition-colors ${
+          allSelected ? 'bg-green-700 text-white' : 'bg-slate-800 text-blue-300 hover:bg-slate-700'
+        }`}
+      >
+        Select All
+      </button>
       {list.map((p) => (
         <label key={p} className="flex items-center gap-1.5 text-xs font-semibold text-slate-300 cursor-pointer">
           <input
@@ -147,7 +147,6 @@ export function PotentialFilterPanel({
   onApply: () => void;
   onReset: () => void;
   resultCount: number;
-  /** Nội dung hiển thị ở cột bên phải của hàng tab (chỉ dùng khi ở tab Following) */
   rightSlot?: React.ReactNode;
 }) {
   const isFollowing = tab === 'following';
