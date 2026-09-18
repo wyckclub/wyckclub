@@ -295,6 +295,7 @@ export function PotentialFilterPanel({
                 onChange={(v) => set('entryWindow', v)}
               />
             </div>
+            <NumberField label="% Price Up under" value={filters.maxPriceUp} onChange={(v) => set('maxPriceUp', v)} placeholder="%" />
             <NumberField label="Min Bull" value={filters.minBull} onChange={(v) => set('minBull', v)} />
             <NumberField label="Max Bear" value={filters.maxBear} onChange={(v) => set('maxBear', v)} />
             <NumberField label="Min Net Bull" value={filters.minNetBull} onChange={(v) => set('minNetBull', v)} />

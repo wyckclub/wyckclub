@@ -2,10 +2,19 @@ import { isWhaleStarredAt, isSpringPointAt, getChartScoreTextColorClass } from '
 import type { PotentialApiItem, PotentialEntryRaw } from '@/app/api/potential/route';
 import type { PotentialFilters } from '@/lib/potentialFilters';
 
-function entryPassesCoreChecks(entries: PotentialEntryRaw[], idx: number, f: PotentialFilters): boolean {
+function entryPassesCoreChecks(entries: PotentialEntryRaw[], idx: number, f: PotentialFilters, currentPrice: number | null): boolean {
   const e0 = entries[idx];
   if (!e0) return false;
   const e1 = entries[idx + 1];
+
+  if (f.maxPriceUp.trim() !== '') {
+    const max = Number(f.maxPriceUp);
+    if (!isNaN(max)) {
+      if (currentPrice == null || e0.price == null || e0.price <= 0) return false;
+      const pctUp = ((currentPrice - e0.price) / e0.price) * 100;
+      if (pctUp > max) return false;
+    }
+  }
 
   if (f.minScore.trim() !== '') {
     const min = Number(f.minScore);
@@ -72,7 +81,7 @@ export function passesFilter(item: PotentialApiItem, f: PotentialFilters): boole
 
   let anyEntryMatches = false;
   for (let idx = 0; idx < f.entryWindow && idx < item.entries.length; idx++) {
-    if (entryPassesCoreChecks(item.entries, idx, f)) {
+    if (entryPassesCoreChecks(item.entries, idx, f, item.priceUsd)) {
       anyEntryMatches = true;
       break;
     }

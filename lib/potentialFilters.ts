@@ -19,6 +19,7 @@ export interface PotentialFilters {
   maxBear: string;
   minNetBull: string;
   entryWindow: 1 | 2 | 3;
+  maxPriceUp: string;
   minAge: string;
   maxAge: string;
   minMarketCap: string;
@@ -46,6 +47,7 @@ const BASE_DEFAULTS: Omit<PotentialFilters, 'network'> = {
   maxBear: '1',
   minNetBull: '5',
   entryWindow: 1,
+  maxPriceUp: '',
   minAge: '',
   maxAge: '',
   minMarketCap: '50000',
