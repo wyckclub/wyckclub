@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PotentialApiItem } from '@/app/api/potential/route';
+import { useTokenGate, VIP_THRESHOLD } from '@/lib/tokenGate';
+import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
 import { PotentialFilterPanel, PotentialTab } from '@/components/PotentialFilterPanel';
 import { PotentialTable } from '@/components/PotentialTable';
 import { prefetchDexDataBatch } from '@/lib/dexData';
@@ -25,6 +27,7 @@ const POLL_MS = 60000;
 const NEW_BADGE_MS = 5 * 60 * 1000;
 
 export default function PotentialPage() {
+  const { isConnected, isLoading, amount, hasAccess } = useTokenGate(VIP_THRESHOLD);
   const [tab, setTab] = useState<PotentialTab>('base');
   const [network, setNetwork] = useState<NetworkKey>('base');
 
@@ -69,6 +72,18 @@ export default function PotentialPage() {
       setNetwork(t);
       setFormFilters(loadDraftFilters(t));
     }
+  }
+
+  function GateMessage({ title, message, showBuyPrompt }: { title: string; message: string; showBuyPrompt?: boolean }) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center p-6">
+        <div className="max-w-md text-center space-y-3">
+          <h1 className="text-2xl font-bold text-blue-400">{title}</h1>
+          <p className="text-slate-400">{message}</p>
+          {showBuyPrompt && <BuyTokenPrompt />}
+        </div>
+      </div>
+    );
   }
 
   const load = useCallback(async (force = false) => {
@@ -239,7 +254,6 @@ export default function PotentialPage() {
     tab === 'robinhood' ? robinhoodRows :
     arcRows;
 
-  // Summary ROI của tab Following — hiển thị ở cột bên phải trong khung filter panel
   const followSummaryNode = useMemo(() => {
     if (tab !== 'following' || loading || followingRows.length === 0) return null;
 
@@ -265,6 +279,22 @@ export default function PotentialPage() {
       </div>
     );
   }, [tab, loading, followingRows]);
+
+  if (!isConnected) {
+    return <GateMessage title="Connect your wallet" message="Connect your wallet to check Potential access." />;
+  }
+  if (isLoading) {
+    return <GateMessage title="Checking balance..." message="" />;
+  }
+  if (!hasAccess) {
+    return (
+      <GateMessage
+        title="Potential Locked"
+        message={`You need at least ${VIP_THRESHOLD.toLocaleString()} tokens. Your balance: ${amount.toLocaleString()}.`}
+        showBuyPrompt
+      />
+    );
+  }
 
   return (
     <div className="w-full px-4 py-6 max-w-[1600px] mx-auto space-y-5">

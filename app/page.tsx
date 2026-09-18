@@ -109,7 +109,6 @@ export default async function Home() {
 
   return (
     <main className="relative max-w-5xl mx-auto p-6 space-y-16 overflow-hidden">
-      {/* ---- Nền trang trí: ánh sáng + lưới mạng + cá voi mờ ---- */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <NetworkGrid className="absolute inset-0 w-full h-full opacity-[0.05]" />
         <div className="absolute -top-32 left-1/3 w-[420px] h-[420px] rounded-full bg-blue-600/20 blur-3xl animate-pulse [animation-duration:6s]" />

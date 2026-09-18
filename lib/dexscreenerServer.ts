@@ -95,8 +95,6 @@ function hashKey(chainId: string) {
   return `wyck:dex:${chainId}`;
 }
 
-/* ---------- RAM cache (per CA, per chain) ---------- */
-
 interface MemEntry {
   data: DexBatchInfo;
   expires: number;
@@ -123,8 +121,6 @@ function memSetMany(chainId: string, entries: Record<string, DexBatchInfo>, ttlM
     memCache.set(memKey(chainId, ca), { data, expires });
   }
 }
-
-/* ---------- Redis cache ---------- */
 
 async function getCachedMany(chainId: string, cas: string[]): Promise<Record<string, DexBatchInfo>> {
   if (!cas.length) return {};
