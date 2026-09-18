@@ -7,44 +7,15 @@ import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
 import { fetchAllCategories, fetchRobinhoodTokens, fetchArcTokens, TokenEntry } from '@/lib/tokenApi';
 import { getWalletHeldTokens, WalletToken } from '@/lib/walletTokens';
 import { prefetchDexDataBatch, getCachedDexData } from '@/lib/dexData';
-import { PriceChartModal } from '@/components/PriceChartModal';
+import { PriceChartModal, trendUpDown, bullBearTrend, netBullTrendState, trendTextClassHtml } from '@/components/PriceChartModal';
 import { PlatformBadge } from '@/components/PlatformBadge';
-import { formatCap } from '@/lib/format';
+import { NetworkIcon } from '@/components/NetworkIcon';
+import { formatCap, formatPriceShort, formatAge } from '@/lib/format';
 import { ScoreBadge } from '@/components/ScoreBadge';
+import type { PotentialApiItem } from '@/app/api/potential/route';
 import Link from 'next/link';
 
 type ChainKey = 'base' | 'robinhood' | 'arc';
-
-function BaseIcon({ className = 'w-6 h-6' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 400 400" className={`${className} rounded-[5px] overflow-hidden shrink-0`}>
-      <rect width="400" height="400" fill="#FFFFFF" />
-      <rect x="80" y="80" width="240" height="240" rx="28" ry="28" fill="#0052FF" />
-    </svg>
-  );
-}
-
-function RobinhoodIcon({ className = 'w-6 h-6' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 400 400" className={`${className} rounded-[5px] overflow-hidden shrink-0`}>
-      <rect width="400" height="400" fill="#ccff00" />
-      <g fill="#211d19">
-        <path d="M 185 133.5 L 170.5 148 C 142 176.5, 131 220, 131 245 C 131 260, 120 300, 106 321 L 115 321 C 137 280, 149 220, 172 172 Z" />
-        <path d="M 249 80 C 275 80, 294 100, 294 130 C 294 150, 280 178, 252 206 L 252 145 L 237 130 L 185 122 Z" />
-        <path d="M 238 145 L 238 215 L 150 272 C 175 235, 205 185, 238 145 Z" />
-      </g>
-    </svg>
-  );
-}
-
-function ArcIcon({ className = 'w-6 h-6' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 500 500" className={`${className} rounded-[5px] overflow-hidden shrink-0`}>
-      <rect width="500" height="500" rx="250" fill="#1B3158"/>
-      <path d="M250.466 85C291.387 85 327.762 120.453 352.899 184.828C365.973 218.31 375.592 258.091 381.291 301.368C381.801 305.233 382.234 309.161 382.679 313.081C382.824 313.323 382.911 313.548 382.881 313.731C382.881 313.731 386.231 334.649 386.942 371.001H386.564C381.597 366.924 323.011 320.889 225.894 334.219C227.359 317.784 229.374 301.793 231.978 286.465C232.111 285.682 232.265 284.925 232.4 284.147C270.491 282.999 303.831 287.422 329.397 293.219C329.302 292.612 329.223 291.988 329.126 291.384C323.871 258.658 316.118 228.697 306.121 203.093C289.776 161.227 268.447 135.216 250.466 135.216C232.486 135.216 211.157 161.228 194.812 203.093C190.856 213.219 187.254 224.019 184.024 235.41C179.483 251.372 175.668 268.484 172.621 286.464C168.112 313.017 165.295 341.496 164.257 371.001H114C116.319 300.984 128.19 235.639 148.033 184.828C173.165 120.453 209.545 85.0002 250.466 85Z" fill="white"/>
-    </svg>
-  );
-}
 
 interface Holding {
   chainKey: ChainKey;
@@ -190,13 +161,51 @@ function useWalletHoldings(address?: string) {
   return { holdings, loading, error };
 }
 
+// ---- dữ liệu bổ sung (Age, Vol1h/6h, W.A.I, Bull/Bear, Net, BigWhale) lấy từ /api/potential (dữ liệu thật, cùng nguồn với trang Potential) ----
+function usePotentialMap() {
+  const [map, setMap] = useState<Record<string, PotentialApiItem>>({});
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/potential', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        const items: PotentialApiItem[] = Array.isArray(d.items) ? d.items : [];
+        const m: Record<string, PotentialApiItem> = {};
+        items.forEach((i) => { m[`${i.chain}:${i.ca.toLowerCase()}`] = i; });
+        setMap(m);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+  return map;
+}
+
+function fmtPlain(v: number | null | undefined) {
+  if (v == null) return '-';
+  const rounded = Math.round(v * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function fmtSigned(v: number | null | undefined) {
+  if (v == null) return '-';
+  const rounded = Math.round(v * 10) / 10;
+  return `${rounded > 0 ? '+' : ''}${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)}`;
+}
+
+function change24hClass(v: number | null | undefined) {
+  return v == null ? 'text-slate-500' : v >= 0 ? 'text-green-400' : 'text-red-400';
+}
+function change24hText(v: number | null | undefined) {
+  return v == null ? 'N/A' : `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+}
+
 export default function PortfolioPage() {
   const { isConnected, isLoading, amount, hasAccess } = useTokenGate(VIP_THRESHOLD);
   const { address } = useAccount();
   const { holdings, loading, error } = useWalletHoldings(hasAccess ? address : undefined);
+  const potentialMap = usePotentialMap();
   const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string; chainId: ChainKey; platform?: string | null } | null>(null);
-
-  console.log('[portfolio] holdings:', holdings.length, 'error:', error, 'loading:', loading, holdings);
 
   if (!isConnected) return <GateMessage title="Connect your wallet" message="Connect your wallet to check Portfolio access." />;
   if (isLoading) return <GateMessage title="Checking balance..." message="" />;
@@ -212,8 +221,6 @@ export default function PortfolioPage() {
 
   const filtered = holdings.filter((h) => hasEnoughLiq(h.ca));
 
-  console.log('[portfolio] filtered:', filtered.length);
-
   return (
     <div className="w-full px-4 py-6 space-y-6">
       <h2 className="text-2xl font-bold text-blue-400">Portfolio - Wallet Holdings</h2>
@@ -228,85 +235,132 @@ export default function PortfolioPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-slate-900 text-blue-400">
-                <th className="text-left p-3 whitespace-nowrap"></th>
-                <th className="text-left p-3 whitespace-nowrap">Token</th>
-                <th className="text-left p-3 whitespace-nowrap">Platform</th>
-                <th className="text-left p-3 whitespace-nowrap">CA</th>
-                <th className="text-left p-3 whitespace-nowrap">Market Cap</th>
-                <th className="text-left p-3 whitespace-nowrap">Liquidity</th>
-                <th className="text-left p-3 whitespace-nowrap">Vol 24h</th>
-                <th className="text-left p-3 whitespace-nowrap">Change 24h</th>
-                <th className="text-left p-3 whitespace-nowrap">Balance</th>
-                <th className="text-left p-3 whitespace-nowrap">Value (USD)</th>
-                <th className="text-left p-3 whitespace-nowrap">WYCKSCORE</th>
+                <th className="text-left p-2.5 whitespace-nowrap"></th>
+                <th className="text-left p-2.5 whitespace-nowrap">Token</th>
+                <th className="text-left p-2.5 whitespace-nowrap">CA</th>
+                <th className="text-left p-2.5 whitespace-nowrap">Age</th>
+                <th className="text-left p-2.5 whitespace-nowrap">Platform</th>
+                <th className="text-left p-2.5 whitespace-nowrap">Price</th>
+                <th className="text-left p-2.5 whitespace-nowrap">Change24h</th>
+                <th className="text-left p-2.5 whitespace-nowrap">MCap</th>
+                <th className="text-left p-2.5 whitespace-nowrap">Liq</th>
+                <th className="text-left p-2.5 whitespace-nowrap">Vol 1h</th>
+                <th className="text-left p-2.5 whitespace-nowrap">Vol 6h</th>
+                <th className="text-left p-2.5 whitespace-nowrap">Vol 24h</th>
+                <th className="text-left p-2.5 whitespace-nowrap">WYCKSCORE</th>
+                <th className="text-left p-2.5 whitespace-nowrap cursor-help" title="Whale Accumulation Index">W.A.I</th>
+                <th className="text-left p-2.5 whitespace-nowrap">Bull / Bear</th>
+                <th className="text-left p-2.5 whitespace-nowrap">Net</th>
+                <th className="text-left p-2.5 whitespace-nowrap">BigWhale</th>
+                <th className="text-left p-2.5 whitespace-nowrap"></th>
+                <th className="text-left p-2.5 whitespace-nowrap">Balance</th>
+                <th className="text-left p-2.5 whitespace-nowrap">Value (USD)</th>
               </tr>
             </thead>
             <tbody>
-            {filtered.map((h) => {
-              const dex = getCachedDexData(h.ca);
-              const change24h = dex?.h24;
-              const valueUsd = dex?.priceUsd != null ? h.qty * dex.priceUsd : null;
+              {filtered.map((h) => {
+                const dex = getCachedDexData(h.ca);
+                const item = potentialMap[`${h.chainKey}:${h.ca.toLowerCase()}`];
+                const e0 = item?.entries[0];
+                const e1 = item?.entries[1];
+                const valueUsd = dex?.priceUsd != null ? h.qty * dex.priceUsd : null;
 
-              console.log('[row]', h.symbol, h.ca, JSON.stringify({
-                priceUsd: dex?.priceUsd,
-                marketCap: dex?.marketCap,
-                qty: h.qty,
-                valueUsd,
-              }));
+                const netBull = e0?.incBull != null && e0?.decBear != null ? e0.incBull - e0.decBear : null;
+                const bullBearColorClass = trendTextClassHtml(
+                  bullBearTrend(e0?.incBull ?? null, e0?.decBear ?? null, e1?.incBull ?? null, e1?.decBear ?? null, !e1)
+                );
+                const netBullColorClass = trendTextClassHtml(
+                  netBullTrendState(e0?.incBull ?? null, e0?.decBear ?? null, e1?.incBull ?? null, e1?.decBear ?? null)
+                );
+                const bigWhaleColorClass = trendTextClassHtml(trendUpDown(e0?.bigwhale ?? null, e1?.bigwhale ?? null));
+                const waiDiff = e0?.top10 != null && e1?.top10 != null ? e0.top10 - e1.top10 : null;
+                const hasWhale = e0?.topwhale === 'y';
+                const strongBuy = e0?.display?.endsWith('+');
+                const change24h = item?.change24h ?? dex?.h24 ?? null;
+                const detailHref = `/${h.chainKey}/${h.ca}`;
 
-              const dexscreenerSlug = h.chainKey;
                 return (
-                  <tr key={`${h.chainKey}-${h.ca}`} className="border-t border-slate-800">
-                    <td className="p-3">
-                      <div className="relative w-6 h-6 shrink-0">
+                  <tr
+                    key={`${h.chainKey}-${h.ca}`}
+                    onClick={() => item && setChartToken({ category: item.category, ca: h.ca, symbol: h.symbol, chainId: h.chainKey, platform: h.platform })}
+                    className="border-t border-slate-800 hover:bg-slate-800/50 cursor-pointer"
+                  >
+                    <td className="p-2.5">
+                      <div className="relative w-7 h-7 shrink-0">
                         {dex?.imageUrl ? (
-                          <img src={dex.imageUrl} alt={h.symbol} className="w-6 h-6 rounded object-cover" />
+                          <img src={dex.imageUrl} alt={h.symbol} className="w-7 h-7 rounded-full object-cover" />
                         ) : (
-                          <div className="w-6 h-6 rounded bg-slate-800" />
+                          <div className="w-7 h-7 rounded-full bg-slate-800" />
                         )}
                         <span className="absolute -bottom-1 -right-1 ring-1 ring-slate-900 rounded-[3px] overflow-hidden">
-                          {h.chainKey === 'base' ? (
-                            <BaseIcon className="w-3 h-3" />
-                          ) : h.chainKey === 'arc' ? (
-                            <ArcIcon className="w-3 h-3" />
-                          ) : (
-                            <RobinhoodIcon className="w-3 h-3" />
-                          )}
+                          <NetworkIcon chain={h.chainKey} className="w-3 h-3" />
                         </span>
                       </div>
                     </td>
-                    <td className="p-3 font-semibold whitespace-nowrap">
-                      <Link href={`/${h.chainKey}/${h.ca}`} className="text-blue-400 hover:text-blue-300 underline decoration-dotted">
+                    <td className="p-2.5 font-semibold whitespace-nowrap">
+                      <Link
+                        href={detailHref}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-blue-400 hover:text-blue-300 underline decoration-dotted"
+                      >
                         {h.symbol}
                       </Link>
                     </td>
-                    <td className="p-3">
-                      <PlatformBadge platform={h.platform} />
-                    </td>
-                    <td className="p-3 whitespace-nowrap">
-                      <Link href={`/${h.chainKey}/${h.ca}`} className="text-blue-400 hover:underline text-xs">
-                        View Chart
-                      </Link>
-                      {' '}
-                      <Link href={`/${h.chainKey}/${h.ca}`} className="font-mono text-xs text-blue-400 hover:underline">
+                    <td className="p-2.5 whitespace-nowrap">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); navigator.clipboard?.writeText(h.ca); }}
+                        className="font-mono text-xs text-slate-400 hover:text-blue-300"
+                        title="Click to copy"
+                      >
                         {h.ca.slice(0, 6)}...{h.ca.slice(-4)}
-                      </Link>
+                      </button>
                     </td>
-                    <td className="p-3 whitespace-nowrap">{dex?.marketCap == null ? 'N/A' : formatCap(dex.marketCap)}</td>
-                    <td className="p-3 whitespace-nowrap">{dex?.liq == null ? 'N/A' : formatCap(dex.liq)}</td>
-                    <td className="p-3 whitespace-nowrap">{dex?.vol24h == null ? 'N/A' : formatCap(dex.vol24h)}</td>
-                    <td className={`p-3 whitespace-nowrap ${change24h == null ? 'text-slate-500' : change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {change24h == null ? 'N/A' : `${change24h >= 0 ? '+' : ''}${change24h.toFixed(1)}%`}
-                    </td>
-                    <td className="p-3 whitespace-nowrap">{h.qty.toLocaleString(undefined, { maximumFractionDigits: 4 })}</td>
-                    <td className="p-3 whitespace-nowrap">{valueUsd == null ? 'N/A' : formatCap(valueUsd)}</td>
-                    <td className="p-3 whitespace-nowrap">
+                    <td className="p-2.5 whitespace-nowrap text-slate-400">{formatAge(item?.pairCreatedAt ?? dex?.pairCreatedAt ?? null)}</td>
+                    <td className="p-2.5 whitespace-nowrap"><PlatformBadge platform={h.platform} size="sm" /></td>
+                    <td className="p-2.5 whitespace-nowrap">{formatPriceShort(dex?.priceUsd)}</td>
+                    <td className={`p-2.5 whitespace-nowrap ${change24hClass(change24h)}`}>{change24hText(change24h)}</td>
+                    <td className="p-2.5 whitespace-nowrap">{dex?.marketCap == null ? 'N/A' : formatCap(dex.marketCap)}</td>
+                    <td className="p-2.5 whitespace-nowrap">{dex?.liq == null ? 'N/A' : formatCap(dex.liq)}</td>
+                    <td className="p-2.5 whitespace-nowrap">{item?.vol1h == null ? 'N/A' : formatCap(item.vol1h)}</td>
+                    <td className="p-2.5 whitespace-nowrap">{item?.vol6h == null ? 'N/A' : formatCap(item.vol6h)}</td>
+                    <td className="p-2.5 whitespace-nowrap">{dex?.vol24h == null ? 'N/A' : formatCap(dex.vol24h)}</td>
+                    <td className="p-2.5 whitespace-nowrap">
                       {h.score != null && h.scoreDisplay ? (
-                        <ScoreBadge scoreDisplay={h.scoreDisplay} score={h.score} />
+                        <div className="flex items-center gap-1">
+                          <ScoreBadge scoreDisplay={h.scoreDisplay} score={h.score} />
+                          {hasWhale && <span title="Has Whale">🐋</span>}
+                          {strongBuy && <span className="text-green-500 font-bold" title="Strong buying">▲</span>}
+                        </div>
                       ) : (
                         <span className="text-slate-500 text-xs">N/A</span>
                       )}
                     </td>
+                    <td className="p-2.5 whitespace-nowrap cursor-help" title="Whale Accumulation Index">
+                      {e0?.top10 ?? '-'}
+                      {waiDiff != null && waiDiff !== 0 && (
+                        <span className={`ml-1 text-[11px] ${waiDiff > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          ({waiDiff > 0 ? '+' : ''}{waiDiff})
+                        </span>
+                      )}
+                    </td>
+                    <td className={`p-2.5 whitespace-nowrap ${bullBearColorClass}`}>
+                      {fmtPlain(e0?.incBull)} / {fmtPlain(e0?.decBear)}
+                    </td>
+                    <td className={`p-2.5 whitespace-nowrap ${netBullColorClass}`}>{fmtSigned(netBull)}</td>
+                    <td className={`p-2.5 whitespace-nowrap ${bigWhaleColorClass}`}>{fmtPlain(e0?.bigwhale)}</td>
+                    <td className="p-2.5 whitespace-nowrap">
+                      <a
+                        href={detailHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-block px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-blue-400 hover:text-blue-300"
+                      >
+                        Detail
+                      </a>
+                    </td>
+                    <td className="p-2.5 whitespace-nowrap">{h.qty.toLocaleString(undefined, { maximumFractionDigits: 4 })}</td>
+                    <td className="p-2.5 whitespace-nowrap">{valueUsd == null ? 'N/A' : formatCap(valueUsd)}</td>
                   </tr>
                 );
               })}
