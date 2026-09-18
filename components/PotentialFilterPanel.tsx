@@ -137,6 +137,7 @@ export function PotentialFilterPanel({
   onApply,
   onReset,
   resultCount,
+  rightSlot,
 }: {
   tab: PotentialTab;
   network: NetworkKey;
@@ -146,6 +147,8 @@ export function PotentialFilterPanel({
   onApply: () => void;
   onReset: () => void;
   resultCount: number;
+  /** Nội dung hiển thị ở cột bên phải của hàng tab (chỉ dùng khi ở tab Following) */
+  rightSlot?: React.ReactNode;
 }) {
   const isFollowing = tab === 'following';
 
@@ -228,6 +231,10 @@ export function PotentialFilterPanel({
             />
           </div>
         )}
+
+        {isFollowing && rightSlot && (
+          <div className="flex items-end lg:justify-end min-w-0">{rightSlot}</div>
+        )}
       </div>
 
       {!isFollowing && (
@@ -295,7 +302,7 @@ export function PotentialFilterPanel({
                 onChange={(v) => set('entryWindow', v)}
               />
             </div>
-            <NumberField label="% Price Up under" value={filters.maxPriceUp} onChange={(v) => set('maxPriceUp', v)} placeholder="%" />
+            <NumberField label="(Entry) % PriceUp under" value={filters.maxPriceUp} onChange={(v) => set('maxPriceUp', v)} placeholder="%" />
             <NumberField label="Min Bull" value={filters.minBull} onChange={(v) => set('minBull', v)} />
             <NumberField label="Max Bear" value={filters.maxBear} onChange={(v) => set('maxBear', v)} />
             <NumberField label="Min Net Bull" value={filters.minNetBull} onChange={(v) => set('minNetBull', v)} />
@@ -314,32 +321,25 @@ export function PotentialFilterPanel({
             <NumberField label="Min Vol 6h" value={filters.minVol6h} onChange={(v) => set('minVol6h', v)} />
             <NumberField label="Min Vol 24h" value={filters.minVol24h} onChange={(v) => set('minVol24h', v)} />
           </div>
+
+          <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onReset}
+                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-bold transition-colors"
+              >
+                Reset
+              </button>
+              <button
+                onClick={onApply}
+                className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold transition-colors"
+              >
+                Filter tokens
+              </button>
+            </div>
+          </div>
         </>
       )}
-
-      <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
-        <span className="text-xs text-slate-500">
-          {isFollowing
-            ? `${resultCount} followed token${resultCount === 1 ? '' : 's'}`
-            : `${resultCount} token${resultCount === 1 ? '' : 's'} match current filters`}
-        </span>
-        {!isFollowing && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onReset}
-              className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-bold transition-colors"
-            >
-              Reset
-            </button>
-            <button
-              onClick={onApply}
-              className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold transition-colors"
-            >
-              Filter tokens
-            </button>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
