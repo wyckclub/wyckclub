@@ -265,7 +265,28 @@ export default function PotentialPage() {
         onReset={handleReset}
         resultCount={activeRows.length}
       />
-
+      {tab === 'following' && !loading && followingRows.length > 0 && (() => {
+        let invested = 0;
+        let current = 0;
+        for (const row of followingRows) {
+          const buyPrice = row.follow?.priceUsd;
+          const nowPrice = row.item.priceUsd;
+          if (buyPrice == null || buyPrice <= 0 || nowPrice == null) continue;
+          invested += 1;
+          current += nowPrice / buyPrice;
+        }
+        const roi = current - invested;
+        const roiPct = invested > 0 ? (roi / invested) * 100 : 0;
+        const roiColor = roi > 0 ? 'text-green-400' : roi < 0 ? 'text-red-400' : 'text-slate-300';
+        return (
+          <div className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-300">
+            {followingRows.length} followed tokens. If you bought it for ${invested.toFixed(0)}, the current value is ${current.toFixed(2)}, ROI:{' '}
+            <span className={`font-bold ${roiColor}`}>
+              {roi >= 0 ? '+' : ''}${roi.toFixed(2)} ({roiPct >= 0 ? '+' : ''}{roiPct.toFixed(1)}%)
+            </span>
+          </div>
+        );
+      })()}
       {error && <p className="text-red-400 text-sm">{error}</p>}
       {loading ? (
         <p className="text-slate-400">Loading potential tokens...</p>
