@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { formatCap, formatPriceShort, formatAge } from '@/lib/format';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { PlatformBadge } from '@/components/PlatformBadge';
@@ -9,6 +8,7 @@ import { PriceChartModal, trendUpDown, bullBearTrend, netBullTrendState, trendTe
 import { InlineSwapPanel } from '@/components/InlineSwapPanel';
 import { PotentialRow } from '@/lib/potentialFilters';
 import type { PotentialApiItem } from '@/app/api/potential/route';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 interface ChartTarget {
   category: number;
@@ -21,6 +21,43 @@ interface ChartTarget {
 interface ExpandedTarget {
   key: string;
   side: 'buy' | 'sell';
+}
+
+const HIDE_ORDER = ['vol6h', 'vol1h', 'ca'] as const;
+type HideKey = (typeof HIDE_ORDER)[number];
+
+function useAutoHideColumns(dep: unknown) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [count, setCount] = useState(0);
+  const [width, setWidth] = useState(0);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (el.scrollWidth > el.clientWidth + 1 && count < HIDE_ORDER.length) {
+      setCount((c) => c + 1);
+    }
+  }, [count, width, dep]);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let last = el.clientWidth;
+    setWidth(last);
+    const ro = new ResizeObserver(() => {
+      const w = el.clientWidth;
+      if (w !== last) {
+        last = w;
+        setWidth(w);
+        setCount(0);
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const hidden = new Set<HideKey>(HIDE_ORDER.slice(0, count));
+  return { ref, hidden };
 }
 
 function rowKey(item: PotentialApiItem) {
@@ -106,13 +143,13 @@ function BuySellButtons({ item, onBuySell }: { item: PotentialApiItem; onBuySell
     <div className="flex gap-1">
       <button
         onClick={(e) => { e.stopPropagation(); onBuySell(item, 'buy'); }}
-        className="px-2 py-1 text-xs font-bold rounded bg-green-600 hover:bg-green-500 text-white"
+        className="px-2 py-1 text-xs font-bold rounded-lg bg-green-800/80 hover:bg-green-700 text-white"
       >
         Buy
       </button>
       <button
         onClick={(e) => { e.stopPropagation(); onBuySell(item, 'sell'); }}
-        className="px-2 py-1 text-xs font-bold rounded bg-red-600 hover:bg-red-500 text-white"
+        className="px-2 py-1 text-xs font-bold rounded-lg bg-red-800/80 hover:bg-red-700 text-white"
       >
         Sell
       </button>
@@ -121,12 +158,10 @@ function BuySellButtons({ item, onBuySell }: { item: PotentialApiItem; onBuySell
 }
 
 function RowCells({
-  row,
-  onToggleFollow,
-  onOpenChart,
-  onBuySell,
+  row, hidden, onToggleFollow, onOpenChart, onBuySell,
 }: {
   row: PotentialRow;
+  hidden: Set<HideKey>;
   onToggleFollow: () => void;
   onOpenChart: (item: PotentialApiItem) => void;
   onBuySell: (item: PotentialApiItem, side: 'buy' | 'sell') => void;
@@ -207,15 +242,18 @@ function RowCells({
           </div>
         </div>
       </td>
-      <td className="p-2.5 whitespace-nowrap">
-        <button
-          onClick={(e) => { e.stopPropagation(); navigator.clipboard?.writeText(item.ca); }}
-          className="font-mono text-xs text-slate-400 hover:text-blue-300"
-          title="Click to copy"
-        >
-          {item.ca.slice(0, 6)}...{item.ca.slice(-4)}
-        </button>
-      </td>
+      {!hidden.has('ca') && (
+        <td className="p-2.5 whitespace-nowrap">
+          <button
+            onClick={(e) => { e.stopPropagation(); navigator.clipboard?.writeText(item.ca); }}
+            className="font-mono text-xs text-slate-400 hover:text-blue-300"
+            title="Click to copy"
+          >
+            {item.ca.slice(0, 6)}...{item.ca.slice(-4)}
+          </button>
+        </td>
+      )}
+
       <td className="p-2.5 whitespace-nowrap text-sm text-slate-400">{formatAge(item.pairCreatedAt)}</td>
       <td className="p-2.5 whitespace-nowrap">
         <PlatformBadge platform={item.platform} size="sm" />
@@ -224,8 +262,12 @@ function RowCells({
       <td className={`p-2.5 whitespace-nowrap text-sm ${change24hClass(item.change24h)}`}>{change24hText(item.change24h)}</td>
       <td className="p-2.5 whitespace-nowrap text-sm">{formatCap(item.marketCap)}</td>
       <td className="p-2.5 whitespace-nowrap text-sm">{formatCap(item.liq)}</td>
-      <td className="p-2.5 whitespace-nowrap text-sm">{formatCap(item.vol1h)}</td>
-      <td className="p-2.5 whitespace-nowrap text-sm">{formatCap(item.vol6h)}</td>
+      {!hidden.has('vol1h') && (
+        <td className="p-2.5 whitespace-nowrap text-sm">{formatCap(item.vol1h)}</td>
+      )}
+      {!hidden.has('vol6h') && (
+        <td className="p-2.5 whitespace-nowrap text-sm">{formatCap(item.vol6h)}</td>
+      )}
       <td className="p-2.5 whitespace-nowrap text-sm">{formatCap(item.vol24h)}</td>
       <td className="p-2.5 whitespace-nowrap">
         <div className="flex items-center gap-1">
@@ -281,6 +323,7 @@ export function PotentialTable({
 }) {
   const [chartTarget, setChartTarget] = useState<ChartTarget | null>(null);
   const [expanded, setExpanded] = useState<ExpandedTarget | null>(null);
+  const { ref: tableWrapRef, hidden } = useAutoHideColumns(rows);
 
   function openChart(item: PotentialApiItem) {
     setChartTarget({ category: item.category, ca: item.ca, symbol: item.symbol, chain: item.chain, platform: item.platform });
@@ -294,21 +337,21 @@ export function PotentialTable({
   return (
     <>
       {/* Desktop table */}
-      <div className="hidden lg:block overflow-x-auto rounded-xl border border-slate-800">
+      <div ref={tableWrapRef} className="hidden lg:block overflow-x-auto rounded-xl border border-slate-800">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-900 text-blue-400">
               <th className="text-left p-2.5"></th>
               <th className="text-left p-2.5">Token</th>
-              <th className="text-left p-2.5">CA</th>
+              {!hidden.has('ca') && <th className="text-left p-2.5">CA</th>}
               <th className="text-left p-2.5">Age</th>
               <th className="text-left p-2.5">Platform</th>
               <th className="text-left p-2.5">Price</th>
               <th className="text-left p-2.5">Change24h</th>
               <th className="text-left p-2.5">MCap</th>
               <th className="text-left p-2.5">Liq</th>
-              <th className="text-left p-2.5">Vol 1h</th>
-              <th className="text-left p-2.5">Vol 6h</th>
+              {!hidden.has('vol1h') && <th className="text-left p-2.5">Vol 1h</th>}
+              {!hidden.has('vol6h') && <th className="text-left p-2.5">Vol 6h</th>}
               <th className="text-left p-2.5">Vol 24h</th>
               <th className="text-left p-2.5">WYCKSCORE</th>
               <th className="text-left p-2.5 cursor-help" title="Whale Accumulation Index">
@@ -334,16 +377,17 @@ export function PotentialTable({
                     row.isFollowed ? 'bg-yellow-500/[0.06]' : ''
                   }`}
                 >
-                  <RowCells
-                    row={row}
-                    onToggleFollow={() => onToggleFollow(row)}
-                    onOpenChart={openChart}
-                    onBuySell={handleBuySell}
-                  />
+                <RowCells
+                  row={row}
+                  hidden={hidden}
+                  onToggleFollow={() => onToggleFollow(row)}
+                  onOpenChart={openChart}
+                  onBuySell={handleBuySell}
+                />
                 </tr>
                 {isExpandedHere && (
                   <tr key={`${key}-swap`}>
-                    <td colSpan={19} className="p-2 bg-slate-950/50 border-t border-slate-800">
+                    <td colSpan={19 - hidden.size} className="p-2 bg-slate-950/50 border-t border-slate-800">
                       <InlineSwapPanel
                         chain={row.item.chain}
                         ca={row.item.ca}
@@ -359,7 +403,7 @@ export function PotentialTable({
           })}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={19} className="p-6 text-center text-slate-500">
+                <td colSpan={19 - hidden.size} className="p-6 text-center text-slate-500">
                   {emptyMessage}
                 </td>
               </tr>

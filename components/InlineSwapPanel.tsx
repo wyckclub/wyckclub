@@ -5,6 +5,8 @@ import { useAccount, usePublicClient, useBalance, useSendTransaction, useWriteCo
 import { parseUnits, formatUnits, maxUint256 } from 'viem';
 import { getCachedDexData } from '@/lib/dexData';
 
+const ethPriceCache: Record<string, { price: number; timestamp: number }> = {};
+const ETH_PRICE_TTL = 60000;
 const CHAIN_IDS: Record<string, number> = { base: 8453, robinhood: 4663, arc: 5042 };
 const NATIVE = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 const NATIVE_ARC_USDC = '0x3600000000000000000000000000000000000000';
@@ -51,24 +53,35 @@ export function InlineSwapPanel({
       .then((d) => setTokenDecimals(Number(d))).catch(() => setTokenDecimals(18));
   }, [ca, publicClient]);
 
-  useEffect(() => {
+    useEffect(() => {
     if (quoteAsset.symbol !== 'ETH') return;
+    const cacheKey = String(numericChainId);
+    const cached = ethPriceCache[cacheKey];
+    if (cached && Date.now() - cached.timestamp < ETH_PRICE_TTL) {
+        setQuoteUsdPrice(cached.price);
+    }
     let active = true;
     function load() {
-      const params = new URLSearchParams({
-        chainId: String(numericChainId),
+        const params = new URLSearchParams({
+        chainId: '8453',
         sellToken: NATIVE,
         buyToken: USDC_BASE,
         sellAmount: parseUnits('1', 18).toString(),
-      });
-      fetch(`/api/zeroex/price?${params}`).then((r) => r.json())
-        .then((d) => { if (active && d?.buyAmount) setQuoteUsdPrice(Number(formatUnits(BigInt(d.buyAmount), 6))); })
+        });
+        fetch(`/api/zeroex/price?${params}`).then((r) => r.json())
+        .then((d) => {
+            if (active && d?.buyAmount) {
+            const price = Number(formatUnits(BigInt(d.buyAmount), 6));
+            setQuoteUsdPrice(price);
+            ethPriceCache[cacheKey] = { price, timestamp: Date.now() };
+            }
+        })
         .catch(() => {});
     }
     load();
     const id = setInterval(load, 60000);
     return () => { active = false; clearInterval(id); };
-  }, [quoteAsset.symbol, numericChainId]);
+    }, [quoteAsset.symbol, numericChainId]);
 
   const payAsset = side === 'buy' ? quoteAsset : { address: ca, symbol, decimals: tokenDecimals ?? 18 };
   const receiveAsset = side === 'buy' ? { address: ca, symbol, decimals: tokenDecimals ?? 18 } : quoteAsset;

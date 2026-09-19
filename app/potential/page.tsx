@@ -297,7 +297,7 @@ export default function PotentialPage() {
   }
 
   return (
-    <div className="w-full px-4 py-6 max-w-[1600px] mx-auto space-y-5">
+    <div className="w-full px-4 py-6 max-w-[1700px] mx-auto space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-2xl font-bold text-blue-400">Potential Tokens</h2>
         <div className="flex items-center gap-3">
