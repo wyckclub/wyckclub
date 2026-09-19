@@ -6,6 +6,7 @@ import { ScoreBadge } from '@/components/ScoreBadge';
 import { PlatformBadge } from '@/components/PlatformBadge';
 import { NetworkIcon } from '@/components/NetworkIcon';
 import { PriceChartModal, trendUpDown, bullBearTrend, netBullTrendState, trendTextClassHtml } from '@/components/PriceChartModal';
+import { InlineSwapPanel } from '@/components/InlineSwapPanel';
 import { PotentialRow } from '@/lib/potentialFilters';
 import type { PotentialApiItem } from '@/app/api/potential/route';
 
@@ -15,6 +16,15 @@ interface ChartTarget {
   symbol: string;
   chain: 'base' | 'robinhood' | 'arc';
   platform: string | null;
+}
+
+interface ExpandedTarget {
+  key: string;
+  side: 'buy' | 'sell';
+}
+
+function rowKey(item: PotentialApiItem) {
+  return `${item.chain}-${item.ca}`;
 }
 
 function relativeTimeLong(ts: number): string {
@@ -91,14 +101,35 @@ function followTooltip(f: NonNullable<PotentialRow['follow']>) {
   ].join('\n');
 }
 
+function BuySellButtons({ item, onBuySell }: { item: PotentialApiItem; onBuySell: (item: PotentialApiItem, side: 'buy' | 'sell') => void }) {
+  return (
+    <div className="flex gap-1">
+      <button
+        onClick={(e) => { e.stopPropagation(); onBuySell(item, 'buy'); }}
+        className="px-2 py-1 text-xs font-bold rounded bg-green-600 hover:bg-green-500 text-white"
+      >
+        Buy
+      </button>
+      <button
+        onClick={(e) => { e.stopPropagation(); onBuySell(item, 'sell'); }}
+        className="px-2 py-1 text-xs font-bold rounded bg-red-600 hover:bg-red-500 text-white"
+      >
+        Sell
+      </button>
+    </div>
+  );
+}
+
 function RowCells({
   row,
   onToggleFollow,
   onOpenChart,
+  onBuySell,
 }: {
   row: PotentialRow;
   onToggleFollow: () => void;
   onOpenChart: (item: PotentialApiItem) => void;
+  onBuySell: (item: PotentialApiItem, side: 'buy' | 'sell') => void;
 }) {
   const { item } = row;
   const e0 = item.entries[0];
@@ -222,6 +253,9 @@ function RowCells({
       <td className={`p-2.5 whitespace-nowrap text-sm ${netBullColorClass}`}>{fmtSigned(netBull)}</td>
       <td className={`p-2.5 whitespace-nowrap text-sm ${bigWhaleColorClass}`}>{fmtPlain(e0?.bigwhale)}</td>
       <td className="p-2.5 whitespace-nowrap">
+        <BuySellButtons item={item} onBuySell={onBuySell} />
+      </td>
+      <td className="p-2.5 whitespace-nowrap">
         <a
           href={detailHref}
           target="_blank"
@@ -246,9 +280,15 @@ export function PotentialTable({
   emptyMessage?: string;
 }) {
   const [chartTarget, setChartTarget] = useState<ChartTarget | null>(null);
+  const [expanded, setExpanded] = useState<ExpandedTarget | null>(null);
 
   function openChart(item: PotentialApiItem) {
     setChartTarget({ category: item.category, ca: item.ca, symbol: item.symbol, chain: item.chain, platform: item.platform });
+  }
+
+  function handleBuySell(item: PotentialApiItem, side: 'buy' | 'sell') {
+    const key = rowKey(item);
+    setExpanded((prev) => (prev && prev.key === key && prev.side === side ? null : { key, side }));
   }
 
   return (
@@ -277,24 +317,49 @@ export function PotentialTable({
               <th className="text-left p-2.5">Bull / Bear</th>
               <th className="text-left p-2.5">Net</th>
               <th className="text-left p-2.5">BigWhale</th>
+              <th className="text-left p-2.5">Trade</th>
               <th className="text-left p-2.5"></th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr
-                key={`${row.item.chain}-${row.item.ca}`}
-                onClick={() => openChart(row.item)}
-                className={`border-t border-slate-800 hover:bg-slate-800/50 transition-colors cursor-pointer ${
-                  row.isFollowed ? 'bg-yellow-500/[0.06]' : ''
-                }`}
-              >
-                <RowCells row={row} onToggleFollow={() => onToggleFollow(row)} onOpenChart={openChart} />
-              </tr>
-            ))}
+          {rows.map((row) => {
+            const key = rowKey(row.item);
+            const isExpandedHere = expanded?.key === key;
+            return (
+              <>
+                <tr
+                  key={key}
+                  onClick={() => openChart(row.item)}
+                  className={`border-t border-slate-800 hover:bg-slate-800/50 transition-colors cursor-pointer ${
+                    row.isFollowed ? 'bg-yellow-500/[0.06]' : ''
+                  }`}
+                >
+                  <RowCells
+                    row={row}
+                    onToggleFollow={() => onToggleFollow(row)}
+                    onOpenChart={openChart}
+                    onBuySell={handleBuySell}
+                  />
+                </tr>
+                {isExpandedHere && (
+                  <tr key={`${key}-swap`}>
+                    <td colSpan={19} className="p-2 bg-slate-950/50 border-t border-slate-800">
+                      <InlineSwapPanel
+                        chain={row.item.chain}
+                        ca={row.item.ca}
+                        symbol={row.item.symbol}
+                        side={expanded.side}
+                        onClose={() => setExpanded(null)}
+                      />
+                    </td>
+                  </tr>
+                )}
+              </>
+            );
+          })}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={18} className="p-6 text-center text-slate-500">
+                <td colSpan={19} className="p-6 text-center text-slate-500">
                   {emptyMessage}
                 </td>
               </tr>
@@ -332,10 +397,12 @@ export function PotentialTable({
           );
           const bigWhaleColorClass = trendTextClassHtml(trendUpDown(e0?.bigwhale ?? null, e1?.bigwhale ?? null));
           const detailHref = `/${item.chain}/${item.ca}`;
+          const key = rowKey(item);
+          const isExpandedHere = expanded?.key === key;
 
           return (
             <div
-              key={`${item.chain}-${item.ca}`}
+              key={key}
               onClick={() => openChart(item)}
               className={`rounded-xl border border-slate-800 p-3 space-y-2 transition-colors hover:bg-slate-800/40 cursor-pointer ${
                 row.isFollowed ? 'bg-yellow-500/[0.06]' : 'bg-slate-900'
@@ -449,6 +516,24 @@ export function PotentialTable({
                   <div className={bigWhaleColorClass}>{fmtPlain(e0?.bigwhale)}</div>
                 </div>
               </div>
+
+              {(
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <BuySellButtons item={item} onBuySell={handleBuySell} />
+                  </div>
+              )}
+
+              {isExpandedHere && (
+                <div onClick={(e) => e.stopPropagation()}>
+                  <InlineSwapPanel
+                    chain={item.chain}
+                    ca={item.ca}
+                    symbol={item.symbol}
+                    side={expanded.side}
+                    onClose={() => setExpanded(null)}
+                  />
+                </div>
+              )}
 
               <a
                 href={detailHref}
