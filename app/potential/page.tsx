@@ -7,6 +7,7 @@ import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
 import { PotentialFilterPanel, PotentialTab } from '@/components/PotentialFilterPanel';
 import { PotentialTable } from '@/components/PotentialTable';
 import { prefetchDexDataBatch } from '@/lib/dexData';
+import { FILTER_LABELS } from '@/lib/platforms';
 import {
   PotentialFilters,
   PotentialRow,
@@ -259,23 +260,56 @@ export default function PotentialPage() {
 
     let invested = 0;
     let current = 0;
+    const groups: Record<string, { invested: number; current: number }> = {};
+
+    function addToGroup(key: string, inv: number, cur: number) {
+      const g = (groups[key] ||= { invested: 0, current: 0 });
+      g.invested += inv;
+      g.current += cur;
+    }
+
     for (const row of followingRows) {
       const buyPrice = row.follow?.priceUsd;
       const nowPrice = row.item.priceUsd;
       if (buyPrice == null || buyPrice <= 0 || nowPrice == null) continue;
-      invested += 1;
-      current += nowPrice / buyPrice;
+      const inv = 1;
+      const cur = nowPrice / buyPrice;
+      invested += inv;
+      current += cur;
+
+      const networkLabel = row.item.chain === 'base' ? 'Base' : row.item.chain === 'robinhood' ? 'RH' : 'Arc';
+      addToGroup(networkLabel, inv, cur);
+
+      const platformLabel = FILTER_LABELS[row.item.platform] ?? row.item.platform;
+      addToGroup(platformLabel, inv, cur);
     }
+
     const roi = current - invested;
     const roiPct = invested > 0 ? (roi / invested) * 100 : 0;
     const roiColor = roi > 0 ? 'text-green-400' : roi < 0 ? 'text-red-400' : 'text-slate-300';
 
+    const groupPcts = Object.entries(groups)
+      .map(([label, g]) => ({
+        label,
+        pct: g.invested > 0 ? ((g.current - g.invested) / g.invested) * 100 : 0,
+      }))
+      .sort((a, b) => b.pct - a.pct);
+
     return (
-      <div className="text-sm text-slate-300 leading-snug lg:text-right">
-        {followingRows.length} followed tokens. If you bought it for ${invested.toFixed(0)}, the current value is ${current.toFixed(2)}, ROI:{' '}
-        <span className={`font-bold ${roiColor}`}>
-          {roi >= 0 ? '+' : ''}${roi.toFixed(2)} ({roiPct >= 0 ? '+' : ''}{roiPct.toFixed(1)}%)
-        </span>
+      <div className="text-sm text-slate-300 leading-snug lg:text-right space-y-1">
+        <div>
+          {followingRows.length} followed tokens. If you bought it for ${invested.toFixed(0)}, the current value is ${current.toFixed(2)}, ROI:{' '}
+          <span className={`font-bold ${roiColor}`}>
+            {roi >= 0 ? '+' : ''}${roi.toFixed(2)} ({roiPct >= 0 ? '+' : ''}{roiPct.toFixed(1)}%)
+          </span>
+        </div>
+        <div className="text-xs text-slate-400 flex flex-wrap gap-x-3 gap-y-1 lg:justify-end">
+          {groupPcts.map((g) => (
+            <span key={g.label} className={g.pct >= 0 ? 'text-green-400' : 'text-red-400'}>
+              {g.label} {g.pct >= 0 ? '+' : ''}{g.pct.toFixed(1)}%
+            </span>
+          ))}
+        </div>
       </div>
     );
   }, [tab, loading, followingRows]);
