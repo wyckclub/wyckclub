@@ -21,6 +21,10 @@ import {
   loadFollows,
   saveFollows,
   followKey,
+  followRoi,
+  openFollow,
+  dcaFollow,
+  closeFollow,
 } from '@/lib/potentialFilters';
 import { passesFilter } from '@/lib/potentialEngine';
 
@@ -159,12 +163,14 @@ export default function PotentialPage() {
         .filter((i) => currentPassing.has(i.ca))
         .map((item) => {
           const key = followKey(item.chain, item.ca);
+          const f = followsRef.current[key];
+          const open = !!f && !f.closedAt;
           return {
             item,
             passes: true,
             isNew: newSinceRef.current.has(item.ca),
-            isFollowed: !!followsRef.current[key],
-            follow: followsRef.current[key],
+            isFollowed: open,
+            follow: open ? f : undefined,
           } as PotentialRow;
         })
         .sort((a, b) => (b.item.entries[0]?.score ?? 0) - (a.item.entries[0]?.score ?? 0));
@@ -177,17 +183,24 @@ export default function PotentialPage() {
 
     const followed = items
       .filter((i) => !!followsRef.current[followKey(i.chain, i.ca)])
-      .map(
-        (item) =>
-          ({
-            item,
-            passes: true,
-            isNew: false,
-            isFollowed: true,
-            follow: followsRef.current[followKey(item.chain, item.ca)],
-          } as PotentialRow)
-      )
-      .sort((a, b) => (b.item.entries[0]?.score ?? 0) - (a.item.entries[0]?.score ?? 0));
+      .map((item) => {
+        const f = followsRef.current[followKey(item.chain, item.ca)];
+        return {
+          item,
+          passes: true,
+          isNew: false,
+          isFollowed: !f.closedAt,
+          isClosed: !!f.closedAt,
+          follow: f,
+        } as PotentialRow;
+      })
+      .sort((a, b) => {
+        const ac = a.isClosed ? 1 : 0;
+        const bc = b.isClosed ? 1 : 0;
+        if (ac !== bc) return ac - bc;
+        if (a.isClosed) return (b.follow?.closedAt ?? 0) - (a.follow?.closedAt ?? 0);
+        return (b.item.entries[0]?.score ?? 0) - (a.item.entries[0]?.score ?? 0);
+      });
     setFollowingRows(followed);
   }, [items, appliedBase, appliedRobinhood, appliedArc, follows]);
 
@@ -221,27 +234,45 @@ export default function PotentialPage() {
 
   function handleToggleFollow(row: PotentialRow) {
     const key = followKey(row.item.chain, row.item.ca);
+    const price = row.item.priceUsd;
+    const existing = followsRef.current[key];
+    const isOpen = !!existing && !existing.closedAt;
+
+    if (isOpen && existing.buys.length > 0 && !(price != null && price > 0)) {
+      window.alert('Live price is not available yet, cannot record the sell. Please try again shortly.');
+      return;
+    }
+
     setFollows((prev) => {
+      const cur = prev[key];
       const next = { ...prev };
-      if (next[key]) {
-        delete next[key];
-      } else {
-        const e0 = row.item.entries[0];
-        next[key] = {
-          ca: row.item.ca,
-          chain: row.item.chain,
-          followedAt: Date.now(),
-          priceUsd: row.item.priceUsd,
-          marketCap: row.item.marketCap,
-          wai: e0?.top10 ?? null,
-          bull: e0?.incBull ?? null,
-          bear: e0?.decBear ?? null,
-          netBull: e0?.incBull != null && e0?.decBear != null ? e0.incBull - e0.decBear : null,
-        };
-      }
+      if (cur && !cur.closedAt) next[key] = closeFollow(cur, price);
+      else next[key] = openFollow(row.item, cur);
       saveFollows(next);
       return next;
     });
+  }
+
+  function handleDca(row: PotentialRow) {
+    const key = followKey(row.item.chain, row.item.ca);
+    const price = row.item.priceUsd;
+    if (price == null || price <= 0) return;
+
+    setFollows((prev) => {
+      const cur = prev[key];
+      if (!cur || cur.closedAt) return prev;
+      const next = { ...prev, [key]: dcaFollow(cur, price) };
+      saveFollows(next);
+      return next;
+    });
+  }
+
+  function handleResetFollows() {
+    if (Object.keys(follows).length === 0) return;
+    const ok = window.confirm('Reset all follows? This will delete every followed token, DCA and sell history.');
+    if (!ok) return;
+    setFollows({});
+    saveFollows({});
   }
 
   function handleRefreshClick() {
@@ -260,6 +291,9 @@ export default function PotentialPage() {
 
     let invested = 0;
     let current = 0;
+    let realized = 0;
+    let openCount = 0;
+    let closedCount = 0;
     const groups: Record<string, { invested: number; current: number }> = {};
 
     function addToGroup(key: string, inv: number, cur: number) {
@@ -269,24 +303,29 @@ export default function PotentialPage() {
     }
 
     for (const row of followingRows) {
-      const buyPrice = row.follow?.priceUsd;
-      const nowPrice = row.item.priceUsd;
-      if (buyPrice == null || buyPrice <= 0 || nowPrice == null) continue;
-      const inv = 1;
-      const cur = nowPrice / buyPrice;
-      invested += inv;
-      current += cur;
+      const f = row.follow;
+      if (!f) continue;
+      if (row.isClosed) closedCount++;
+      else openCount++;
+
+      const r = followRoi(f, row.item.priceUsd);
+      if (r.invested <= 0) continue;
+
+      invested += r.invested;
+      current += r.current;
+      realized += r.realized;
 
       const networkLabel = row.item.chain === 'base' ? 'Base' : row.item.chain === 'robinhood' ? 'RH' : 'Arc';
-      addToGroup(networkLabel, inv, cur);
+      addToGroup(networkLabel, r.invested, r.current);
 
       const platformLabel = FILTER_LABELS[row.item.platform] ?? row.item.platform;
-      addToGroup(platformLabel, inv, cur);
+      addToGroup(platformLabel, r.invested, r.current);
     }
 
     const roi = current - invested;
     const roiPct = invested > 0 ? (roi / invested) * 100 : 0;
     const roiColor = roi > 0 ? 'text-green-400' : roi < 0 ? 'text-red-400' : 'text-slate-300';
+    const realizedColor = realized > 0 ? 'text-green-400' : realized < 0 ? 'text-red-400' : 'text-slate-300';
 
     const groupPcts = Object.entries(groups)
       .map(([label, g]) => ({
@@ -298,10 +337,18 @@ export default function PotentialPage() {
     return (
       <div className="text-sm text-slate-300 leading-snug lg:text-right space-y-1">
         <div>
-          {followingRows.length} followed tokens. If you bought it for ${invested.toFixed(0)}, the current value is ${current.toFixed(2)}, ROI:{' '}
+          {openCount} followed{closedCount > 0 ? ` · ${closedCount} sold` : ''}. Total bought ${invested.toFixed(0)} (incl. DCA), current value ${current.toFixed(2)}, ROI:{' '}
           <span className={`font-bold ${roiColor}`}>
             {roi >= 0 ? '+' : ''}${roi.toFixed(2)} ({roiPct >= 0 ? '+' : ''}{roiPct.toFixed(1)}%)
           </span>
+          {closedCount > 0 && (
+            <>
+              {' '}· Realized:{' '}
+              <span className={`font-bold ${realizedColor}`}>
+                {realized >= 0 ? '+' : ''}${realized.toFixed(2)}
+              </span>
+            </>
+          )}
         </div>
         <div className="text-xs text-slate-400 flex flex-wrap gap-x-3 gap-y-1 lg:justify-end">
           {groupPcts.map((g) => (
@@ -343,6 +390,15 @@ export default function PotentialPage() {
           >
             {refreshing ? 'Refreshing...' : '↻ Refresh'}
           </button>
+          {tab === 'following' && (
+            <button
+              onClick={handleResetFollows}
+              disabled={Object.keys(follows).length === 0}
+              className="px-3 py-1.5 text-sm rounded-lg bg-slate-900 border border-slate-800 text-red-400 hover:text-red-300 hover:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              Reset Follow
+            </button>
+          )}
         </div>
       </div>
 
@@ -365,6 +421,7 @@ export default function PotentialPage() {
         <PotentialTable
           rows={activeRows}
           onToggleFollow={handleToggleFollow}
+          onDca={handleDca}
           emptyMessage={
             tab === 'following'
               ? 'You are not following any tokens yet. Tap the star icon on a token to follow it.'

@@ -6,7 +6,15 @@ import { PlatformBadge } from '@/components/PlatformBadge';
 import { NetworkIcon } from '@/components/NetworkIcon';
 import { PriceChartModal, trendUpDown, bullBearTrend, netBullTrendState, trendTextClassHtml } from '@/components/PriceChartModal';
 import { InlineSwapPanel } from '@/components/InlineSwapPanel';
-import { PotentialRow } from '@/lib/potentialFilters';
+import {
+  PotentialRow,
+  FollowSnapshot,
+  FollowTrade,
+  FOLLOW_BUY_USD,
+  DCA_ONLY_WHEN_DOWN,
+  followPosition,
+  lastBuyPrice,
+} from '@/lib/potentialFilters';
 import type { PotentialApiItem } from '@/app/api/potential/route';
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
@@ -112,30 +120,103 @@ function change24hText(v: number | null) {
   return v == null ? 'N/A' : `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
 }
 
-function followPriceColor(follow: NonNullable<PotentialRow['follow']>, item: PotentialApiItem): string {
-  if (follow.priceUsd == null || item.priceUsd == null) return 'text-slate-400';
-  if (item.priceUsd > follow.priceUsd) return 'text-green-400';
-  if (item.priceUsd < follow.priceUsd) return 'text-red-400';
+function followRefColor(ref: number | null, item: PotentialApiItem): string {
+  if (ref == null || item.priceUsd == null) return 'text-slate-400';
+  if (item.priceUsd > ref) return 'text-green-400';
+  if (item.priceUsd < ref) return 'text-red-400';
   return 'text-slate-400';
 }
 
-function followPctText(follow: NonNullable<PotentialRow['follow']>, item: PotentialApiItem): string {
-  if (follow.priceUsd == null || item.priceUsd == null || follow.priceUsd === 0) return '';
-  const pct = Math.abs(((item.priceUsd - follow.priceUsd) / follow.priceUsd) * 100);
+function followRefPctText(ref: number | null, item: PotentialApiItem): string {
+  if (ref == null || item.priceUsd == null || ref === 0) return '';
+  const pct = Math.abs(((item.priceUsd - ref) / ref) * 100);
   const rounded = pct < 10 ? pct.toFixed(1) : Math.round(pct).toString();
   return ` (${rounded}%)`;
 }
 
-function followTooltip(f: NonNullable<PotentialRow['follow']>) {
+function followTooltip(f: FollowSnapshot) {
   const netBull = f.bull != null && f.bear != null ? f.bull - f.bear : f.netBull;
-  return [
+  const lines = [
     `Followed ${relativeTimeLong(f.followedAt)}`,
     `Price: ${formatPriceShort(f.priceUsd)}`,
     `W.A.I: ${f.wai ?? '-'}`,
     `Bull: ${fmtPlain(f.bull)}`,
     `Bear: ${fmtPlain(f.bear)}`,
     `NetBull: ${fmtSigned(netBull)}`,
+  ];
+  if (f.buys.length > 0) {
+    const pos = followPosition(f);
+    const last = f.buys[f.buys.length - 1];
+    lines.push(
+      `Buys: ${f.buys.length} x $${FOLLOW_BUY_USD} (total $${pos.invested})`,
+      `Avg price: ${formatPriceShort(pos.avgPrice)}`
+    );
+    if (f.buys.length > 1) lines.push(`Last DCA: ${relativeTimeLong(last.at)}`);
+  }
+  return lines.join('\n');
+}
+
+function soldTooltip(t: FollowTrade) {
+  return [
+    `Sold ${relativeTimeLong(t.closedAt)}`,
+    `Sell price: ${formatPriceShort(t.sellPrice)}`,
+    `Invested: $${t.invested.toFixed(0)}`,
+    `Proceeds: $${t.proceeds.toFixed(2)}`,
   ].join('\n');
+}
+
+function FollowLine({
+  row, onDca, truncate = true,
+}: {
+  row: PotentialRow;
+  onDca: (row: PotentialRow) => void;
+  truncate?: boolean;
+}) {
+  const { item } = row;
+  const f = row.follow;
+  if (!f) return null;
+
+  if (row.isClosed) {
+    const t = f.trades[f.trades.length - 1];
+    if (!t) return <div className="text-[11px] text-slate-500">Unfollowed</div>;
+    const roi = t.invested > 0 ? ((t.proceeds - t.invested) / t.invested) * 100 : 0;
+    return (
+      <div
+        className={`text-[11px] cursor-help ${truncate ? 'truncate' : ''} ${roi >= 0 ? 'text-green-400' : 'text-red-400'}`}
+        title={soldTooltip(t)}
+      >
+        Sold · at {formatPriceShort(t.sellPrice)} ({roi >= 0 ? '+' : ''}{roi.toFixed(1)}%)
+      </div>
+    );
+  }
+
+  const ref = lastBuyPrice(f);
+  const isDca = f.buys.length > 1;
+  const showDca =
+    item.priceUsd != null &&
+    item.priceUsd > 0 &&
+    (!DCA_ONLY_WHEN_DOWN || (ref != null && item.priceUsd < ref));
+
+  return (
+    <div>
+      <div
+        className={`text-[11px] cursor-help ${truncate ? 'truncate' : ''} ${followRefColor(ref, item)}`}
+        title={followTooltip(f)}
+      >
+        {isDca ? 'DCA' : 'Following ·'} at {formatPriceShort(ref)}
+        {followRefPctText(ref, item)}
+      </div>
+      {showDca && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onDca(row); }}
+          className="mt-0.5 px-1.5 py-0.5 text-[10px] font-bold rounded bg-blue-600/80 hover:bg-blue-500 text-white"
+          title={`Buy another $${FOLLOW_BUY_USD} at the current price`}
+        >
+          {`DCA +$${FOLLOW_BUY_USD}`}
+        </button>
+      )}
+    </div>
+  );
 }
 
 function BuySellButtons({ item, onBuySell }: { item: PotentialApiItem; onBuySell: (item: PotentialApiItem, side: 'buy' | 'sell') => void }) {
@@ -158,13 +239,14 @@ function BuySellButtons({ item, onBuySell }: { item: PotentialApiItem; onBuySell
 }
 
 function RowCells({
-  row, hidden, onToggleFollow, onOpenChart, onBuySell,
+  row, hidden, onToggleFollow, onOpenChart, onBuySell, onDca,
 }: {
   row: PotentialRow;
   hidden: Set<HideKey>;
   onToggleFollow: () => void;
   onOpenChart: (item: PotentialApiItem) => void;
   onBuySell: (item: PotentialApiItem, side: 'buy' | 'sell') => void;
+  onDca: (row: PotentialRow) => void;
 }) {
   const { item } = row;
   const e0 = item.entries[0];
@@ -228,14 +310,8 @@ function RowCells({
                 </span>
               )}
             </div>
-            {row.isFollowed && row.follow ? (
-              <div
-                className={`text-[11px] truncate cursor-help ${followPriceColor(row.follow, item)}`}
-                title={followTooltip(row.follow)}
-              >
-                Following · at {formatPriceShort(row.follow.priceUsd)}
-                {followPctText(row.follow, item)}
-              </div>
+            {row.follow ? (
+              <FollowLine row={row} onDca={onDca} />
             ) : (
               item.name && <div className="text-[11px] text-slate-500 truncate">{item.name}</div>
             )}
@@ -315,10 +391,12 @@ function RowCells({
 export function PotentialTable({
   rows,
   onToggleFollow,
+  onDca,
   emptyMessage = 'No tokens match current filters yet. Set your criteria above and click "Filter tokens".',
 }: {
   rows: PotentialRow[];
   onToggleFollow: (row: PotentialRow) => void;
+  onDca: (row: PotentialRow) => void;
   emptyMessage?: string;
 }) {
   const [chartTarget, setChartTarget] = useState<ChartTarget | null>(null);
@@ -369,12 +447,11 @@ export function PotentialTable({
             const key = rowKey(row.item);
             const isExpandedHere = expanded?.key === key;
             return (
-              <>
+              <Fragment key={key}>
                 <tr
-                  key={key}
                   onClick={() => openChart(row.item)}
                   className={`border-t border-slate-800 hover:bg-slate-800/50 transition-colors cursor-pointer ${
-                    row.isFollowed ? 'bg-yellow-500/[0.06]' : ''
+                    row.isClosed ? 'opacity-40 hover:opacity-70' : row.isFollowed ? 'bg-yellow-500/[0.06]' : ''
                   }`}
                 >
                 <RowCells
@@ -383,6 +460,7 @@ export function PotentialTable({
                   onToggleFollow={() => onToggleFollow(row)}
                   onOpenChart={openChart}
                   onBuySell={handleBuySell}
+                  onDca={onDca}
                 />
                 </tr>
                 {isExpandedHere && (
@@ -398,7 +476,7 @@ export function PotentialTable({
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             );
           })}
             {rows.length === 0 && (
@@ -449,7 +527,7 @@ export function PotentialTable({
               key={key}
               onClick={() => openChart(item)}
               className={`rounded-xl border border-slate-800 p-3 space-y-2 transition-colors hover:bg-slate-800/40 cursor-pointer ${
-                row.isFollowed ? 'bg-yellow-500/[0.06]' : 'bg-slate-900'
+                row.isClosed ? 'opacity-40 hover:opacity-70 bg-slate-900' : row.isFollowed ? 'bg-yellow-500/[0.06]' : 'bg-slate-900'
               }`}
             >
               <div className="flex items-center justify-between gap-2">
@@ -475,11 +553,8 @@ export function PotentialTable({
                         </span>
                       )}
                     </div>
-                    {row.isFollowed && row.follow ? (
-                      <div className={`text-[11px] ${followPriceColor(row.follow, item)}`} title={followTooltip(row.follow)}>
-                        Following · at {formatPriceShort(row.follow.priceUsd)}
-                {followPctText(row.follow, item)}
-                      </div>
+                    {row.follow ? (
+                      <FollowLine row={row} onDca={onDca} truncate={false} />
                     ) : (
                       <button
                         onClick={(e) => { e.stopPropagation(); navigator.clipboard?.writeText(item.ca); }}
