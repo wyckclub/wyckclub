@@ -24,7 +24,7 @@ export function TokenScoreChart({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [livePrice, setLivePrice] = useState<number | null>(null);
-  const [overlay, setOverlay] = useState<OverlayMode>('top10');
+  const [overlay, setOverlay] = useState<OverlayMode>('netbull');
   const [sharing, setSharing] = useState(false);
   const [shareMsg, setShareMsg] = useState('');
 

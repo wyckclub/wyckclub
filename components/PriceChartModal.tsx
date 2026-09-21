@@ -71,7 +71,7 @@ export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [livePrice, setLivePrice] = useState<number | null>(null);
-  const [overlay, setOverlay] = useState<OverlayMode>('top10');
+  const [overlay, setOverlay] = useState<OverlayMode>('netbull');
 
   useEffect(() => {
     fetch('/api/stats/track', {
