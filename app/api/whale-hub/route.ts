@@ -132,7 +132,7 @@ export async function GET(req: NextRequest) {
     const marketMap = await fetchDexscreenerBatchMap(
       candidates.map((c) => c.ca),
       chain,
-      { revalidateSeconds: 30, maxRetries: 2 }
+      { revalidateSeconds: 60, maxRetries: 2 }
     );
 
     for (const c of candidates) {

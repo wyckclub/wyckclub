@@ -86,7 +86,7 @@ export function TokenDataProvider({ chain, children }: { chain: Chain; children:
 
   useEffect(() => {
     load();
-    const id = setInterval(load, 300000);
+    const id = setInterval(load, 600000);
     return () => clearInterval(id);
   }, [load]);
 

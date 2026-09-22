@@ -59,7 +59,7 @@ export interface DexInfo {
 }
 
 export async function fetchDexInfo(ca: string, chainId: string): Promise<DexInfo | null> {
-  const info = await fetchDexscreenerSingle(ca, chainId, { revalidateSeconds: 20, maxRetries: 2 });
+  const info = await fetchDexscreenerSingle(ca, chainId, { revalidateSeconds: 40, maxRetries: 2 });
   if (!info) return null;
   return {
     priceUsd: info.priceUsd,

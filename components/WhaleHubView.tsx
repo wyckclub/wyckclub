@@ -249,7 +249,7 @@ export function WhaleHubView({ chain }: { chain: Chain }) {
 
   useEffect(() => {
     load();
-    const id = setInterval(load, 300000);
+    const id = setInterval(load, 800000);
     return () => clearInterval(id);
   }, [chain]);
 

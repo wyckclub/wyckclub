@@ -5,13 +5,13 @@ const redis = new Redis({
   token: process.env.REDIS_KV_REST_API_TOKEN!,
 });
 
-const DEFAULT_REVALIDATE_SECONDS = 20;
+const DEFAULT_REVALIDATE_SECONDS = 40;
 const DEFAULT_MAX_RETRIES = 2;
 const BASE_BACKOFF_MS = 1000;
 const MAX_BACKOFF_MS = 4000;
 const BATCH_SIZE = 30;
-const DEFAULT_CACHE_TTL_MS = 45000;
-const MEM_TTL_MS = 8000;
+const DEFAULT_CACHE_TTL_MS = 120000;
+const MEM_TTL_MS = 20000;
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));

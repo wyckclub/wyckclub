@@ -43,7 +43,7 @@ export function TokenScoreChart({
       fetchLivePrice(ca, chainId).then((p) => { if (active) setLivePrice(p); });
     }
     poll();
-    const id = setInterval(poll, 15000);
+    const id = setInterval(poll, 30000);
     return () => { active = false; clearInterval(id); };
   }, [ca, chainId]);
 

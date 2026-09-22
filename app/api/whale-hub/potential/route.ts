@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
   const marketMap = await fetchDexscreenerBatchMap(
     items.map((i) => i.ca),
     chain,
-    { revalidateSeconds: 30, maxRetries: 2 }
+    { revalidateSeconds: 60, maxRetries: 2 }
   );
 
   const enriched = items

@@ -108,13 +108,13 @@ export async function GET(req: NextRequest) {
 
   const [baseMarket, robinhoodMarket, arcMarket] = await Promise.all([
     baseCas.length
-      ? fetchDexscreenerBatchMap(baseCas, 'base', { revalidateSeconds: 30, maxRetries: 2, force })
+      ? fetchDexscreenerBatchMap(baseCas, 'base', { revalidateSeconds: 70, maxRetries: 2, force })
       : Promise.resolve({} as Record<string, DexBatchInfo>),
     robinhoodCas.length
-      ? fetchDexscreenerBatchMap(robinhoodCas, 'robinhood', { revalidateSeconds: 30, maxRetries: 2, force })
+      ? fetchDexscreenerBatchMap(robinhoodCas, 'robinhood', { revalidateSeconds: 60, maxRetries: 2, force })
       : Promise.resolve({} as Record<string, DexBatchInfo>),
     arcCas.length
-      ? fetchDexscreenerBatchMap(arcCas, 'arc', { revalidateSeconds: 30, maxRetries: 2, force })
+      ? fetchDexscreenerBatchMap(arcCas, 'arc', { revalidateSeconds: 80, maxRetries: 2, force })
       : Promise.resolve({} as Record<string, DexBatchInfo>),
   ]);
 

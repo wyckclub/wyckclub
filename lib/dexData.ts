@@ -39,10 +39,10 @@ export interface FullPairInfo {
   };
 }
 
-const TTL = 2 * 60 * 1000;
+const TTL = 5 * 60 * 1000;
 const STORAGE_KEY = 'wyck_dex_cache_v1';
 const cache = new Map<string, { data: DexData; timestamp: number }>();
-const IMAGE_TTL = 7 * 24 * 60 * 60 * 1000;
+const IMAGE_TTL = 30 * 24 * 60 * 60 * 1000;
 const IMAGE_STORAGE_KEY = 'wyck_image_cache_v1';
 const imageCache = new Map<string, { url: string; timestamp: number }>();
 

@@ -5,8 +5,8 @@ const redis = new Redis({
   token: process.env.REDIS_KV_REST_API_TOKEN!,
 });
 
-const CACHE_TTL_SECONDS = 45;
-const MEM_TTL_MS = 8000;
+const CACHE_TTL_SECONDS = 240;
+const MEM_TTL_MS = 20000;
 
 interface MemEntry {
   data: Record<string, any>;

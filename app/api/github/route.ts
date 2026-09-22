@@ -17,7 +17,7 @@ interface GithubStats {
 }
 
 const CACHE_KEY = 'wyck:github:stats';
-const CACHE_TTL_SECONDS = 3 * 60 * 60;
+const CACHE_TTL_SECONDS = 72 * 60 * 60;
 const BATCH_SIZE = 15;
 
 function sanitizeAlias(i: number) {

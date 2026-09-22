@@ -44,7 +44,7 @@ interface RawToken {
 type RawCategoryData = Record<string, RawToken>;
 
 const rawCache = new Map<number, { data: RawCategoryData; timestamp: number }>();
-const RAW_TTL = 2 * 60 * 1000;
+const RAW_TTL = 5 * 60 * 1000;
 
 async function fetchCategoryRaw(cat: number): Promise<RawCategoryData> {
   const cached = rawCache.get(cat);
