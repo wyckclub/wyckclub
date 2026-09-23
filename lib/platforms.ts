@@ -67,8 +67,24 @@ export function formatPlatformLabel(p: string): string {
   return FILTER_LABELS[p] ?? p.charAt(0).toUpperCase() + p.slice(1);
 }
 
+function isCatchAllPlatform(p: string): boolean {
+  return p.endsWith('_verified') || p.endsWith('_unverified');
+}
+
 export function derivePlatformOptions(items: { platform: string }[]): string[] {
-  return [...new Set(items.map((i) => i.platform))].sort((a, b) =>
-    formatPlatformLabel(a).localeCompare(formatPlatformLabel(b))
-  );
+  const counts = new Map<string, number>();
+  for (const i of items) {
+    counts.set(i.platform, (counts.get(i.platform) ?? 0) + 1);
+  }
+
+  return [...counts.keys()].sort((a, b) => {
+    const aCatchAll = isCatchAllPlatform(a);
+    const bCatchAll = isCatchAllPlatform(b);
+    if (aCatchAll !== bCatchAll) return aCatchAll ? 1 : -1;
+
+    const diff = (counts.get(b) ?? 0) - (counts.get(a) ?? 0);
+    if (diff !== 0) return diff;
+
+    return formatPlatformLabel(a).localeCompare(formatPlatformLabel(b));
+  });
 }
