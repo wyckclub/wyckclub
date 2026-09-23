@@ -17,6 +17,7 @@ export interface TokenEntry {
   last7: HistoryEntry[];
   verified: boolean;
   platform: string;
+  wallets: string[];
 }
 
 interface RawEntry {
@@ -39,6 +40,7 @@ interface RawToken {
   entries: RawEntry[];
   verified?: boolean;
   platform?: string;
+  wallets?: string[];
 }
 
 type RawCategoryData = Record<string, RawToken>;
@@ -82,6 +84,7 @@ function toTokenEntry(ca: string, raw: RawToken, category: number): TokenEntry {
     last7,
     verified: raw.verified ?? false,
     platform: raw.platform ?? 'unknown',
+    wallets: raw.wallets ?? [],
   };
 }
 

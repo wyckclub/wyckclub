@@ -30,94 +30,87 @@ function memSet(key: string, data: Record<string, any>) {
 
 export interface ScoreSource {
   url: string | undefined;
-  platform: string;
-  verified: boolean;
 }
 
 const CATEGORY_SOURCES: Record<string, ScoreSource[]> = {
   '1': [
-    { url: process.env.WYCK_CLANKER1_URL, platform: 'clanker', verified: true },
-    { url: process.env.WYCK_CLANKER2_URL, platform: 'clanker', verified: true },
-    { url: process.env.WYCK_CLANKER3_URL, platform: 'clanker', verified: true },
-    { url: process.env.WYCK_BANKRBOT1_URL, platform: 'bankr', verified: true },
-    { url: process.env.WYCK_BANKRBOT2_URL, platform: 'bankr', verified: true },
-    { url: process.env.WYCK_BANKRBOT3_URL, platform: 'bankr', verified: true },
+    { url: process.env.WYCK_CLANKER1_URL },
+    { url: process.env.WYCK_CLANKER2_URL },
+    { url: process.env.WYCK_CLANKER3_URL },
+    { url: process.env.WYCK_BANKRBOT1_URL },
+    { url: process.env.WYCK_BANKRBOT2_URL },
+    { url: process.env.WYCK_BANKRBOT3_URL },
   ],
   '2': [
-    { url: process.env.WYCK_B1_URL, platform: 'base_verified', verified: true },
-    { url: process.env.WYCK_B2_URL, platform: 'base_verified', verified: true },
-    { url: process.env.WYCK_B3_URL, platform: 'base_verified', verified: true },
-    { url: process.env.WYCK_B4_URL, platform: 'base_verified', verified: true },
-    { url: process.env.WYCK_B5_URL, platform: 'base_unverified', verified: false },
-    { url: process.env.WYCK_B6_URL, platform: 'base_unverified', verified: false },
-    { url: process.env.WYCK_2NEW_URL, platform: 'base_verified', verified: true },
-    { url: process.env.WYCK_ZR1_URL, platform: 'zora', verified: true },
-    { url: process.env.WYCK_FLAUNCH1_URL, platform: 'flaunch', verified: true },
-    { url: process.env.WYCK_O1EXCHANGE1_URL, platform: 'o1exchange', verified: true },
-    { url: process.env.WYCK_BASESTONK1_URL, platform: 'basestonk', verified: true },
-    { url: process.env.WYCK_THESTONKS1_URL, platform: 'thestonks', verified: true },
+    { url: process.env.WYCK_B1_URL },
+    { url: process.env.WYCK_B2_URL },
+    { url: process.env.WYCK_B3_URL },
+    { url: process.env.WYCK_B4_URL },
+    { url: process.env.WYCK_B5_URL },
+    { url: process.env.WYCK_B6_URL },
+    { url: process.env.WYCK_2NEW_URL },
+    { url: process.env.WYCK_ZR1_URL },
+    { url: process.env.WYCK_FLAUNCH1_URL },
+    { url: process.env.WYCK_O1EXCHANGE1_URL },
+    { url: process.env.WYCK_BASESTONK1_URL },
+    { url: process.env.WYCK_THESTONKS1_URL },
   ],
   '3': [
-    { url: process.env.WYCK_VIRTUALS1_URL, platform: 'virtuals', verified: true },
-    { url: process.env.WYCK_VIRTUALS2_URL, platform: 'virtuals', verified: true },
-    { url: process.env.WYCK_VIRTUALS3_URL, platform: 'virtuals', verified: true },
+    { url: process.env.WYCK_VIRTUALS1_URL },
+    { url: process.env.WYCK_VIRTUALS2_URL },
+    { url: process.env.WYCK_VIRTUALS3_URL },
   ],
-  '4': [{ url: process.env.WYCK_5NEW_URL, platform: 'base_unverified', verified: false }],
+  '4': [{ url: process.env.WYCK_5NEW_URL }],
 };
 
 const ROBINHOOD_SOURCES: ScoreSource[] = [
-  { url: process.env.WYCK_ROBIN_URL, platform: 'robinhood_unverified', verified: false },
-  // { url: process.env.WYCK_ROBIN1_URL, platform: 'robinhood_unverified', verified: false },
-  // { url: process.env.WYCK_ROBIN1A_URL, platform: 'robinhood_unverified', verified: false },
-  { url: process.env.WYCK_ROBIN1B_URL, platform: 'robinhood_unverified', verified: false },
-  { url: process.env.WYCK_ROBIN2_URL, platform: 'robinhood_unverified', verified: false },
-  { url: process.env.WYCK_ROBIN2A_URL, platform: 'robinhood_unverified', verified: true },
-  { url: process.env.WYCK_ROBIN2B_URL, platform: 'robinhood_unverified', verified: true },
-  { url: process.env.WYCK_ROBIN3_URL, platform: 'robinhood_unverified', verified: false },
-  { url: process.env.WYCK_ROBIN4_URL, platform: 'robinhood_unverified', verified: false },
-
-  { url: process.env.WYCK_ROBIN5_URL, platform: 'robinhood_verified', verified: true },
-  { url: process.env.WYCK_ROBIN6_URL, platform: 'robinhood_verified', verified: true },
-  { url: process.env.WYCK_ROBIN_BANKRBOT1_URL, platform: 'bankr', verified: true },
-  { url: process.env.WYCK_ROBIN_POOLSFUN1_URL, platform: 'poolsfun', verified: true },
-  { url: process.env.WYCK_ROBIN_POOLSTRADE1_URL, platform: 'poolstrade', verified: true },
-  { url: process.env.WYCK_ROBIN_CLANKER1_URL, platform: 'clanker', verified: true },
-  { url: process.env.WYCK_ROBIN_VIRTUALS1_URL, platform: 'virtuals', verified: true },
-  { url: process.env.WYCK_ROBIN_FLAP1_URL, platform: 'flap', verified: true },
-  { url: process.env.WYCK_ROBIN_PONSFAMILY1_URL, platform: 'ponsfamily', verified: true },
-  { url: process.env.WYCK_ROBIN_PONSFAMILY2_URL, platform: 'ponsfamily', verified: true },
-  { url: process.env.WYCK_ROBIN_PONSFAMILY3_URL, platform: 'ponsfamily', verified: true },
-  { url: process.env.WYCK_ROBIN_PONSFAMILY4_URL, platform: 'ponsfamily', verified: true },
-  { url: process.env.WYCK_ROBIN_PONSFAMILY5_URL, platform: 'ponsfamily', verified: true },
-  { url: process.env.WYCK_ROBIN_PONSFAMILY6_URL, platform: 'ponsfamily', verified: true },
-  { url: process.env.WYCK_ROBIN_PONSFAMILY7_URL, platform: 'ponsfamily', verified: true },
-  // { url: process.env.WYCK_ROBIN_PONSFAMILY8_URL, platform: 'ponsfamily', verified: true },
-  { url: process.env.WYCK_ROBIN_LETSCASH1_URL, platform: 'letscash', verified: true },
-  { url: process.env.WYCK_ROBIN_NOXA1_URL, platform: 'noxa', verified: true },
-  { url: process.env.WYCK_ROBIN_STONKBROKERS1_URL, platform: 'stonkbrokers', verified: true },
-  { url: process.env.WYCK_ROBIN_LONG1_URL, platform: 'long', verified: true },
-  { url: process.env.WYCK_ROBIN_LONG2_URL, platform: 'long', verified: true },
-  { url: process.env.WYCK_ROBIN_LONG3_URL, platform: 'long', verified: true },
-  // { url: process.env.WYCK_ROBIN_LONG4_URL, platform: 'long', verified: true },
-  { url: process.env.WYCK_ROBIN_LEMON1_URL, platform: 'lemon', verified: true },
-  { url: process.env.WYCK_ROBIN_O1EXCHANGE1_URL, platform: 'o1exchange', verified: true },
-  { url: process.env.WYCK_ROBIN_FEELCASH1_URL, platform: 'feelcash', verified: true },
-  { url: process.env.WYCK_ROBIN_LUNCHFUN1_URL, platform: 'lunchfun', verified: true },
-  { url: process.env.WYCK_ROBIN_PAIRFUND1_URL, platform: 'pairfund', verified: true },
-  { url: process.env.WYCK_ROBIN_SENTRY1_URL, platform: 'sentry', verified: true },
+  { url: process.env.WYCK_ROBIN_URL },
+  { url: process.env.WYCK_ROBIN1B_URL },
+  { url: process.env.WYCK_ROBIN2_URL },
+  { url: process.env.WYCK_ROBIN2A_URL },
+  { url: process.env.WYCK_ROBIN2B_URL },
+  { url: process.env.WYCK_ROBIN3_URL },
+  { url: process.env.WYCK_ROBIN4_URL },
+  { url: process.env.WYCK_ROBIN5_URL },
+  { url: process.env.WYCK_ROBIN6_URL },
+  { url: process.env.WYCK_ROBIN_BANKRBOT1_URL },
+  { url: process.env.WYCK_ROBIN_POOLSFUN1_URL },
+  { url: process.env.WYCK_ROBIN_POOLSTRADE1_URL },
+  { url: process.env.WYCK_ROBIN_CLANKER1_URL },
+  { url: process.env.WYCK_ROBIN_VIRTUALS1_URL },
+  { url: process.env.WYCK_ROBIN_FLAP1_URL },
+  { url: process.env.WYCK_ROBIN_PONSFAMILY1_URL },
+  { url: process.env.WYCK_ROBIN_PONSFAMILY2_URL },
+  { url: process.env.WYCK_ROBIN_PONSFAMILY3_URL },
+  { url: process.env.WYCK_ROBIN_PONSFAMILY4_URL },
+  { url: process.env.WYCK_ROBIN_PONSFAMILY5_URL },
+  { url: process.env.WYCK_ROBIN_PONSFAMILY6_URL },
+  { url: process.env.WYCK_ROBIN_PONSFAMILY7_URL },
+  { url: process.env.WYCK_ROBIN_LETSCASH1_URL },
+  { url: process.env.WYCK_ROBIN_NOXA1_URL },
+  { url: process.env.WYCK_ROBIN_STONKBROKERS1_URL },
+  { url: process.env.WYCK_ROBIN_LONG1_URL },
+  { url: process.env.WYCK_ROBIN_LONG2_URL },
+  { url: process.env.WYCK_ROBIN_LONG3_URL },
+  { url: process.env.WYCK_ROBIN_LEMON1_URL },
+  { url: process.env.WYCK_ROBIN_O1EXCHANGE1_URL },
+  { url: process.env.WYCK_ROBIN_FEELCASH1_URL },
+  { url: process.env.WYCK_ROBIN_LUNCHFUN1_URL },
+  { url: process.env.WYCK_ROBIN_PAIRFUND1_URL },
+  { url: process.env.WYCK_ROBIN_SENTRY1_URL },
 ];
 
 const ARC_SOURCES: ScoreSource[] = [
-  { url: process.env.WYCK_ARC1_URL, platform: 'arc_unverified', verified: false },
-  { url: process.env.WYCK_ARC2_URL, platform: 'arc_unverified', verified: false },
-  { url: process.env.WYCK_ARC3_URL, platform: 'arc_unverified', verified: false },
-  { url: process.env.WYCK_ARC4_URL, platform: 'arc_unverified', verified: false },
-  { url: process.env.WYCK_ARC5_URL, platform: 'arc_unverified', verified: false },
-  { url: process.env.WYCK_ARC_ARGUS1_URL, platform: 'argus', verified: true },
-  { url: process.env.WYCK_ARC_ARGUS2_URL, platform: 'argus', verified: true },
-  { url: process.env.WYCK_ARC_ARGUS3_URL, platform: 'argus', verified: true },
-  { url: process.env.WYCK_ARC_O1EXCHANGE1_URL, platform: 'o1exchange', verified: true },
-  { url: process.env.WYCK_ARC_VERIFY1_URL, platform: 'arc_verified', verified: true },
+  { url: process.env.WYCK_ARC1_URL },
+  { url: process.env.WYCK_ARC2_URL },
+  { url: process.env.WYCK_ARC3_URL },
+  { url: process.env.WYCK_ARC4_URL },
+  { url: process.env.WYCK_ARC5_URL },
+  { url: process.env.WYCK_ARC_ARGUS1_URL },
+  { url: process.env.WYCK_ARC_ARGUS2_URL },
+  { url: process.env.WYCK_ARC_ARGUS3_URL },
+  { url: process.env.WYCK_ARC_O1EXCHANGE1_URL },
+  { url: process.env.WYCK_ARC_VERIFY1_URL },
 ];
 
 export function getCategorySources(cat: string): ScoreSource[] {
@@ -132,25 +125,158 @@ export function getArcSources(): ScoreSource[] {
   return ARC_SOURCES.filter((s): s is ScoreSource & { url: string } => !!s.url);
 }
 
-async function fetchAndTagSource(source: ScoreSource & { url: string }): Promise<Record<string, any>> {
+async function fetchSourceData(source: ScoreSource & { url: string }): Promise<Record<string, any>> {
   const res = await fetch(source.url, { cache: 'no-store' });
   if (!res.ok) throw new Error(`Upstream error: ${source.url}`);
-  const data = await res.json();
-  const tagged: Record<string, any> = {};
-  for (const [ca, token] of Object.entries<any>(data)) {
-    tagged[ca] = { ...token, platform: source.platform, verified: source.verified };
-  }
-  return tagged;
+  return res.json();
 }
 
 async function fetchMergedSources(sources: (ScoreSource & { url: string })[]): Promise<Record<string, any>> {
-  const results = await Promise.all(sources.map(fetchAndTagSource));
+  const results = await Promise.all(sources.map(fetchSourceData));
   return Object.assign({}, ...results);
 }
 
 function cacheKey(kind: string) {
   return `wyck:scores:${kind}`;
 }
+
+// ---------- Factory (platform/verified/creator wallets) ----------
+
+type Chain = 'base' | 'robinhood' | 'arc';
+
+interface FactoryRawEntry {
+  checked_at?: number;
+  data?: {
+    creator_wallet?: string | null;
+    creator_2?: string | null;
+    factory?: string | null;
+    fee_recipients_confirmed?: string[];
+  };
+}
+
+interface FactoryInfo {
+  platform: string;
+  verified: boolean;
+  wallets: string[];
+}
+
+const FACTORY_URLS: Record<Chain, string | undefined> = {
+  base: process.env.WYCK_FACTORY_BASE_URL,
+  robinhood: process.env.WYCK_FACTORY_ROBINHOOD_URL,
+  arc: process.env.WYCK_FACTORY_ARC_URL,
+};
+
+const FACTORY_MEM_TTL_MS = 60000;
+const FACTORY_CACHE_TTL_SECONDS = 300;
+const factoryMemCache = new Map<string, { data: Record<string, FactoryInfo>; expires: number }>();
+const factoryInFlight = new Map<string, Promise<Record<string, FactoryInfo>>>();
+
+function factoryCacheKey(chain: Chain) {
+  return `wyck:factory:${chain}`;
+}
+
+function buildWalletsList(d: NonNullable<FactoryRawEntry['data']>): string[] {
+  const raw: string[] = [];
+  if (d.creator_wallet) raw.push(d.creator_wallet);
+  if (d.creator_2) raw.push(d.creator_2);
+  if (Array.isArray(d.fee_recipients_confirmed)) raw.push(...d.fee_recipients_confirmed);
+
+  const seen = new Set<string>();
+  const wallets: string[] = [];
+  for (const w of raw) {
+    if (typeof w !== 'string') continue;
+    const lower = w.toLowerCase();
+    if (seen.has(lower)) continue;
+    seen.add(lower);
+    wallets.push(w);
+    if (wallets.length >= 5) break;
+  }
+  return wallets;
+}
+
+function resolveFactoryInfo(chain: Chain, factory: string | null | undefined, wallets: string[]): FactoryInfo {
+  if (factory === 'verified') return { platform: `${chain}_verified`, verified: true, wallets };
+  if (!factory || factory === 'unknown') return { platform: `${chain}_unverified`, verified: false, wallets };
+  return { platform: factory, verified: true, wallets };
+}
+
+async function fetchFactoryMap(chain: Chain): Promise<Record<string, FactoryInfo>> {
+  const key = factoryCacheKey(chain);
+
+  const mem = factoryMemCache.get(key);
+  if (mem && Date.now() < mem.expires) return mem.data;
+
+  try {
+    const cached = await redis.get<string | Record<string, FactoryInfo> | null>(key);
+    if (cached != null) {
+      const parsed = typeof cached === 'string' ? JSON.parse(cached) : cached;
+      factoryMemCache.set(key, { data: parsed, expires: Date.now() + FACTORY_MEM_TTL_MS });
+      return parsed;
+    }
+  } catch {
+    // unavailable
+  }
+
+  const existing = factoryInFlight.get(chain);
+  if (existing) return existing;
+
+  const url = FACTORY_URLS[chain];
+  const p = (async () => {
+    const map: Record<string, FactoryInfo> = {};
+    if (url) {
+      try {
+        const res = await fetch(url, { next: { revalidate: FACTORY_CACHE_TTL_SECONDS } });
+        if (res.ok) {
+          const json: Record<string, FactoryRawEntry> = await res.json();
+          for (const [ca, entry] of Object.entries(json)) {
+            const d = entry?.data;
+            if (!d) continue;
+            map[ca.toLowerCase()] = resolveFactoryInfo(chain, d.factory, buildWalletsList(d));
+          }
+        }
+      } catch {
+        // best-effort, fallback default unverified applied per-token at enrich step
+      }
+    }
+    factoryMemCache.set(key, { data: map, expires: Date.now() + FACTORY_MEM_TTL_MS });
+    try {
+      await redis.set(key, JSON.stringify(map), { ex: FACTORY_CACHE_TTL_SECONDS });
+    } catch {
+      // best-effort cache write
+    }
+    return map;
+  })().finally(() => {
+    factoryInFlight.delete(chain);
+  });
+
+  factoryInFlight.set(chain, p);
+  return p;
+}
+
+function chainFromKind(kind: string): Chain {
+  if (kind === 'robinhood') return 'robinhood';
+  if (kind === 'arc') return 'arc';
+  return 'base';
+}
+
+async function enrichWithFactory(data: Record<string, any>, chain: Chain): Promise<Record<string, any>> {
+  const factoryMap = await fetchFactoryMap(chain);
+  for (const [ca, token] of Object.entries<any>(data)) {
+    const info = factoryMap[ca.toLowerCase()];
+    if (info) {
+      token.platform = info.platform;
+      token.verified = info.verified;
+      token.wallets = info.wallets;
+    } else {
+      token.platform = `${chain}_unverified`;
+      token.verified = false;
+      token.wallets = [];
+    }
+  }
+  return data;
+}
+
+// ---------- Main cached fetch ----------
 
 const inFlight = new Map<string, Promise<Record<string, any>>>();
 
@@ -162,18 +288,19 @@ export async function fetchScoresCached(
   const validSources = sources.filter((s): s is ScoreSource & { url: string } => !!s.url);
   if (!validSources.length) return {};
 
+  const chain = chainFromKind(kind);
   const key = cacheKey(kind);
 
   if (!force) {
     const mem = memGet(key);
-    if (mem) return mem;
+    if (mem) return enrichWithFactory(mem, chain);
 
     try {
       const cached = await redis.get<string | Record<string, any> | null>(key);
       if (cached != null) {
         const parsed = typeof cached === 'string' ? JSON.parse(cached) : cached;
         memSet(key, parsed);
-        return parsed;
+        return enrichWithFactory(parsed, chain);
       }
     } catch {
       // unavailable
@@ -181,7 +308,7 @@ export async function fetchScoresCached(
   }
 
   const existing = inFlight.get(kind);
-  if (existing) return existing;
+  if (existing) return existing.then((d) => enrichWithFactory(d, chain));
 
   const p = (async () => {
     const merged = await fetchMergedSources(validSources);
@@ -197,5 +324,5 @@ export async function fetchScoresCached(
   });
 
   inFlight.set(kind, p);
-  return p;
+  return p.then((d) => enrichWithFactory(d, chain));
 }

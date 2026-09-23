@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
-import { fetchFullTokenPairInfo, fetchHoldersCount, fetchFactoryWallets, FullPairInfo } from '@/lib/dexData';
+import { fetchFullTokenPairInfo, fetchHoldersCount, FullPairInfo } from '@/lib/dexData';
 import { TokenScoreChart } from '@/components/TokenScoreChart';
 import { TokenInfoPanel } from '@/components/TokenInfoPanel';
 import { TokenSwapPanel } from '@/components/TokenSwapPanel';
@@ -29,17 +29,14 @@ export function TokenDetailContent({ chain, ca }: { chain: Chain; ca: string }) 
   const [pairInfo, setPairInfo] = useState<FullPairInfo | null>(null);
   const [holders, setHolders] = useState<number | null>(null);
   const token = tokens.find((t) => t.CA.toLowerCase() === ca.toLowerCase()) ?? null;
-  const [wallets, setWallets] = useState<string[]>([]);
 
   useEffect(() => {
     setPairInfo(null);
     setHolders(null);
-    setWallets([]);
     let active = true;
     function poll() {
       fetchFullTokenPairInfo(ca, chain).then((info) => { if (active) setPairInfo(info); });
       fetchHoldersCount(ca, chain).then((h) => { if (active) setHolders(h); });
-      fetchFactoryWallets(ca, chain).then((w) => { if (active) setWallets(w); });
     }
     poll();
     const id = setInterval(poll, 30000);
@@ -85,7 +82,7 @@ export function TokenDetailContent({ chain, ca }: { chain: Chain; ca: string }) 
       </div>
 
       <div className="lg:w-96 shrink-0 lg:overflow-y-auto space-y-1">
-        <TokenInfoPanel info={pairInfo} ca={ca} chainId={chain} symbol={symbol} platform={token?.platform} holders={holders} wallets={wallets} />
+        <TokenInfoPanel info={pairInfo} ca={ca} chainId={chain} symbol={symbol} platform={token?.platform} holders={holders} wallets={token?.wallets} />
         <TokenSwapPanel chainId={chain} ca={ca} platform={token?.platform} />
       </div>
     </>
