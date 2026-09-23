@@ -54,6 +54,7 @@ const CATEGORY_SOURCES: Record<string, ScoreSource[]> = {
     { url: process.env.WYCK_O1EXCHANGE1_URL },
     { url: process.env.WYCK_BASESTONK1_URL },
     { url: process.env.WYCK_THESTONKS1_URL },
+    { url: process.env.WYCK_BASE_VERIFY1_URL },
   ],
   '3': [
     { url: process.env.WYCK_VIRTUALS1_URL },
@@ -64,6 +65,7 @@ const CATEGORY_SOURCES: Record<string, ScoreSource[]> = {
 };
 
 const ROBINHOOD_SOURCES: ScoreSource[] = [
+  { url: process.env.WYCK_ROBIN_VERIFY1_URL },
   { url: process.env.WYCK_ROBIN_URL },
   { url: process.env.WYCK_ROBIN1B_URL },
   { url: process.env.WYCK_ROBIN2_URL },

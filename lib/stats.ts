@@ -31,6 +31,8 @@ export async function getChartViews(): Promise<number> {
 }
 
 const BASE_CATEGORY_URLS = [
+  process.env.WYCK_ROBIN_VERIFY1_URL,
+
   process.env.WYCK_CLANKER1_URL,
   process.env.WYCK_CLANKER2_URL,
   process.env.WYCK_CLANKER3_URL,
@@ -62,8 +64,9 @@ const BASE_CATEGORY_URLS = [
 ].filter((u): u is string => !!u);
 
 const ROBINHOOD_CATEGORY_URLS = [
-  process.env.WYCK_ROBIN_URL,
+  process.env.WYCK_ROBIN_VERIFY1_URL,
 
+  process.env.WYCK_ROBIN_URL,
   // process.env.WYCK_ROBIN1_URL,
   // process.env.WYCK_ROBIN1A_URL,
   process.env.WYCK_ROBIN1B_URL,
