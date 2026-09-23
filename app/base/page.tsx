@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { getCachedDexData } from '@/lib/dexData';
 import { formatCap } from '@/lib/format';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { PlatformBadge } from '@/components/PlatformBadge';
 import { PriceChartModal } from '@/components/PriceChartModal';
 import { TokenEntry } from '@/lib/tokenApi';
-import { BASE_PLATFORMS, FILTER_LABELS } from '@/lib/platforms';
+import { derivePlatformOptions, formatPlatformLabel } from '@/lib/platforms';
 import { fetchGithubStats, GithubStats } from '@/lib/githubApi';
 import { useTokenData } from '@/components/TokenDataContext';
 import Link from 'next/link';
@@ -16,6 +16,7 @@ type SortCol = 'marketCap' | 'liq' | 'vol24h' | 'score' | 'change24h' | 'snapsho
 
 export default function BaseTrackerPage() {
   const { tokens, loading: loadingData, dexReady, refresh: loadData, watchlist, toggleWatchlist } = useTokenData();
+  const platformOptions = useMemo(() => derivePlatformOptions(tokens), [tokens]);
   const [sortCol, setSortCol] = useState<SortCol>('snapshot');
   const [sortDir, setSortDir] = useState<1 | -1>(-1);
   const [chartToken, setChartToken] = useState<{ category: number; ca: string; symbol: string } | null>(null);
@@ -106,8 +107,8 @@ export default function BaseTrackerPage() {
           className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
         >
           <option value="all">All platforms</option>
-          {BASE_PLATFORMS.map((p) => (
-            <option key={p} value={p}>{FILTER_LABELS[p] ?? p}</option>
+          {platformOptions.map((p) => (
+            <option key={p} value={p}>{formatPlatformLabel(p)}</option>
           ))}
         </select>
         <button

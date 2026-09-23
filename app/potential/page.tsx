@@ -7,7 +7,7 @@ import { BuyTokenPrompt } from '@/components/BuyTokenPrompt';
 import { PotentialFilterPanel, PotentialTab } from '@/components/PotentialFilterPanel';
 import { PotentialTable } from '@/components/PotentialTable';
 import { prefetchDexDataBatch } from '@/lib/dexData';
-import { FILTER_LABELS } from '@/lib/platforms';
+import { FILTER_LABELS, formatPlatformLabel, derivePlatformOptions } from '@/lib/platforms';
 import {
   PotentialFilters,
   PotentialRow,
@@ -286,6 +286,11 @@ export default function PotentialPage() {
     tab === 'robinhood' ? robinhoodRows :
     arcRows;
 
+  const networkPlatformOptions = useMemo(
+    () => derivePlatformOptions(items.filter((i) => i.chain === network)),
+    [items, network]
+  );
+
   const followSummaryNode = useMemo(() => {
     if (tab !== 'following' || loading || followingRows.length === 0) return null;
 
@@ -412,6 +417,7 @@ export default function PotentialPage() {
         onReset={handleReset}
         resultCount={activeRows.length}
         rightSlot={followSummaryNode}
+        platformOptions={networkPlatformOptions}
       />
 
       {error && <p className="text-red-400 text-sm">{error}</p>}

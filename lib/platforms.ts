@@ -53,12 +53,22 @@ export const FILTER_LABELS: Record<string, string> = {
   arc_unverified: 'Unknown - Not Verified',
 };
 
-export function platformShareLines(platform: string | null | undefined): string[] {
-  if (!platform) return [];
-  const isUnverified = platform.endsWith('_unverified');
-  const label = PLATFORM_LABELS[platform] ?? platform;
-  const hashtag = label.replace(/[^a-zA-Z0-9]/g, '');
-  const verifiedLine = isUnverified ? '❌ Not Verified' : '✅ Verified';
-  const platformLine = `🚀 Token Launcher: #${hashtag}`;
-  return [verifiedLine, platformLine];
+ export function platformShareLines(platform: string | null | undefined): string[] {
+   if (!platform) return [];
+   const isUnverified = platform.endsWith('_unverified');
+   const label = PLATFORM_LABELS[platform] ?? platform;
+   const hashtag = label.replace(/[^a-zA-Z0-9]/g, '');
+   const verifiedLine = isUnverified ? '❌ Not Verified' : '✅ Verified';
+   const platformLine = `🚀 Token Launcher: #${hashtag}`;
+   return [verifiedLine, platformLine];
+ }
+
+export function formatPlatformLabel(p: string): string {
+  return FILTER_LABELS[p] ?? p.charAt(0).toUpperCase() + p.slice(1);
+}
+
+export function derivePlatformOptions(items: { platform: string }[]): string[] {
+  return [...new Set(items.map((i) => i.platform))].sort((a, b) =>
+    formatPlatformLabel(a).localeCompare(formatPlatformLabel(b))
+  );
 }

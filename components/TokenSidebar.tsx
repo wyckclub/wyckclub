@@ -7,7 +7,7 @@ import { PlatformBadge } from '@/components/PlatformBadge';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTokenData } from '@/components/TokenDataContext';
 import { formatCap, formatAge } from '@/lib/format';
-import { BASE_PLATFORMS, ROBINHOOD_PLATFORMS, ARC_PLATFORMS, FILTER_LABELS } from '@/lib/platforms';
+import { derivePlatformOptions, formatPlatformLabel } from '@/lib/platforms';
 
 type Chain = 'base' | 'robinhood' | 'arc';
 type Tab = 'star' | 'all' | 'potential' | 'new';
@@ -49,8 +49,10 @@ export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () 
   const [platformFilter, setPlatformFilter] = useState<string>('all');
   const listRef = useRef<HTMLDivElement>(null);
 
-  const platforms = chain === 'robinhood' ? ROBINHOOD_PLATFORMS : chain === 'arc' ? ARC_PLATFORMS : BASE_PLATFORMS;
-
+  const platforms = useMemo(
+    () => derivePlatformOptions([...tokens, ...potential.map((p) => ({ platform: p.platform ?? 'unknown' }))]),
+    [tokens, potential]
+  );
   useEffect(() => {
     setPlatformFilter('all');
   }, [chain]);
@@ -168,7 +170,7 @@ export function TokenSidebar({ chain, onSelect }: { chain: Chain; onSelect?: () 
         >
           <option value="all">All platforms</option>
           {platforms.map((p) => (
-            <option key={p} value={p}>{FILTER_LABELS[p] ?? p}</option>
+            <option key={p} value={p}>{formatPlatformLabel(p)}</option>
           ))}
         </select>
       </div>

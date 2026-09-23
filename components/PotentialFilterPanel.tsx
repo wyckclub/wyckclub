@@ -1,7 +1,7 @@
 'use client';
 
-import { BASE_PLATFORMS, ROBINHOOD_PLATFORMS, ARC_PLATFORMS, FILTER_LABELS } from '@/lib/platforms';
 import { PotentialFilters, NetworkKey } from '@/lib/potentialFilters';
+import { formatPlatformLabel } from '@/lib/platforms';
 import { NetworkIcon } from '@/components/NetworkIcon';
 
 export type PotentialTab = 'following' | NetworkKey;
@@ -121,7 +121,7 @@ function PlatformGroup({
             onChange={() => onToggleOne(p)}
             className="wyck-checkbox wyck-checkbox-sm"
           />
-          {FILTER_LABELS[p] ?? p}
+          {formatPlatformLabel(p)}
         </label>
       ))}
     </div>
@@ -138,6 +138,7 @@ export function PotentialFilterPanel({
   onReset,
   resultCount,
   rightSlot,
+  platformOptions,
 }: {
   tab: PotentialTab;
   network: NetworkKey;
@@ -148,6 +149,7 @@ export function PotentialFilterPanel({
   onReset: () => void;
   resultCount: number;
   rightSlot?: React.ReactNode;
+  platformOptions: string[];
 }) {
   const isFollowing = tab === 'following';
 
@@ -173,10 +175,7 @@ export function PotentialFilterPanel({
     set(key, allSelected ? [] : [...list]);
   }
 
-  const activePlatformList =
-    filters.network === 'base' ? BASE_PLATFORMS :
-    filters.network === 'robinhood' ? ROBINHOOD_PLATFORMS :
-    ARC_PLATFORMS;
+  const activePlatformList = platformOptions;
 
   const activeSelected =
     filters.network === 'base' ? filters.basePlatforms :
