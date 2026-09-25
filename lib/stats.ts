@@ -67,11 +67,8 @@ const ROBINHOOD_CATEGORY_URLS = [
 
   process.env.WYCK_ROBIN_URL,
   // process.env.WYCK_ROBIN1_URL,
-  // process.env.WYCK_ROBIN1A_URL,
-  process.env.WYCK_ROBIN1B_URL,
   process.env.WYCK_ROBIN2_URL,
   process.env.WYCK_ROBIN2A_URL,
-  process.env.WYCK_ROBIN2B_URL,
   process.env.WYCK_ROBIN3_URL,
   process.env.WYCK_ROBIN4_URL,
 

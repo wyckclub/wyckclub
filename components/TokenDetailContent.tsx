@@ -12,6 +12,12 @@ import { ROBINHOOD_CATEGORY, ARC_CATEGORY } from '@/lib/tokenApi';
 
 type Chain = 'base' | 'robinhood' | 'arc';
 
+const GECKOTERMINAL_NETWORK: Record<Chain, string> = {
+  base: 'base',
+  robinhood: 'robinhood',
+  arc: 'arc',
+};
+
 function WalletIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
@@ -45,16 +51,16 @@ export function TokenDetailContent({ chain, ca }: { chain: Chain; ca: string }) 
 
   const category = token?.category ?? (chain === 'robinhood' ? ROBINHOOD_CATEGORY : chain === 'arc' ? ARC_CATEGORY : null);
   const symbol = pairInfo?.symbol ?? token?.symbol ?? ca.slice(0, 6);
-  const dexscreenerUrl = pairInfo
-    ? `https://dexscreener.com/${chain}/${pairInfo.topVolumePairAddress ?? pairInfo.pairAddress}?embed=1&theme=dark&trades=0&info=0&interval=${getDexscreenerInterval(pairInfo.pairCreatedAt)}`
+  const geckoterminalUrl = pairInfo
+    ? `https://www.geckoterminal.com/${GECKOTERMINAL_NETWORK[chain]}/pools/${pairInfo.topVolumePairAddress ?? pairInfo.pairAddress}?embed=1&info=0&swaps=0`
     : null;
 
   return (
     <>
       <div className="flex-1 min-w-0 flex flex-col gap-3 lg:h-full">
         <div className="h-[42vh] lg:flex-1 lg:min-h-0 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-          {dexscreenerUrl ? (
-            <iframe src={dexscreenerUrl} className="w-full h-full" title="Dexscreener chart" />
+          {geckoterminalUrl ? (
+            <iframe src={geckoterminalUrl} className="w-full h-full" title="GeckoTerminal chart" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-slate-500 text-sm">Loading chart...</div>
           )}

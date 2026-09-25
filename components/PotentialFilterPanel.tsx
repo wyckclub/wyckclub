@@ -114,7 +114,7 @@ function PlatformGroup({
         Select All
       </button>
       {list.map((p) => (
-        <label key={p} className="flex items-center gap-1.5 text-xs font-semibold text-slate-300 cursor-pointer">
+        <label key={p} className="flex items-center gap-1.5 text-xs font-semibold text-blue-300/70 cursor-pointer">
           <input
             type="checkbox"
             checked={selected.includes(p)}

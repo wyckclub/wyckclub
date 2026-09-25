@@ -66,10 +66,8 @@ const CATEGORY_SOURCES: Record<string, ScoreSource[]> = {
 const ROBINHOOD_SOURCES: ScoreSource[] = [
   { url: process.env.WYCK_ROBIN_VERIFY1_URL },
   { url: process.env.WYCK_ROBIN_URL },
-  { url: process.env.WYCK_ROBIN1B_URL },
   { url: process.env.WYCK_ROBIN2_URL },
   { url: process.env.WYCK_ROBIN2A_URL },
-  { url: process.env.WYCK_ROBIN2B_URL },
   { url: process.env.WYCK_ROBIN3_URL },
   { url: process.env.WYCK_ROBIN4_URL },
   { url: process.env.WYCK_ROBIN5_URL },
