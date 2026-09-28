@@ -45,7 +45,7 @@ export function TokenDetailContent({ chain, ca }: { chain: Chain; ca: string }) 
       fetchHoldersCount(ca, chain).then((h) => { if (active) setHolders(h); });
     }
     poll();
-    const id = setInterval(poll, 30000);
+    const id = setInterval(poll, 90000);
     return () => { active = false; clearInterval(id); };
   }, [ca, chain]);
 

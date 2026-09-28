@@ -72,7 +72,6 @@ export function TokenInfoPanel({
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      // clipboard API unavailable
     }
   };
 

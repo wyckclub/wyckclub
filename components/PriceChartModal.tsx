@@ -99,7 +99,7 @@ export function PriceChartModal({ category, ca, symbol, onClose, chainId = 'base
       });
     }
     poll();
-    const id = setInterval(poll, 30000);
+    const id = setInterval(poll, 90000);
     return () => {
       active = false;
       clearInterval(id);

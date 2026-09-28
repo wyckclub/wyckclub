@@ -131,8 +131,6 @@ function cacheKey(kind: string) {
   return `wyck:scores:${kind}`;
 }
 
-// ---------- Factory (platform/verified/creator wallets) ----------
-
 type Chain = 'base' | 'robinhood' | 'arc';
 
 interface FactoryRawEntry {
