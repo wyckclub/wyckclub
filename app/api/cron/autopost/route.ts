@@ -112,7 +112,7 @@ async function runForChain(chain: 'base' | 'robinhood', origin: string) {
 
   if (!scored.length) return { chain, posted: false, reason: 'no candidate passed pct/marketcap check' };
 
-  const picked = scored[Math.floor(Math.random() * scored.length)];
+  const picked = scored.reduce((best, c) => (c.pct > best.pct ? c : best));
 
   const chartEntries: ChartEntry[] = [...picked.entries]
     .reverse()
