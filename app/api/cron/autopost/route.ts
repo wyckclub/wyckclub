@@ -21,8 +21,8 @@ import {
 } from '@/lib/signalDetection';
 
 const redis = new Redis({
-  url: process.env.REDIS_KV_REST_API_URL!,
-  token: process.env.REDIS_KV_REST_API_TOKEN!,
+  url: process.env.KV_REST_API_URL!,
+  token: process.env.KV_REST_API_TOKEN!,
 });
 
 const LAST_POST_KEY = 'wyck:autopost:last_post_at';
