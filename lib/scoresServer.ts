@@ -166,8 +166,8 @@ const FACTORY_URLS: Record<Chain, string | undefined> = {
   arc: process.env.WYCK_FACTORY_ARC_URL,
 };
 
-const FACTORY_MEM_TTL_MS = 60000;
-const FACTORY_CACHE_TTL_SECONDS = 300;
+const FACTORY_MEM_TTL_MS = 900000;
+const FACTORY_CACHE_TTL_SECONDS = 3600;
 const factoryMemCache = new Map<string, { data: Record<string, FactoryInfo>; expires: number }>();
 const factoryInFlight = new Map<string, Promise<Record<string, FactoryInfo>>>();
 
@@ -209,7 +209,7 @@ async function fetchFactoryMap(chain: Chain): Promise<Record<string, FactoryInfo
   try {
     const cached = await redis.get<string | Record<string, FactoryInfo> | null>(key);
     if (cached != null) {
-      const parsed = typeof cached === 'string' ? JSON.parse(cached) : cached;
+      const parsed = unpack(cached as string | Record<string, FactoryInfo>) as Record<string, FactoryInfo>;
       factoryMemCache.set(key, { data: parsed, expires: Date.now() + FACTORY_MEM_TTL_MS });
       return parsed;
     }
@@ -238,7 +238,7 @@ async function fetchFactoryMap(chain: Chain): Promise<Record<string, FactoryInfo
     }
     factoryMemCache.set(key, { data: map, expires: Date.now() + FACTORY_MEM_TTL_MS });
     try {
-      await redis.set(key, JSON.stringify(map), { ex: FACTORY_CACHE_TTL_SECONDS });
+      await redis.set(key, pack(map), { ex: FACTORY_CACHE_TTL_SECONDS });
     } catch {
     }
     return map;

@@ -176,10 +176,13 @@ export async function GET(req: NextRequest) {
   }
 
   const all = (await redis.hgetall<Record<string, string>>(NOTIF_HASH_KEY)) || {};
-  const notifications: Notification[] = Object.values(all)
-    .map((r) => (typeof r === 'string' ? JSON.parse(r) : (r as unknown as Notification)))
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-    .slice(0, MAX_NOTIFS);
+  const sorted = Object.entries(all)
+    .map(([ca, r]) => ({ ca, n: (typeof r === 'string' ? JSON.parse(r) : r) as Notification }))
+    .sort((a, b) => new Date(b.n.timestamp).getTime() - new Date(a.n.timestamp).getTime());
+
+  const notifications = sorted.slice(0, MAX_NOTIFS).map((x) => x.n);
+  const stale = sorted.slice(MAX_NOTIFS).map((x) => x.ca);
+  if (stale.length) await redis.hdel(NOTIF_HASH_KEY, ...stale);
 
     return NextResponse.json(notifications, {
       headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
