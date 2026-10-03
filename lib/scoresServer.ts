@@ -203,7 +203,6 @@ async function fetchFactoryMap(chain: Chain): Promise<Record<string, FactoryInfo
       return parsed;
     }
   } catch {
-    // unavailable
   }
 
   const existing = factoryInFlight.get(chain);
@@ -224,14 +223,12 @@ async function fetchFactoryMap(chain: Chain): Promise<Record<string, FactoryInfo
           }
         }
       } catch {
-        // best-effort, fallback default unverified applied per-token at enrich step
       }
     }
     factoryMemCache.set(key, { data: map, expires: Date.now() + FACTORY_MEM_TTL_MS });
     try {
       await redis.set(key, JSON.stringify(map), { ex: FACTORY_CACHE_TTL_SECONDS });
     } catch {
-      // best-effort cache write
     }
     return map;
   })().finally(() => {
@@ -265,8 +262,6 @@ async function enrichWithFactory(data: Record<string, any>, chain: Chain): Promi
   return data;
 }
 
-// ---------- Main cached fetch ----------
-
 const inFlight = new Map<string, Promise<Record<string, any>>>();
 
 export async function fetchScoresCached(
@@ -292,7 +287,6 @@ export async function fetchScoresCached(
         return enrichWithFactory(parsed, chain);
       }
     } catch {
-      // unavailable
     }
   }
 
@@ -305,7 +299,6 @@ export async function fetchScoresCached(
     try {
       await redis.set(key, JSON.stringify(merged), { ex: CACHE_TTL_SECONDS });
     } catch {
-      // best-effort cache write
     }
     return merged;
   })().finally(() => {
