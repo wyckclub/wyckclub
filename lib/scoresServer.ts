@@ -1,4 +1,15 @@
 import { Redis } from '@upstash/redis';
+import { gzipSync, gunzipSync } from 'zlib';
+
+function pack(obj: unknown): string {
+  return gzipSync(JSON.stringify(obj)).toString('base64');
+}
+
+function unpack(v: string | Record<string, any>): Record<string, any> {
+  if (typeof v !== 'string') return v;
+  if (v.startsWith('{')) return JSON.parse(v);
+  return JSON.parse(gunzipSync(Buffer.from(v, 'base64')).toString());
+}
 
 const redis = new Redis({
   url: process.env.KV_REST_API_URL!,
@@ -282,7 +293,7 @@ export async function fetchScoresCached(
     try {
       const cached = await redis.get<string | Record<string, any> | null>(key);
       if (cached != null) {
-        const parsed = typeof cached === 'string' ? JSON.parse(cached) : cached;
+        const parsed = unpack(cached);
         memSet(key, parsed);
         return enrichWithFactory(parsed, chain);
       }
@@ -297,7 +308,7 @@ export async function fetchScoresCached(
     const merged = await fetchMergedSources(validSources);
     memSet(key, merged);
     try {
-      await redis.set(key, JSON.stringify(merged), { ex: CACHE_TTL_SECONDS });
+      await redis.set(key, pack(merged), { ex: CACHE_TTL_SECONDS });
     } catch {
     }
     return merged;

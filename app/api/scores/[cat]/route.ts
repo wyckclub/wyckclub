@@ -8,7 +8,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ cat
 
   try {
     const merged = await fetchScoresCached(`cat:${cat}`, sources);
-    return NextResponse.json(merged);
+    return NextResponse.json(merged, {
+      headers: { 'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300' },
+    });
   } catch {
     return NextResponse.json({ error: 'Upstream error' }, { status: 502 });
   }

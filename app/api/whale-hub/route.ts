@@ -3,6 +3,7 @@ import { Redis } from '@upstash/redis';
 import { getWhaleStarredScore, getChartScoreTextColorClass } from '@/lib/format';
 import { fetchDexscreenerBatchMap } from '@/lib/dexscreenerServer';
 import { getCategorySources, getRobinhoodSources, fetchScoresCached, getArcSources } from '@/lib/scoresServer';
+import crypto from 'crypto';
 
 const redis = new Redis({
   url: process.env.KV_REST_API_URL!,
@@ -103,7 +104,11 @@ export async function GET(req: NextRequest) {
       if (!entries.length) continue;
       const latest = entries[0];
 
-      const sig = `${latest.timestamp ?? ''}_${latest.score}_${latest.display}_${latest.price}`;
+      const sig = crypto
+        .createHash('md5')
+        .update(`${latest.timestamp ?? ''}_${latest.score}_${latest.display}_${latest.price}`)
+        .digest('base64url')
+        .slice(0, 10);
       if (lastSeen[ca] === sig) continue;
       seenUpdates[ca] = sig;
 
@@ -176,7 +181,9 @@ export async function GET(req: NextRequest) {
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
     .slice(0, MAX_NOTIFS);
 
-    return NextResponse.json(notifications);
+    return NextResponse.json(notifications, {
+      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+    });
   } catch (e) {
     console.error('[whale-hub] ERROR', e);
     return NextResponse.json([], { status: 200 });
