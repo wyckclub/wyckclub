@@ -17,7 +17,7 @@ const redis = new Redis({
 });
 
 const CACHE_TTL_SECONDS = 240;
-const MEM_TTL_MS = 20000;
+const MEM_TTL_MS = 60000;
 
 interface MemEntry {
   data: Record<string, any>;

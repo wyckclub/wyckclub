@@ -1,4 +1,5 @@
 import { Redis } from '@upstash/redis';
+import { gzipSync, gunzipSync } from 'zlib';
 
 const redis = new Redis({
   url: process.env.KV_REST_API_URL!,
@@ -91,8 +92,27 @@ function oldestPairCreatedAt(pairs: any[], fallback: any): number | null {
   }, null as number | null);
 }
 
-function hashKey(chainId: string) {
-  return `wyck:dex:${chainId}`;
+function pack(obj: unknown): string {
+  return gzipSync(JSON.stringify(obj)).toString('base64');
+}
+
+function unpack(v: string): any {
+  return JSON.parse(gunzipSync(Buffer.from(v, 'base64')).toString());
+}
+
+type DexBlob = Record<string, { t: number; d: DexBatchInfo }>;
+
+function blobKey(chainId: string) {
+  return `wyck:dexblob:${chainId}`;
+}
+
+async function readBlob(chainId: string): Promise<DexBlob> {
+  try {
+    const raw = await redis.get<string>(blobKey(chainId));
+    return raw ? (unpack(raw) as DexBlob) : {};
+  } catch {
+    return {};
+  }
 }
 
 interface MemEntry {
@@ -122,33 +142,29 @@ function memSetMany(chainId: string, entries: Record<string, DexBatchInfo>, ttlM
   }
 }
 
-async function getCachedMany(chainId: string, cas: string[]): Promise<Record<string, DexBatchInfo>> {
+async function getCachedMany(chainId: string, cas: string[], ttlSeconds: number): Promise<Record<string, DexBatchInfo>> {
   if (!cas.length) return {};
-  try {
-    const fields = cas.map((ca) => ca.toLowerCase());
-    const raw = await redis.hmget<Record<string, DexBatchInfo | string>>(hashKey(chainId), ...fields);
-    const out: Record<string, DexBatchInfo> = {};
-    cas.forEach((ca) => {
-      const v = raw?.[ca.toLowerCase()];
-      if (v == null) return;
-      try {
-        out[ca] = typeof v === 'string' ? (JSON.parse(v) as DexBatchInfo) : v;
-      } catch {}
-    });
-    return out;
-  } catch {
-    return {};
+  const blob = await readBlob(chainId);
+  const now = Date.now();
+  const out: Record<string, DexBatchInfo> = {};
+  for (const ca of cas) {
+    const e = blob[ca.toLowerCase()];
+    if (e && now - e.t < ttlSeconds * 1000) out[ca] = e.d;
   }
+  return out;
 }
 
 async function setCachedMany(chainId: string, entries: Record<string, DexBatchInfo>, ttlSeconds: number) {
   const cas = Object.keys(entries);
   if (!cas.length) return;
   try {
-    const fields: Record<string, string> = {};
-    cas.forEach((ca) => { fields[ca.toLowerCase()] = JSON.stringify(entries[ca]); });
-    await redis.hset(hashKey(chainId), fields);
-    await redis.expire(hashKey(chainId), ttlSeconds);
+    const blob = await readBlob(chainId);
+    const now = Date.now();
+    for (const k of Object.keys(blob)) {
+      if (now - blob[k].t >= ttlSeconds * 1000) delete blob[k];
+    }
+    cas.forEach((ca) => { blob[ca.toLowerCase()] = { t: now, d: entries[ca] }; });
+    await redis.set(blobKey(chainId), pack(blob), { ex: ttlSeconds });
   } catch {}
 }
 
@@ -173,7 +189,7 @@ export async function fetchDexscreenerBatchMap(
     toFetch = uniqueCas.filter((ca) => !(ca in memHit));
 
     if (toFetch.length) {
-      const cached = await getCachedMany(chainId, toFetch);
+      const cached = await getCachedMany(chainId, toFetch, cacheTtlSeconds);
       Object.assign(out, cached);
       memSetMany(chainId, cached);
       toFetch = toFetch.filter((ca) => !(ca in cached));
@@ -203,11 +219,11 @@ export async function fetchDexscreenerBatchMap(
         caPairs.length ? caPairs.reduce((s: number, p: any) => s + (Number(getter(p)) || 0), 0) : 0;
 
       const info: DexBatchInfo = {
-        liq: sumField((p) => p.liquidity?.usd),
-        vol1h: sumField((p) => p.volume?.h1),
-        vol6h: sumField((p) => p.volume?.h6),
-        vol24h: sumField((p) => p.volume?.h24),
-        marketCap: pair.marketCap ?? pair.fdv ?? null,
+        liq: Math.round(sumField((p) => p.liquidity?.usd)),
+        vol1h: Math.round(sumField((p) => p.volume?.h1)),
+        vol6h: Math.round(sumField((p) => p.volume?.h6)),
+        vol24h: Math.round(sumField((p) => p.volume?.h24)),
+        marketCap: pair.marketCap != null ? Math.round(pair.marketCap) : pair.fdv != null ? Math.round(pair.fdv) : null,
         imageUrl: pair.info?.imageUrl ?? null,
         priceUsd: pair.priceUsd == null ? null : Number(pair.priceUsd),
         h24: pair.priceChange?.h24 == null ? null : Number(pair.priceChange.h24),
