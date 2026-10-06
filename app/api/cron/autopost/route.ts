@@ -81,8 +81,6 @@ async function fetchTokenImageDataUri(imageUrl: string | null): Promise<string |
   }
 }
 
-// ---------- Bài share token tăng giá nhiều nhất ----------
-
 async function findBestForChain(chain: Chain, origin: string) {
   const HISTORY_KEY = `wyck:autopost:history:${chain}`;
   const categories = await fetchCategories(chain, origin);
@@ -183,10 +181,11 @@ MarketCap: ${formatCap(oldMarketCap)} → ${formatCap(picked.dex.marketCap)} | P
   return { chain, posted: true, tweetId: result.id, token: picked.symbol, ca: picked.ca, pct: pctRounded };
 }
 
-// ---------- Bài share Top 5 tiềm năng ----------
-
 async function runTopPost(chain: Chain, origin: string) {
   const categories = await fetchCategories(chain, origin);
+  const TOP_LAST_KEY = `wyck:autopost:top_last:${chain}`;
+  const lastTop = (await redis.get<string[]>(TOP_LAST_KEY)) || [];
+  const excluded = new Set(lastTop.map((c) => c.toLowerCase()));
   const found: { ca: string; symbol: string; platform: string; tier: 1 | 2; score: number }[] = [];
 
   for (const { data } of categories) {
@@ -196,6 +195,15 @@ async function runTopPost(chain: Chain, origin: string) {
       if (entries.length < 2) continue;
       const tier = getPotentialTier({ entries } as any);
       if (!tier) continue;
+      if (excluded.has(ca.toLowerCase())) continue;
+
+      const e0 = entries[0];
+      const e1 = entries[1];
+      if (e0.incBull == null || e0.decBear == null || e1.incBull == null || e1.decBear == null) continue;
+      if (e0.incBull - e0.decBear <= 7) continue;
+      if (!(e0.incBull > e1.incBull)) continue;
+      if (!(e0.decBear < 1 || e0.decBear < e1.decBear)) continue;
+
       found.push({ ca, symbol: token.symbol, platform: token.platform!, tier, score: entries[0].score });
     }
   }
@@ -229,10 +237,9 @@ async function runTopPost(chain: Chain, origin: string) {
   const result = await postTweetWithMedia(text.trim(), [uploaded.mediaId]);
   if (!result.ok) return { chain, posted: false, reason: result.error };
   await redis.set(LAST_POST_KEY, Date.now());
+  await redis.set(TOP_LAST_KEY, top.map((t) => t.ca.toLowerCase()));
   return { chain, posted: true, type: 'top5', tweetId: result.id };
 }
-
-// ---------- Cron handler ----------
 
 export async function GET(req: NextRequest) {
   if (process.env.CRON_SECRET) {
@@ -263,7 +270,6 @@ export async function GET(req: NextRequest) {
 
     const origin = req.nextUrl.origin;
 
-    // Đủ 4 bài token -> đăng 1 bài Top 5 (xoay vòng Base -> Robinhood -> Arc)
     const count = Number(await redis.get<number>(COUNT_KEY)) || 0;
     if (count >= TOP_EVERY) {
       const lastTop = await redis.get<string>(TOP_CHAIN_KEY);
