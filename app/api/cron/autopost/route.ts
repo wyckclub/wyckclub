@@ -250,6 +250,12 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+
+    const forceTop = req.nextUrl.searchParams.get('top') as Chain | null;
+    if (forceTop && CHAINS.includes(forceTop)) {
+      return NextResponse.json(await runTopPost(forceTop, req.nextUrl.origin));
+    }
+
     const lastPostAt = await redis.get<number>(LAST_POST_KEY);
     if (lastPostAt && Date.now() - lastPostAt < MIN_POST_INTERVAL_SECONDS * 1000) {
       return NextResponse.json({ posted: false, reason: 'too soon since last post' });
