@@ -223,7 +223,7 @@ async function runTopPost(chain: Chain, origin: string) {
   let text = `Top ${top.length} Tokens with accumulation potential on #${label}:\n`;
   for (const t of top) {
     const tag = (PLATFORM_LABELS[t.platform] ?? t.platform).replace(/[^a-zA-Z0-9]/g, '');
-    text += `\n$${stripDots(t.symbol)} ${t.ca}\nDeploy: #${tag} MarketCap: ${formatCap(t.m.marketCap)}\n`;
+    text += `\n#${stripDots(t.symbol)} ${t.ca}\nDeploy: #${tag} MarketCap: ${formatCap(t.m.marketCap)}\n`;
   }
 
   const result = await postTweetWithMedia(text.trim(), [uploaded.mediaId]);
