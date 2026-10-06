@@ -134,7 +134,7 @@ export function passesFilter(item: PotentialApiItem, f: PotentialFilters): boole
   return true;
 }
 
-export function passesDefaultPotential(item: PotentialApiItem): boolean {
+export function getPotentialTier(item: Pick<PotentialApiItem, 'entries'>): 1 | 2 | null {
   const mapped = item.entries.map((e) => ({
     score: e.score,
     topwhale: e.topwhale,
@@ -143,7 +143,7 @@ export function passesDefaultPotential(item: PotentialApiItem): boolean {
   }));
   const e0 = mapped[0];
   const e1 = mapped[1];
-  if (!e0 || !e1) return false;
+  if (!e0 || !e1) return null;
 
   const whaleE0 = isWhaleStarredAt(mapped, 0);
   const springE0 = isSpringPointAt(mapped, 0);
@@ -156,5 +156,9 @@ export function passesDefaultPotential(item: PotentialApiItem): boolean {
   const tier1 = (priceDown && yellowE0 && top10Up) || (priceDown && springE0 && top10Up) || (springE1 && whaleE0);
   const tier2 = !tier1 && whaleE0 && plusE0;
 
-  return tier1 || tier2;
+  return tier1 ? 1 : tier2 ? 2 : null;
+}
+
+export function passesDefaultPotential(item: PotentialApiItem): boolean {
+  return getPotentialTier(item) !== null;
 }

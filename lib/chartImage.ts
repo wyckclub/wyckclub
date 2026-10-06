@@ -5,10 +5,10 @@ import { formatPriceShort, formatDateShort, formatCap } from '@/lib/format';
 import { DEJAVU_SANS_BOLD_BASE64 } from '@/lib/fontData';
 import { PLATFORM_LABELS } from '@/lib/platforms';
 
-const FONT_FAMILY = 'DejaVu Sans';
+export const FONT_FAMILY = 'DejaVu Sans';
 const FONT_TMP_PATH = path.join('/tmp', 'wyck-chart-font.ttf');
 
-function ensureFontFile(): string {
+export function ensureFontFile(): string {
   if (!fs.existsSync(FONT_TMP_PATH)) {
     fs.writeFileSync(FONT_TMP_PATH, Buffer.from(DEJAVU_SANS_BOLD_BASE64, 'base64'));
   }
@@ -26,7 +26,7 @@ export interface ChartEntry {
 }
 
 export interface ChartHeader {
-  chain: 'base' | 'robinhood';
+  chain: 'base' | 'robinhood' | 'arc';
   tokenImageDataUri: string | null;
   name: string | null;
   symbol: string;
@@ -81,7 +81,7 @@ function segmentColor(currentScore: number | null, prevScores: number[]): { stro
   return { stroke: COLORS.blue, opacity: 1 };
 }
 
-function escapeXml(s: string): string {
+export function escapeXml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
@@ -207,7 +207,7 @@ function buildChartInner(entries: ChartEntry[]): string {
   return svg;
 }
 
-function buildChainIcon(chain: 'base' | 'robinhood', x: number, y: number, size: number): string {
+function buildChainIcon(chain: 'base' | 'robinhood' | 'arc', x: number, y: number, size: number): string {
   if (chain === 'base') {
     const inset = size * 0.2;
     const innerSize = size - inset * 2;
@@ -216,6 +216,14 @@ function buildChainIcon(chain: 'base' | 'robinhood', x: number, y: number, size:
       <rect x="${x + inset}" y="${y + inset}" width="${innerSize}" height="${innerSize}" rx="2.8" fill="#0052FF"/>
     `;
   }
+  if (chain === 'arc') {
+    const scale = size / 500;
+    return `<g transform="translate(${x},${y}) scale(${scale})">
+      <rect width="500" height="500" rx="250" fill="#1B3158"/>
+      <path d="M250.466 85C291.387 85 327.762 120.453 352.899 184.828C365.973 218.31 375.592 258.091 381.291 301.368C381.801 305.233 382.234 309.161 382.679 313.081C382.824 313.323 382.911 313.548 382.881 313.731C382.881 313.731 386.231 334.649 386.942 371.001H386.564C381.597 366.924 323.011 320.889 225.894 334.219C227.359 317.784 229.374 301.793 231.978 286.465C232.111 285.682 232.265 284.925 232.4 284.147C270.491 282.999 303.831 287.422 329.397 293.219C329.302 292.612 329.223 291.988 329.126 291.384C323.871 258.658 316.118 228.697 306.121 203.093C289.776 161.227 268.447 135.216 250.466 135.216C232.486 135.216 211.157 161.228 194.812 203.093C190.856 213.219 187.254 224.019 184.024 235.41C179.483 251.372 175.668 268.484 172.621 286.464C168.112 313.017 165.295 341.496 164.257 371.001H114C116.319 300.984 128.19 235.639 148.033 184.828C173.165 120.453 209.545 85.0002 250.466 85Z" fill="white"/>
+    </g>`;
+  }
+
   const scale = size / 400;
   return `
     <g transform="translate(${x},${y}) scale(${scale})">
@@ -229,9 +237,9 @@ function buildChainIcon(chain: 'base' | 'robinhood', x: number, y: number, size:
   `;
 }
 
-function buildChainBadge(chain: 'base' | 'robinhood'): string {
-  const label = chain === 'base' ? 'Base' : 'Robinhood';
-  const color = chain === 'base' ? '#60a5fa' : '#ccff00';
+export function buildChainBadge(chain: 'base' | 'robinhood' | 'arc'): string {
+  const label = chain === 'base' ? 'Base' : chain === 'robinhood' ? 'Robinhood' : 'Arc';
+  const color = chain === 'base' ? '#60a5fa' : chain === 'robinhood' ? '#ccff00' : '#c084fc';
   const iconSize = 26;
   const gap = 10;
   const fontSize = 19;

@@ -5,8 +5,11 @@ import { Redis } from '@upstash/redis';
 import crypto from 'crypto';
 import { uploadMedia, postTweetWithMedia } from '@/lib/xApi';
 import { renderChartPng, ChartEntry } from '@/lib/chartImage';
+import { renderTopPng } from '@/lib/topImage';
+import { getPotentialTier } from '@/lib/potentialEngine';
+import { fetchDexscreenerBatchMap } from '@/lib/dexscreenerServer';
 import { formatCap, formatPriceShort, stripDots } from '@/lib/format';
-import { platformShareLines } from '@/lib/platforms';
+import { platformShareLines, PLATFORM_LABELS } from '@/lib/platforms';
 import {
   ROBINHOOD_CATEGORY,
   MIN_LIQ,
@@ -25,7 +28,15 @@ const redis = new Redis({
   token: process.env.KV_REST_API_TOKEN!,
 });
 
+type Chain = 'base' | 'robinhood' | 'arc';
+const CHAINS: Chain[] = ['base', 'robinhood', 'arc'];
+const ARC_CATEGORY = 6;
+
 const LAST_POST_KEY = 'wyck:autopost:last_post_at';
+const COUNT_KEY = 'wyck:autopost:token_count';
+const TOP_CHAIN_KEY = 'wyck:autopost:next_top_chain';
+const TOP_EVERY = 4;
+const TOP_MIN_ITEMS = 3;
 const MIN_POST_INTERVAL_SECONDS = Number(process.env.AUTOPOST_MIN_INTERVAL_SECONDS) || 900;
 
 function isVerifiedPlatform(platform: string | null | undefined): boolean {
@@ -41,11 +52,12 @@ interface Candidate {
   signalPrice: number;
 }
 
-async function fetchCategories(chain: 'base' | 'robinhood', origin: string) {
-  if (chain === 'robinhood') {
-    const res = await fetch(`${origin}/api/scores/robinhood`, { cache: 'no-store' });
-    if (!res.ok) return [{ cat: ROBINHOOD_CATEGORY, data: {} as Record<string, RawToken> }];
-    return [{ cat: ROBINHOOD_CATEGORY, data: (await res.json()) as Record<string, RawToken> }];
+async function fetchCategories(chain: Chain, origin: string) {
+  if (chain === 'robinhood' || chain === 'arc') {
+    const cat = chain === 'robinhood' ? ROBINHOOD_CATEGORY : ARC_CATEGORY;
+    const res = await fetch(`${origin}/api/scores/${chain}`, { cache: 'no-store' });
+    if (!res.ok) return [{ cat, data: {} as Record<string, RawToken> }];
+    return [{ cat, data: (await res.json()) as Record<string, RawToken> }];
   }
   return Promise.all(
     [1, 2, 3, 4].map(async (cat) => {
@@ -69,7 +81,9 @@ async function fetchTokenImageDataUri(imageUrl: string | null): Promise<string |
   }
 }
 
-async function runForChain(chain: 'base' | 'robinhood', origin: string) {
+// ---------- Bài share token tăng giá nhiều nhất ----------
+
+async function findBestForChain(chain: Chain, origin: string) {
   const HISTORY_KEY = `wyck:autopost:history:${chain}`;
   const categories = await fetchCategories(chain, origin);
 
@@ -94,8 +108,7 @@ async function runForChain(chain: 'base' | 'robinhood', origin: string) {
       candidates.push({ ca, cat, symbol: token.symbol, platform: token.platform ?? null, entries, signalPrice });
     }
   }
-
-  if (!candidates.length) return { chain, posted: false, reason: 'no matching token' };
+  if (!candidates.length) return null;
 
   const scored: (Candidate & { dex: NonNullable<Awaited<ReturnType<typeof fetchDexInfo>>>; pct: number })[] = [];
   for (const c of candidates) {
@@ -109,10 +122,15 @@ async function runForChain(chain: 'base' | 'robinhood', origin: string) {
 
     scored.push({ ...c, dex, pct });
   }
-
-  if (!scored.length) return { chain, posted: false, reason: 'no candidate passed pct/marketcap check' };
+  if (!scored.length) return null;
 
   const picked = scored.reduce((best, c) => (c.pct > best.pct ? c : best));
+  return { ...picked, chain };
+}
+
+async function postPicked(picked: NonNullable<Awaited<ReturnType<typeof findBestForChain>>>) {
+  const { chain } = picked;
+  const HISTORY_KEY = `wyck:autopost:history:${chain}`;
 
   const chartEntries: ChartEntry[] = [...picked.entries]
     .reverse()
@@ -165,6 +183,57 @@ MarketCap: ${formatCap(oldMarketCap)} → ${formatCap(picked.dex.marketCap)} | P
   return { chain, posted: true, tweetId: result.id, token: picked.symbol, ca: picked.ca, pct: pctRounded };
 }
 
+// ---------- Bài share Top 5 tiềm năng ----------
+
+async function runTopPost(chain: Chain, origin: string) {
+  const categories = await fetchCategories(chain, origin);
+  const found: { ca: string; symbol: string; platform: string; tier: 1 | 2; score: number }[] = [];
+
+  for (const { data } of categories) {
+    for (const [ca, token] of Object.entries(data)) {
+      if (!isVerifiedPlatform(token.platform)) continue;
+      const entries = (token.entries || []).slice(0, 8);
+      if (entries.length < 2) continue;
+      const tier = getPotentialTier({ entries } as any);
+      if (!tier) continue;
+      found.push({ ca, symbol: token.symbol, platform: token.platform!, tier, score: entries[0].score });
+    }
+  }
+  if (!found.length) return { chain, posted: false, reason: 'no potential token' };
+
+  const market = await fetchDexscreenerBatchMap(found.map((f) => f.ca), chain, { revalidateSeconds: 40, maxRetries: 2 });
+  const top = found
+    .map((f) => ({ ...f, m: market[f.ca] }))
+    .filter((f) => f.m && f.m.liq >= MIN_LIQ && f.m.marketCap != null)
+    .sort((a, b) => a.tier - b.tier || b.score - a.score)
+    .slice(0, 5);
+
+  if (top.length < TOP_MIN_ITEMS) return { chain, posted: false, reason: 'not enough potential tokens' };
+
+  const images = await Promise.all(top.map((t) => fetchTokenImageDataUri(t.m.imageUrl)));
+  const png = renderTopPng(chain, top.map((t, i) => ({
+    imageDataUri: images[i], name: t.m.name, symbol: t.symbol,
+    platform: t.platform, marketCap: t.m.marketCap, liq: t.m.liq,
+  })));
+
+  const uploaded = await uploadMedia(png);
+  if (!uploaded.ok || !uploaded.mediaId) return { chain, posted: false, reason: uploaded.error };
+
+  const label = chain === 'base' ? 'Base' : chain === 'robinhood' ? 'Robinhood' : 'Arc';
+  let text = `Top ${top.length} Tokens with accumulation potential on #${label}:\n`;
+  for (const t of top) {
+    const tag = (PLATFORM_LABELS[t.platform] ?? t.platform).replace(/[^a-zA-Z0-9]/g, '');
+    text += `\n$${stripDots(t.symbol)} ${t.ca}\nDeploy: #${tag} MarketCap: ${formatCap(t.m.marketCap)}\n`;
+  }
+
+  const result = await postTweetWithMedia(text.trim(), [uploaded.mediaId]);
+  if (!result.ok) return { chain, posted: false, reason: result.error };
+  await redis.set(LAST_POST_KEY, Date.now());
+  return { chain, posted: true, type: 'top5', tweetId: result.id };
+}
+
+// ---------- Cron handler ----------
+
 export async function GET(req: NextRequest) {
   if (process.env.CRON_SECRET) {
     const auth = req.headers.get('authorization');
@@ -187,13 +256,29 @@ export async function GET(req: NextRequest) {
     }
 
     const origin = req.nextUrl.origin;
-    const NEXT_CHAIN_KEY = 'wyck:autopost:next_chain';
-    const lastChain = await redis.get<string>(NEXT_CHAIN_KEY);
-    const chain: 'base' | 'robinhood' = lastChain === 'base' ? 'robinhood' : 'base';
 
-    const result = await runForChain(chain, origin);
-    await redis.set(NEXT_CHAIN_KEY, chain);
+    // Đủ 4 bài token -> đăng 1 bài Top 5 (xoay vòng Base -> Robinhood -> Arc)
+    const count = Number(await redis.get<number>(COUNT_KEY)) || 0;
+    if (count >= TOP_EVERY) {
+      const lastTop = await redis.get<string>(TOP_CHAIN_KEY);
+      const topChain = CHAINS[(CHAINS.indexOf(lastTop as Chain) + 1) % CHAINS.length];
+      const r = await runTopPost(topChain, origin);
+      await redis.set(TOP_CHAIN_KEY, topChain);
+      if (r.posted) {
+        await redis.set(COUNT_KEY, 0);
+        return NextResponse.json(r);
+      }
+    }
 
+    let best: Awaited<ReturnType<typeof findBestForChain>> = null;
+    for (const c of CHAINS) {
+      const b = await findBestForChain(c, origin);
+      if (b && (!best || b.pct > best.pct)) best = b;
+    }
+    if (!best) return NextResponse.json({ posted: false, reason: 'no matching token on any chain' });
+
+    const result = await postPicked(best);
+    if (result.posted) await redis.incr(COUNT_KEY);
     return NextResponse.json(result);
   } finally {
     const current = await redis.get<string>(LOCK_KEY);
