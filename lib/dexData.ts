@@ -132,19 +132,18 @@ export function getCachedDexData(ca: string): DexData | null {
   return null;
 }
 
-function extractTwitter(pair: any): string | null {
-  const socials = pair?.info?.socials || [];
-  const tw = socials.find((s: any) => s.type === 'twitter');
-  return tw?.url ?? null;
-}
-
-function oldestPairCreatedAt(caPairs: any[], fallback: any): number | null {
-  if (!caPairs.length) return fallback?.pairCreatedAt ?? null;
-  return caPairs.reduce((min: number | null, p: any) => {
-    const t = p.pairCreatedAt ?? null;
-    if (t == null) return min;
-    return min == null ? t : Math.min(min, t);
-  }, null as number | null);
+interface ServerDex {
+  liq: number;
+  vol24h: number;
+  marketCap: number | null;
+  imageUrl: string | null;
+  priceUsd: number | null;
+  h24: number | null;
+  name: string | null;
+  symbol?: string | null;
+  twitter?: string | null;
+  website?: string | null;
+  pairCreatedAt: number | null;
 }
 
 export async function prefetchDexDataBatch(
@@ -159,99 +158,40 @@ export async function prefetchDexDataBatch(
   });
   if (!need.length) return;
 
-  const failedCas: string[] = [];
-
-  const BATCH_SIZE = 30;
-    for (let i = 0; i < need.length; i += BATCH_SIZE) {
-      const chunk = need.slice(i, i + BATCH_SIZE);
-      try {
-        const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${chunk.join(',')}`);
-        if (!res.ok) {
-          console.error('Dexscreener error, status:', res.status, res.statusText);
-        }
-        const json = await res.json();
-        const pairs = json.pairs || [];
+  const BATCH_SIZE = 50;
+  for (let i = 0; i < need.length; i += BATCH_SIZE) {
+    const chunk = need.slice(i, i + BATCH_SIZE);
+    try {
+      const res = await fetch(`/api/dex?chain=${chainId}&cas=${chunk.join(',')}`);
+      if (!res.ok) {
+        console.error('Dex API error, status:', res.status);
+      } else {
+        const map: Record<string, ServerDex> = await res.json();
         chunk.forEach((ca) => {
-          const caPairs = pairs.filter(
-            (p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase() && p.chainId === chainId
-          );
-          const pair = caPairs[0] || pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase());
-          if (!pair) {
-            failedCas.push(ca);
-            return;
-          }
-          const effectivePairs = caPairs.length ? caPairs : [pair];
-          const h24 = pair?.priceChange?.h24;
-          const priceUsd = pair?.priceUsd;
-          const vol24h = effectivePairs.reduce((s: number, p: any) => s + (Number(p.volume?.h24) || 0), 0);
-          const liq = effectivePairs.reduce((s: number, p: any) => s + (Number(p.liquidity?.usd) || 0), 0);
-          const marketCap = pair?.marketCap ?? pair?.fdv;
+          const d = map[ca];
+          if (!d) return;
           cache.set(ca, {
             data: {
-              h24: h24 == null ? null : Number(h24),
-              priceUsd: priceUsd == null ? null : Number(priceUsd),
-              vol24h,
-              liq,
-              marketCap: marketCap == null ? null : Number(marketCap),
-              twitter: extractTwitter(pair),
-              website: pair?.info?.websites?.[0]?.url ?? null,
-              imageUrl: pair?.info?.imageUrl ?? getCachedImage(ca),
-              symbol: pair?.baseToken?.symbol ?? null,
-              name: pair?.baseToken?.name ?? null,
-              pairCreatedAt: oldestPairCreatedAt(effectivePairs, pair),
+              h24: d.h24 ?? null,
+              priceUsd: d.priceUsd ?? null,
+              vol24h: d.vol24h,
+              liq: d.liq,
+              marketCap: d.marketCap ?? null,
+              twitter: d.twitter ?? null,
+              website: d.website ?? null,
+              imageUrl: d.imageUrl ?? getCachedImage(ca),
+              symbol: d.symbol ?? null,
+              name: d.name ?? null,
+              pairCreatedAt: d.pairCreatedAt ?? null,
             },
             timestamp: Date.now(),
           });
-          setCachedImage(ca, pair?.info?.imageUrl);
+          setCachedImage(ca, d.imageUrl);
         });
-      } catch {
-        failedCas.push(...chunk);
       }
-      saveToStorage();
-      onBatch?.();
-      if (i + BATCH_SIZE < need.length) await new Promise((r) => setTimeout(r, 300));
+    } catch (e) {
+      console.error('Dex prefetch failed', e);
     }
-
-  for (const ca of failedCas) {
-    try {
-      const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${ca}`);
-      if (!res.ok) continue;
-      const json = await res.json();
-      const pairs = json.pairs || [];
-      const caPairs = pairs.filter(
-        (p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase() && p.chainId === chainId
-      );
-      const pair = caPairs[0] || pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase());
-      if (!pair) continue;
-      const effectivePairs = caPairs.length ? caPairs : [pair];
-      const h24 = pair?.priceChange?.h24;
-      const priceUsd = pair?.priceUsd;
-      const vol24h = effectivePairs.reduce((s: number, p: any) => s + (Number(p.volume?.h24) || 0), 0);
-      const liq = effectivePairs.reduce((s: number, p: any) => s + (Number(p.liquidity?.usd) || 0), 0);
-      const marketCap = pair?.marketCap ?? pair?.fdv;
-      cache.set(ca, {
-        data: {
-          h24: h24 == null ? null : Number(h24),
-          priceUsd: priceUsd == null ? null : Number(priceUsd),
-          vol24h,
-          liq,
-          marketCap: marketCap == null ? null : Number(marketCap),
-          twitter: extractTwitter(pair),
-          website: pair?.info?.websites?.[0]?.url ?? null,
-          imageUrl: pair?.info?.imageUrl ?? null,
-          symbol: pair?.baseToken?.symbol ?? null,
-          name: pair?.baseToken?.name ?? null,
-          pairCreatedAt: oldestPairCreatedAt(effectivePairs, pair),
-        },
-        timestamp: Date.now(),
-      });
-    } catch {
-      // Skip
-    }
-    await new Promise((r) => setTimeout(r, 150));
-  }
-
-  if (failedCas.length) {
     saveToStorage();
     onBatch?.();
   }
@@ -259,14 +199,10 @@ export async function prefetchDexDataBatch(
 
 export async function fetchLivePrice(ca: string, chainId: string = 'base'): Promise<number | null> {
   try {
-    const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${ca}`).then((r) => r.json());
-    const pairs = res.pairs || [];
-    const caPairs = pairs.filter(
-      (p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase() && p.chainId === chainId
-    );
-    const pair = caPairs[0] || pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase());
-    const priceUsd = pair?.priceUsd;
-    return priceUsd == null ? null : Number(priceUsd);
+    const res = await fetch(`/api/dex?chain=${chainId}&cas=${ca}&live=1`);
+    if (!res.ok) return null;
+    const map: Record<string, ServerDex> = await res.json();
+    return map[ca]?.priceUsd ?? null;
   } catch {
     return null;
   }
@@ -274,85 +210,22 @@ export async function fetchLivePrice(ca: string, chainId: string = 'base'): Prom
 
 export async function fetchFullTokenPairInfo(ca: string, chainId: string = 'base'): Promise<FullPairInfo | null> {
   try {
-    const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${ca}`);
+    const res = await fetch(`/api/dex/pair?ca=${ca}&chain=${chainId}`);
     if (!res.ok) return null;
-    const json = await res.json();
-    const pairs = json.pairs || [];
-    const caPairs = pairs.filter(
-      (p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase() && p.chainId === chainId
-    );
-    const pair =
-      [...caPairs].sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0] ||
-      pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase());
-    if (!pair) return null;
-
-    const effectivePairs = caPairs.length ? caPairs : [pair];
-
-    const topVolumePair =
-      [...effectivePairs].sort((a: any, b: any) => (Number(b.volume?.h24) || 0) - (Number(a.volume?.h24) || 0))[0] ?? pair;
-
-    const socials = pair.info?.socials || [];
-    const tw = socials.find((s: any) => s.type === 'twitter');
-    const tg = socials.find((s: any) => s.type === 'telegram');
-    const dc = socials.find((s: any) => s.type === 'discord');
-
-    const sumField = (getter: (p: any) => number | undefined) =>
-      effectivePairs.reduce((s: number, p: any) => s + (Number(getter(p)) || 0), 0);
-
-    return {
-      pairAddress: pair.pairAddress,
-      topVolumePairAddress: topVolumePair?.pairAddress ?? pair.pairAddress,
-      dexId: pair.dexId,
-      url: pair.url,
-      priceUsd: pair.priceUsd == null ? null : Number(pair.priceUsd),
-      marketCap: pair.marketCap ?? pair.fdv ?? null,
-      fdv: pair.fdv ?? null,
-      liq: sumField((p) => p.liquidity?.usd),
-      pairCreatedAt: oldestPairCreatedAt(effectivePairs, pair),
-      imageUrl: pair.info?.imageUrl ?? getCachedImage(ca),
-      symbol: pair.baseToken?.symbol ?? null,
-      name: pair.baseToken?.name ?? null,
-      twitter: tw?.url ?? null,
-      telegram: tg?.url ?? null,
-      discord: dc?.url ?? null,
-      website: pair.info?.websites?.[0]?.url ?? null,
-      priceChange: {
-        m5: pair.priceChange?.m5 ?? null,
-        h1: pair.priceChange?.h1 ?? null,
-        h6: pair.priceChange?.h6 ?? null,
-        h24: pair.priceChange?.h24 ?? null,
-      },
-      volume: {
-        m5: sumField((p) => p.volume?.m5),
-        h1: sumField((p) => p.volume?.h1),
-        h6: sumField((p) => p.volume?.h6),
-        h24: sumField((p) => p.volume?.h24),
-      },
-      txns: {
-        m5: { buys: effectivePairs.reduce((s: number, p: any) => s + (p.txns?.m5?.buys ?? 0), 0), sells: effectivePairs.reduce((s: number, p: any) => s + (p.txns?.m5?.sells ?? 0), 0) },
-        h1: { buys: effectivePairs.reduce((s: number, p: any) => s + (p.txns?.h1?.buys ?? 0), 0), sells: effectivePairs.reduce((s: number, p: any) => s + (p.txns?.h1?.sells ?? 0), 0) },
-        h6: { buys: effectivePairs.reduce((s: number, p: any) => s + (p.txns?.h6?.buys ?? 0), 0), sells: effectivePairs.reduce((s: number, p: any) => s + (p.txns?.h6?.sells ?? 0), 0) },
-        h24: { buys: effectivePairs.reduce((s: number, p: any) => s + (p.txns?.h24?.buys ?? 0), 0), sells: effectivePairs.reduce((s: number, p: any) => s + (p.txns?.h24?.sells ?? 0), 0) },
-      },
-    };
+    const info: FullPairInfo | null = await res.json();
+    if (!info) return null;
+    return { ...info, imageUrl: info.imageUrl ?? getCachedImage(ca) };
   } catch {
     return null;
   }
 }
 
-const BLOCKSCOUT_BASE_URL: Record<string, string> = {
-  base: 'https://base.blockscout.com',
-  robinhood: 'https://robinhoodchain.blockscout.com',
-};
-
 export async function fetchHoldersCount(ca: string, chainId: string): Promise<number | null> {
-  const base = BLOCKSCOUT_BASE_URL[chainId] ?? BLOCKSCOUT_BASE_URL.base;
   try {
-    const res = await fetch(`${base}/api/v2/tokens/${ca}`);
+    const res = await fetch(`/api/holders?ca=${ca}&chain=${chainId}`);
     if (!res.ok) return null;
     const json = await res.json();
-    const n = Number(json.holders_count);
-    return isNaN(n) ? null : n;
+    return json.holders ?? null;
   } catch {
     return null;
   }

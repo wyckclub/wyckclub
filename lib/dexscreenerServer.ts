@@ -73,6 +73,9 @@ export interface DexBatchInfo {
   priceUsd: number | null;
   h24: number | null;
   name: string | null;
+  symbol: string | null;
+  twitter: string | null;
+  website: string | null;
   pairCreatedAt: number | null;
 }
 
@@ -154,17 +157,18 @@ async function getCachedMany(chainId: string, cas: string[], ttlSeconds: number)
   return out;
 }
 
-async function setCachedMany(chainId: string, entries: Record<string, DexBatchInfo>, ttlSeconds: number) {
+async function setCachedMany(chainId: string, entries: Record<string, DexBatchInfo>, _ttlSeconds: number) {
   const cas = Object.keys(entries);
   if (!cas.length) return;
+  const maxAge = Math.round(DEFAULT_CACHE_TTL_MS / 1000);
   try {
     const blob = await readBlob(chainId);
     const now = Date.now();
     for (const k of Object.keys(blob)) {
-      if (now - blob[k].t >= ttlSeconds * 1000) delete blob[k];
+      if (now - blob[k].t >= maxAge * 1000) delete blob[k];
     }
     cas.forEach((ca) => { blob[ca.toLowerCase()] = { t: now, d: entries[ca] }; });
-    await redis.set(blobKey(chainId), pack(blob), { ex: ttlSeconds });
+    await redis.set(blobKey(chainId), pack(blob), { ex: maxAge });
   } catch {}
 }
 
@@ -215,8 +219,10 @@ export async function fetchDexscreenerBatchMap(
         pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === caLower);
       if (!pair) return;
 
+      const eff = caPairs.length ? caPairs : [pair];
       const sumField = (getter: (p: any) => number | undefined) =>
-        caPairs.length ? caPairs.reduce((s: number, p: any) => s + (Number(getter(p)) || 0), 0) : 0;
+        eff.reduce((s: number, p: any) => s + (Number(getter(p)) || 0), 0);
+      const socials = pair.info?.socials || [];
 
       const info: DexBatchInfo = {
         liq: Math.round(sumField((p) => p.liquidity?.usd)),
@@ -228,7 +234,10 @@ export async function fetchDexscreenerBatchMap(
         priceUsd: pair.priceUsd == null ? null : Number(pair.priceUsd),
         h24: pair.priceChange?.h24 == null ? null : Number(pair.priceChange.h24),
         name: pair.baseToken?.name ?? null,
-        pairCreatedAt: oldestPairCreatedAt(caPairs, pair),
+        symbol: pair.baseToken?.symbol ?? null,
+        twitter: socials.find((s: any) => s.type === 'twitter')?.url ?? null,
+        website: pair.info?.websites?.[0]?.url ?? null,
+        pairCreatedAt: oldestPairCreatedAt(eff, pair),
       };
 
       out[ca] = info;
@@ -251,4 +260,55 @@ export async function fetchDexscreenerSingle(
 ): Promise<DexBatchInfo | null> {
   const map = await fetchDexscreenerBatchMap([ca], chainId, opts);
   return map[ca] ?? null;
+}
+
+import type { FullPairInfo } from '@/lib/dexData';
+
+export async function fetchFullPairInfoServer(ca: string, chainId: string): Promise<FullPairInfo | null> {
+  const json = await fetchDeduped(`https://api.dexscreener.com/latest/dex/tokens/${ca}`, 30, 2);
+  if (!json) return null;
+  const pairs = json.pairs || [];
+  const caLower = ca.toLowerCase();
+  const caPairs = pairs.filter((p: any) => p.baseToken?.address?.toLowerCase() === caLower && p.chainId === chainId);
+  const pair =
+    [...caPairs].sort((a: any, b: any) => (Number(b.liquidity?.usd) || 0) - (Number(a.liquidity?.usd) || 0))[0] ||
+    pairs.find((p: any) => p.baseToken?.address?.toLowerCase() === caLower);
+  if (!pair) return null;
+
+  const eff = caPairs.length ? caPairs : [pair];
+  const topVol = [...eff].sort((a: any, b: any) => (Number(b.volume?.h24) || 0) - (Number(a.volume?.h24) || 0))[0] ?? pair;
+  const socials = pair.info?.socials || [];
+  const soc = (t: string) => socials.find((s: any) => s.type === t)?.url ?? null;
+  const sum = (g: (p: any) => number | undefined) => eff.reduce((s: number, p: any) => s + (Number(g(p)) || 0), 0);
+  const tx = (k: 'm5' | 'h1' | 'h6' | 'h24') => ({
+    buys: eff.reduce((s: number, p: any) => s + (p.txns?.[k]?.buys ?? 0), 0),
+    sells: eff.reduce((s: number, p: any) => s + (p.txns?.[k]?.sells ?? 0), 0),
+  });
+
+  return {
+    pairAddress: pair.pairAddress,
+    topVolumePairAddress: topVol?.pairAddress ?? pair.pairAddress,
+    dexId: pair.dexId,
+    url: pair.url,
+    priceUsd: pair.priceUsd == null ? null : Number(pair.priceUsd),
+    marketCap: pair.marketCap ?? pair.fdv ?? null,
+    fdv: pair.fdv ?? null,
+    liq: sum((p) => p.liquidity?.usd),
+    pairCreatedAt: oldestPairCreatedAt(eff, pair),
+    imageUrl: pair.info?.imageUrl ?? null,
+    symbol: pair.baseToken?.symbol ?? null,
+    name: pair.baseToken?.name ?? null,
+    twitter: soc('twitter'),
+    telegram: soc('telegram'),
+    discord: soc('discord'),
+    website: pair.info?.websites?.[0]?.url ?? null,
+    priceChange: {
+      m5: pair.priceChange?.m5 ?? null,
+      h1: pair.priceChange?.h1 ?? null,
+      h6: pair.priceChange?.h6 ?? null,
+      h24: pair.priceChange?.h24 ?? null,
+    },
+    volume: { m5: sum((p) => p.volume?.m5), h1: sum((p) => p.volume?.h1), h6: sum((p) => p.volume?.h6), h24: sum((p) => p.volume?.h24) },
+    txns: { m5: tx('m5'), h1: tx('h1'), h6: tx('h6'), h24: tx('h24') },
+  };
 }
