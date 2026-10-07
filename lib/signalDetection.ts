@@ -15,8 +15,6 @@ export interface RawEntry {
   display: string;
   topwhale?: string;
   top10?: number;
-  incBull?: number | null;
-  decBear?: number | null;
   timestamp?: string;
 }
 
