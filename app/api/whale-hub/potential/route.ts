@@ -52,10 +52,14 @@ export async function GET(req: NextRequest) {
         price: e.price as number | null,
         topwhale: e.topwhale,
         top10: e.top10 ?? null,
+        incBull: e.incBull ?? null,
+        decBear: e.decBear ?? null,
       }));
 
       const e0 = last7[0];
       const e1 = last7[1];
+      const netBull = e0.incBull != null && e0.decBear != null ? e0.incBull - e0.decBear : null;
+      if (netBull == null || netBull <= 7) continue;
       if (!e1) continue;
 
       const whaleE0 = isWhaleStarredAt(last7, 0);

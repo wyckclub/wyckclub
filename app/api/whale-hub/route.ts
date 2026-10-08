@@ -11,7 +11,7 @@ const redis = new Redis({
 });
 
 const MAX_NOTIFS = 50;
-const MIN_VOL24H = 1000;
+const MIN_VOL24H = 100;
 const ROBINHOOD_CATEGORY = 5;
 const ARC_CATEGORY = 6;
 
@@ -55,7 +55,7 @@ function computeLevel(
   if (hasWhale && isYellow && hasPlus) return 'super';
   if (hasWhale && (hasPlus || isYellow)) return 'strong';
   if (hasWhale || isYellow) return 'medium';
-  if (scoreJump || (hasPlus && latestScore > 3)) return 'inflow';
+  if (scoreJump || (hasPlus && latestScore > 2)) return 'inflow';
   return null;
 }
 
@@ -95,8 +95,8 @@ export async function GET(req: NextRequest) {
     platform: string | null;
   };
   const candidates: Candidate[] = [];
-  const MIN_LIQ = 50000;
-  const MIN_SCORE = 3;
+  const MIN_LIQ = 30000;
+  const MIN_SCORE = 2;
 
   for (const { cat, data } of categories) {
     for (const [ca, token] of Object.entries<any>(data)) {
@@ -117,6 +117,19 @@ export async function GET(req: NextRequest) {
       const level = computeLevel(latest.score, latest.display, last7);
       if (!level) continue;
       if (latest.score <= MIN_SCORE) continue;
+
+      const prev = entries[1];
+      const n = (v: any) => (typeof v === 'number' ? v : null);
+
+      const waiUp = n(latest.top10) != null && n(prev.top10) != null && latest.top10 > prev.top10;
+      const bullUp = n(latest.incBull) != null && n(prev.incBull) != null && latest.incBull > prev.incBull;
+      const bearOk =
+        n(latest.decBear) != null &&
+        (latest.decBear < 3 || (n(prev.decBear) != null && latest.decBear < prev.decBear));
+      const netBull =
+        n(latest.incBull) != null && n(latest.decBear) != null ? latest.incBull - latest.decBear : null;
+
+      if (!(waiUp && bullUp && bearOk && netBull != null && netBull > 6)) continue;
 
       const prevEntry = entries[1];
       const scoreWithWhale = getWhaleStarredScore(latest.display, last7);
