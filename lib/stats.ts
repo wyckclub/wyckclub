@@ -34,30 +34,30 @@ const BASE_CATEGORY_URLS = [
   process.env.WYCK_ROBIN_VERIFY1_URL,
 
   process.env.WYCK_CLANKER1_URL,
-  process.env.WYCK_CLANKER2_URL,
+  //process.env.WYCK_CLANKER2_URL,
   process.env.WYCK_CLANKER3_URL,
 
   process.env.WYCK_BANKRBOT1_URL,
-  process.env.WYCK_BANKRBOT2_URL,
+  //process.env.WYCK_BANKRBOT2_URL,
   process.env.WYCK_BANKRBOT3_URL,
 
   process.env.WYCK_VIRTUALS1_URL,
-  process.env.WYCK_VIRTUALS2_URL,
+  //process.env.WYCK_VIRTUALS2_URL,
   process.env.WYCK_VIRTUALS3_URL,
 
-  process.env.WYCK_ZR1_URL,
-  process.env.WYCK_BASESTONK1_URL,
-  process.env.WYCK_THESTONKS1_URL,
-  process.env.WYCK_O1EXCHANGE1_URL,
+  //process.env.WYCK_ZR1_URL,
+  //process.env.WYCK_BASESTONK1_URL,
+  //process.env.WYCK_THESTONKS1_URL,
+  //process.env.WYCK_O1EXCHANGE1_URL,
 
   process.env.WYCK_B1_URL,
-  process.env.WYCK_B2_URL,
+  //process.env.WYCK_B2_URL,
   process.env.WYCK_B3_URL,
-  process.env.WYCK_B4_URL,
+  //process.env.WYCK_B4_URL,
   process.env.WYCK_2NEW_URL,
 
   process.env.WYCK_B5_URL,
-  process.env.WYCK_B6_URL,
+  //process.env.WYCK_B6_URL,
 
   process.env.WYCK_5NEW_URL,
 ].filter((u): u is string => !!u);
@@ -67,12 +67,12 @@ const ROBINHOOD_CATEGORY_URLS = [
 
   process.env.WYCK_ROBIN_URL,
   process.env.WYCK_ROBIN2_URL,
-  process.env.WYCK_ROBIN2A_URL,
+  //process.env.WYCK_ROBIN2A_URL,
   process.env.WYCK_ROBIN3_URL,
   process.env.WYCK_ROBIN4_URL,
 
   process.env.WYCK_ROBIN5_URL,
-  process.env.WYCK_ROBIN6_URL,
+  //process.env.WYCK_ROBIN6_URL,
 
   process.env.WYCK_ROBIN_PONSFAMILY1_URL,
   process.env.WYCK_ROBIN_PONSFAMILY2_URL,
@@ -83,16 +83,16 @@ const ROBINHOOD_CATEGORY_URLS = [
   process.env.WYCK_ROBIN_PONSFAMILY7_URL,
 
   process.env.WYCK_ROBIN_LONG1_URL,
-  process.env.WYCK_ROBIN_LONG2_URL,
+  //process.env.WYCK_ROBIN_LONG2_URL,
   process.env.WYCK_ROBIN_LONG3_URL,
 
   process.env.WYCK_ROBIN_NOXA1_URL,
-  process.env.WYCK_ROBIN_STONKBROKERS1_URL,
-  process.env.WYCK_ROBIN_O1EXCHANGE1_URL,
+  //process.env.WYCK_ROBIN_STONKBROKERS1_URL,
+  //process.env.WYCK_ROBIN_O1EXCHANGE1_URL,
   process.env.WYCK_ROBIN_BANKRBOT1_URL,
   process.env.WYCK_ROBIN_POOLSTRADE1_URL,
   process.env.WYCK_ROBIN_VIRTUALS1_URL,
-  process.env.WYCK_ROBIN_FLAP1_URL,
+  //process.env.WYCK_ROBIN_FLAP1_URL,
 ].filter((u): u is string => !!u);
 
 const ARC_CATEGORY_URLS = [
@@ -104,7 +104,7 @@ const ARC_CATEGORY_URLS = [
   process.env.WYCK_ARC_ARGUS1_URL,
   process.env.WYCK_ARC_ARGUS2_URL,
   process.env.WYCK_ARC_ARGUS3_URL,
-  process.env.WYCK_ARC_O1EXCHANGE1_URL,
+  //process.env.WYCK_ARC_O1EXCHANGE1_URL,
   process.env.WYCK_ARC_VERIFY1_URL,
 ].filter((u): u is string => !!u);
 
