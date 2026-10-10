@@ -27,6 +27,8 @@ interface Notification {
   top10: number | null;
   prevTop10: number | null;
   platform: string | null;
+  incBull?: number | null;
+  decBear?: number | null;
 }
 
 const LEVEL_STYLE: Record<Notification['level'], string> = {
@@ -360,15 +362,32 @@ export function WhaleHubView({ chain }: { chain: Chain }) {
                     </div>
 
                     <p className="text-sm text-slate-100">{renderMessage(n)}</p>
-                    {n.top10 != null && n.prevTop10 != null && n.top10 !== n.prevTop10 && (() => {
-                      const diff = n.top10 - n.prevTop10;
-                      const isUp = diff > 0;
-                      return (
-                        <p className={`text-xs mt-0.5 ${isUp ? 'text-green-400' : 'text-red-400'}`}>
-                          Whale Accumulation Index: {isUp ? '+' : ''}{diff} ({n.prevTop10}→{n.top10})
-                        </p>
-                      );
-                    })()}
+                      {(() => {
+                        const r = (v: number) => Math.round(v * 10) / 10;
+                        const hasWai = n.top10 != null && n.prevTop10 != null && n.top10 !== n.prevTop10;
+                        const hasBB = n.incBull != null && n.decBear != null;
+                        if (!hasWai && !hasBB) return null;
+                        const diff = hasWai ? n.top10! - n.prevTop10! : 0;
+                        const net = hasBB ? r(n.incBull! - n.decBear!) : 0;
+                        return (
+                          <p className="text-xs mt-0.5 text-slate-300">
+                            {hasWai && (
+                              <span className={diff > 0 ? 'text-green-400' : 'text-red-400'}>
+                                W.A.I: {diff > 0 ? '+' : ''}{diff} ({n.prevTop10}→{n.top10})
+                              </span>
+                            )}
+                            {hasWai && hasBB && ' | '}
+                            {hasBB && (
+                              <>
+                                BullvsBear: {r(n.incBull!)}-{r(n.decBear!)} | Net Bull:{' '}
+                                <span className={net >= 0 ? 'text-green-400' : 'text-red-400'}>
+                                  {net > 0 ? '+' : ''}{net}
+                                </span>
+                              </>
+                            )}
+                          </p>
+                        );
+                      })()}
 
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                       <a

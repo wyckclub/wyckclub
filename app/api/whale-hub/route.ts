@@ -38,6 +38,8 @@ interface Notification {
   top10: number | null;
   prevTop10: number | null;
   platform: string | null;
+  incBull: number | null;
+  decBear: number | null;
 }
 
 function computeLevel(
@@ -93,6 +95,8 @@ export async function GET(req: NextRequest) {
     top10: number | null;
     prevTop10: number | null;
     platform: string | null;
+    incBull: number | null;
+    decBear: number | null;
   };
   const candidates: Candidate[] = [];
   const MIN_LIQ = 30000;
@@ -140,6 +144,8 @@ export async function GET(req: NextRequest) {
         top10: latest.top10 ?? null,
         prevTop10: prevEntry.top10 ?? null,
         platform: token.platform ?? null,
+        incBull: latest.incBull ?? null,
+        decBear: latest.decBear ?? null,
       });
     }
   }
@@ -175,6 +181,8 @@ export async function GET(req: NextRequest) {
         platform: c.platform,
         message: `$${c.symbol} just triggered a SmartMoney signal: ${levelLabel} ${c.scoreWithWhale} (previous ${c.prevWhale})`,
         timestamp: new Date().toISOString(),
+        incBull: c.incBull,
+        decBear: c.decBear,
       };
 
       notifUpdates[c.ca] = JSON.stringify(notif);
