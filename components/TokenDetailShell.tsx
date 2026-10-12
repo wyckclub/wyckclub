@@ -1,28 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useAccount, useSwitchChain } from 'wagmi';
+import { useState } from 'react';
 import { TokenSidebar } from '@/components/TokenSidebar';
 import { TokenDataProvider } from '@/components/TokenDataContext';
 
 type Chain = 'base' | 'robinhood' | 'arc';
 
-const CHAIN_IDS: Record<Chain, number> = { base: 8453, robinhood: 4663, arc: 5042 };
-
 export function TokenDetailShell({
   chain, children,
 }: { chain: Chain; children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { isConnected, chainId } = useAccount();
-  const { switchChain } = useSwitchChain();
-
-  useEffect(() => {
-    if (!isConnected) return;
-    const target = CHAIN_IDS[chain];
-    if (chainId !== target) {
-      switchChain?.({ chainId: target });
-    }
-  }, [chain, isConnected, chainId, switchChain]);
 
   return (
     <TokenDataProvider chain={chain}>

@@ -15,10 +15,9 @@ const MIN_VOL24H = 100;
 const ROBINHOOD_CATEGORY = 5;
 const ARC_CATEGORY = 6;
 
-type Level = 'inflow' | 'medium' | 'strong' | 'super';
+type Level = 'medium' | 'strong' | 'super';
 
 const LEVEL_LABELS: Record<Level, string> = {
-  inflow: 'Inflow',
   medium: 'Medium',
   strong: 'Strong',
   super: 'Super Strong',
@@ -42,6 +41,10 @@ interface Notification {
   decBear: number | null;
 }
 
+function isVerifiedPlatform(platform: string | null | undefined): boolean {
+  return !!platform && !platform.endsWith('_unverified');
+}
+
 function computeLevel(
   latestScore: number,
   latestDisplay: string,
@@ -51,13 +54,10 @@ function computeLevel(
   const hasWhale = scoreWithWhale.includes('🐋');
   const isYellow = getChartScoreTextColorClass(latestScore, last7) === 'text-yellow-400';
   const hasPlus = latestDisplay.endsWith('+');
-  const prevScore = last7[1]?.score;
-  const scoreJump = prevScore != null && latestScore - prevScore > 3;
 
   if (hasWhale && isYellow && hasPlus) return 'super';
   if (hasWhale && (hasPlus || isYellow)) return 'strong';
   if (hasWhale || isYellow) return 'medium';
-  if (scoreJump || (hasPlus && latestScore > 2)) return 'inflow';
   return null;
 }
 
@@ -104,6 +104,8 @@ export async function GET(req: NextRequest) {
 
   for (const { cat, data } of categories) {
     for (const [ca, token] of Object.entries<any>(data)) {
+      if (!isVerifiedPlatform(token.platform)) continue;
+
       const entries = token.entries || [];
       if (!entries.length) continue;
       const latest = entries[0];
@@ -126,14 +128,11 @@ export async function GET(req: NextRequest) {
       const n = (v: any) => (typeof v === 'number' ? v : null);
 
       const waiUp = n(latest.top10) != null && n(prev.top10) != null && latest.top10 > prev.top10;
-      const bullUp = n(latest.incBull) != null && n(prev.incBull) != null && latest.incBull > prev.incBull;
-      const bearOk =
-        n(latest.decBear) != null &&
-        (latest.decBear < 3 || (n(prev.decBear) != null && latest.decBear < prev.decBear));
+      const bearOk = n(latest.decBear) != null && latest.decBear < 3;
       const netBull =
         n(latest.incBull) != null && n(latest.decBear) != null ? latest.incBull - latest.decBear : null;
 
-      if (!(waiUp && bullUp && bearOk && netBull != null && netBull > 6)) continue;
+      if (!(waiUp && bearOk && netBull != null && netBull > 6)) continue;
 
       const prevEntry = entries[1];
       const scoreWithWhale = getWhaleStarredScore(latest.display, last7);
