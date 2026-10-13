@@ -16,7 +16,7 @@ const redis = new Redis({
   token: process.env.KV_REST_API_TOKEN!,
 });
 
-const CACHE_TTL_SECONDS = 240;
+const CACHE_TTL_SECONDS = 120;
 const MEM_TTL_MS = 60000;
 
 interface MemEntry {
@@ -46,29 +46,19 @@ export interface ScoreSource {
 const CATEGORY_SOURCES: Record<string, ScoreSource[]> = {
   '1': [
     { url: process.env.WYCK_CLANKER1_URL },
-    //{ url: process.env.WYCK_CLANKER2_URL },
     { url: process.env.WYCK_CLANKER3_URL },
     { url: process.env.WYCK_BANKRBOT1_URL },
-    //{ url: process.env.WYCK_BANKRBOT2_URL },
     { url: process.env.WYCK_BANKRBOT3_URL },
   ],
   '2': [
     { url: process.env.WYCK_B1_URL },
-    //{ url: process.env.WYCK_B2_URL },
     { url: process.env.WYCK_B3_URL },
-    //{ url: process.env.WYCK_B4_URL },
     { url: process.env.WYCK_B5_URL },
-    //{ url: process.env.WYCK_B6_URL },
     { url: process.env.WYCK_2NEW_URL },
-    //{ url: process.env.WYCK_ZR1_URL },
-    //{ url: process.env.WYCK_O1EXCHANGE1_URL },
-    //{ url: process.env.WYCK_BASESTONK1_URL },
-    //{ url: process.env.WYCK_THESTONKS1_URL },
     { url: process.env.WYCK_BASE_VERIFY1_URL },
   ],
   '3': [
     { url: process.env.WYCK_VIRTUALS1_URL },
-    //{ url: process.env.WYCK_VIRTUALS2_URL },
     { url: process.env.WYCK_VIRTUALS3_URL },
   ],
   '4': [{ url: process.env.WYCK_5NEW_URL }],
@@ -78,7 +68,6 @@ const ROBINHOOD_SOURCES: ScoreSource[] = [
   { url: process.env.WYCK_ROBIN_VERIFY1_URL },
   { url: process.env.WYCK_ROBIN_URL },
   { url: process.env.WYCK_ROBIN2_URL },
-  //{ url: process.env.WYCK_ROBIN2A_URL },
   { url: process.env.WYCK_ROBIN3_URL },
   { url: process.env.WYCK_ROBIN4_URL },
   { url: process.env.WYCK_ROBIN5_URL },
@@ -86,7 +75,6 @@ const ROBINHOOD_SOURCES: ScoreSource[] = [
   { url: process.env.WYCK_ROBIN_BANKRBOT1_URL },
   { url: process.env.WYCK_ROBIN_POOLSTRADE1_URL },
   { url: process.env.WYCK_ROBIN_VIRTUALS1_URL },
-  //{ url: process.env.WYCK_ROBIN_FLAP1_URL },
   { url: process.env.WYCK_ROBIN_PONSFAMILY1_URL },
   { url: process.env.WYCK_ROBIN_PONSFAMILY2_URL },
   { url: process.env.WYCK_ROBIN_PONSFAMILY3_URL },
@@ -95,23 +83,16 @@ const ROBINHOOD_SOURCES: ScoreSource[] = [
   { url: process.env.WYCK_ROBIN_PONSFAMILY6_URL },
   { url: process.env.WYCK_ROBIN_PONSFAMILY7_URL },
   { url: process.env.WYCK_ROBIN_NOXA1_URL },
-  //{ url: process.env.WYCK_ROBIN_STONKBROKERS1_URL },
   { url: process.env.WYCK_ROBIN_LONG1_URL },
-  //{ url: process.env.WYCK_ROBIN_LONG2_URL },
   { url: process.env.WYCK_ROBIN_LONG3_URL },
-  //{ url: process.env.WYCK_ROBIN_O1EXCHANGE1_URL },
 ];
 
 const ARC_SOURCES: ScoreSource[] = [
   { url: process.env.WYCK_ARC1_URL },
   { url: process.env.WYCK_ARC2_URL },
-  //{ url: process.env.WYCK_ARC3_URL },
-  //{ url: process.env.WYCK_ARC4_URL },
   { url: process.env.WYCK_ARC5_URL },
   { url: process.env.WYCK_ARC_ARGUS1_URL },
-  //{ url: process.env.WYCK_ARC_ARGUS2_URL },
   { url: process.env.WYCK_ARC_ARGUS3_URL },
-  //{ url: process.env.WYCK_ARC_O1EXCHANGE1_URL },
   { url: process.env.WYCK_ARC_VERIFY1_URL },
 ];
 
