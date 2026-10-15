@@ -75,6 +75,7 @@ const ROBINHOOD_SOURCES: ScoreSource[] = [
   { url: process.env.WYCK_ROBIN_BANKRBOT1_URL },
   { url: process.env.WYCK_ROBIN_POOLSTRADE1_URL },
   { url: process.env.WYCK_ROBIN_VIRTUALS1_URL },
+  { url: process.env.WYCK_ROBIN_NOXA1_URL },
   { url: process.env.WYCK_ROBIN_PONSFAMILY1_URL },
   { url: process.env.WYCK_ROBIN_PONSFAMILY2_URL },
   { url: process.env.WYCK_ROBIN_PONSFAMILY3_URL },
@@ -82,7 +83,6 @@ const ROBINHOOD_SOURCES: ScoreSource[] = [
   { url: process.env.WYCK_ROBIN_PONSFAMILY5_URL },
   { url: process.env.WYCK_ROBIN_PONSFAMILY6_URL },
   { url: process.env.WYCK_ROBIN_PONSFAMILY7_URL },
-  { url: process.env.WYCK_ROBIN_NOXA1_URL },
   { url: process.env.WYCK_ROBIN_LONG1_URL },
   { url: process.env.WYCK_ROBIN_LONG3_URL },
 ];
@@ -90,7 +90,7 @@ const ROBINHOOD_SOURCES: ScoreSource[] = [
 const ARC_SOURCES: ScoreSource[] = [
   { url: process.env.WYCK_ARC1_URL },
   { url: process.env.WYCK_ARC2_URL },
-  { url: process.env.WYCK_ARC5_URL },
+  { url: process.env.WYCK_ARC4_URL },
   { url: process.env.WYCK_ARC_ARGUS1_URL },
   { url: process.env.WYCK_ARC_ARGUS3_URL },
   { url: process.env.WYCK_ARC_VERIFY1_URL },
