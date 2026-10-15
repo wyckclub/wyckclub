@@ -71,7 +71,6 @@ const ROBINHOOD_SOURCES: ScoreSource[] = [
   { url: process.env.WYCK_ROBIN3_URL },
   { url: process.env.WYCK_ROBIN4_URL },
   { url: process.env.WYCK_ROBIN5_URL },
-  { url: process.env.WYCK_ROBIN6_URL },
   { url: process.env.WYCK_ROBIN_BANKRBOT1_URL },
   { url: process.env.WYCK_ROBIN_POOLSTRADE1_URL },
   { url: process.env.WYCK_ROBIN_VIRTUALS1_URL },
