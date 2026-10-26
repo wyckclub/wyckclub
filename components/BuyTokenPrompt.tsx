@@ -69,6 +69,14 @@ export function BuyTokenPrompt() {
           </div>
         </div>
       ))}
+      <a
+        href={`https://www.pangea.trade/app/t/${WYCK_BASE_ADDRESS}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block text-center text-sm font-semibold text-blue-400 hover:text-blue-300"
+      >
+        WYCK được phát hành trên Pangea — mua được ở cả Base và Robinhood Chain ↗
+      </a>
     </div>
   );
 }
