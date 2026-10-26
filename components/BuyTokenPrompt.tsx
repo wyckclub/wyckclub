@@ -75,7 +75,7 @@ export function BuyTokenPrompt() {
         rel="noopener noreferrer"
         className="block text-center text-sm font-semibold text-blue-400 hover:text-blue-300"
       >
-        WYCK được phát hành trên Pangea — mua được ở cả Base và Robinhood Chain ↗
+        WYCK is launched on Pangea — available on both Base and Robinhood Chain ↗
       </a>
     </div>
   );
