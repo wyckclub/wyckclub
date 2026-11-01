@@ -7,8 +7,8 @@ export const WYCK_ROBINHOOD_ADDRESS = '0x875ab39b84dbd1f962214c013e55a1ffcd8bdc7
 
 export const GATE_TOKEN_ADDRESS = WYCK_ROBINHOOD_ADDRESS;
 
-export const PRO_THRESHOLD = 2_000_000;
-export const VIP_THRESHOLD = 2_000_000;
+export const PRO_THRESHOLD = 1_000_000;
+export const VIP_THRESHOLD = 1_000_000;
 
 const FREE_ACCESS_MODE = false;
 

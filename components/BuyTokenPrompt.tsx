@@ -70,12 +70,12 @@ export function BuyTokenPrompt() {
         </div>
       ))}
       <a
-        href={`https://www.pangea.trade/app/t/${WYCK_BASE_ADDRESS}`}
+        href={`https://dexscreener.com/robinhood/${WYCK_ROBINHOOD_ADDRESS}`}
         target="_blank"
         rel="noopener noreferrer"
         className="block text-center text-sm font-semibold text-blue-400 hover:text-blue-300"
       >
-        WYCK is launched on Pangea — available on both Base and Robinhood Chain ↗
+        WYCK is live
       </a>
     </div>
   );
