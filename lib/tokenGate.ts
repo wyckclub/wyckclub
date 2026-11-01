@@ -3,7 +3,7 @@
 import { useAccount, useBalance } from 'wagmi';
 
 export const WYCK_BASE_ADDRESS = '0x0e4faDFBD8c3a506227e4b6B9A13a02F0E6176eA' as const;
-export const WYCK_ROBINHOOD_ADDRESS = '0x7e3F67409E766650257Ea7436B465b1CcB3FC6EA' as const;
+export const WYCK_ROBINHOOD_ADDRESS = '0x875ab39b84dbd1f962214c013e55a1ffcd8bdc7f' as const;
 
 export const GATE_TOKEN_ADDRESS = WYCK_ROBINHOOD_ADDRESS;
 
