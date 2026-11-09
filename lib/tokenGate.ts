@@ -8,7 +8,7 @@ import { useAccount, useBalance } from 'wagmi';
 // ---------------------------------------------------------------------------
 
 // ONE contract address shared by the 3 EVM networks: Base, Robinhood, BSC
-export const WYCK_EVM_ADDRESS = '0x875ab39b84dbd1f962214c013e55a1ffcd8bdc7f' as const;
+export const WYCK_EVM_ADDRESS = '' as const;
 
 // Solana mint address (leave '' to show "Coming soon" on the homepage)
 export const WYCK_SOLANA_ADDRESS = '';
