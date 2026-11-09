@@ -7,6 +7,7 @@ import {
   getRobinhoodTotalTokens,
   getArcTotalTokens,
 } from '@/lib/stats';
+import { TokenAddressBanner } from '@/components/TokenAddressBanner';
 
 function BaseIcon({ className = 'w-8 h-8' }: { className?: string }) {
   return (
@@ -167,6 +168,8 @@ export default async function Home() {
           </a>
         </div>
       </section>
+
+      <TokenAddressBanner />
 
       <section className="space-y-6">
         <h2 className="text-3xl font-bold text-center text-white">Networks We Track</h2>

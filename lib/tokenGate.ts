@@ -2,10 +2,38 @@
 
 import { useAccount, useBalance } from 'wagmi';
 
-export const WYCK_BASE_ADDRESS = '0x0e4faDFBD8c3a506227e4b6B9A13a02F0E6176eA' as const;
-export const WYCK_ROBINHOOD_ADDRESS = '0x875ab39b84dbd1f962214c013e55a1ffcd8bdc7f' as const;
+// ---------------------------------------------------------------------------
+// Token addresses — edit here, everything else (gating, buy prompt, homepage
+// banner) follows.
+// ---------------------------------------------------------------------------
+
+// ONE contract address shared by the 3 EVM networks: Base, Robinhood, BSC
+export const WYCK_EVM_ADDRESS = '0x875ab39b84dbd1f962214c013e55a1ffcd8bdc7f' as const;
+
+// Solana mint address (leave '' to show "Coming soon" on the homepage)
+export const WYCK_SOLANA_ADDRESS = '';
+
+export const WYCK_BASE_ADDRESS = WYCK_EVM_ADDRESS;
+export const WYCK_ROBINHOOD_ADDRESS = WYCK_EVM_ADDRESS;
+export const WYCK_BSC_ADDRESS = WYCK_EVM_ADDRESS;
 
 export const GATE_TOKEN_ADDRESS = WYCK_ROBINHOOD_ADDRESS;
+
+export type TokenNetworkKey = 'base' | 'robinhood' | 'bsc' | 'solana';
+
+export interface TokenNetworkInfo {
+  key: TokenNetworkKey;
+  label: string;
+  address: string;
+  explorerUrl: string;
+}
+
+export const WYCK_TOKEN_NETWORKS: TokenNetworkInfo[] = [
+  { key: 'base', label: 'Base', address: WYCK_BASE_ADDRESS, explorerUrl: 'https://basescan.org/token/' },
+  { key: 'robinhood', label: 'Robinhood', address: WYCK_ROBINHOOD_ADDRESS, explorerUrl: 'https://robinhoodchain.blockscout.com/token/' },
+  { key: 'bsc', label: 'BSC', address: WYCK_BSC_ADDRESS, explorerUrl: 'https://bscscan.com/token/' },
+  { key: 'solana', label: 'Solana', address: WYCK_SOLANA_ADDRESS, explorerUrl: 'https://solscan.io/token/' },
+];
 
 export const PRO_THRESHOLD = 1_000_000;
 export const VIP_THRESHOLD = 1_000_000;
