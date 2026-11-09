@@ -6,14 +6,15 @@ function requireEnv(key: string): string {
   return v;
 }
 
-const ALCHEMY_URLS: Record<'base' | 'robinhood' | 'arc', string> = {
-  base: requireEnv('WYCK_A_BASE'),
-  robinhood: requireEnv('WYCK_A_ROBINHOOD'),
-  arc: requireEnv('WYCK_A_ARC'),
+const ALCHEMY_ENV: Record<'base' | 'robinhood' | 'arc', string> = {
+  base: 'WYCK_A_BASE',
+  robinhood: 'WYCK_A_ROBINHOOD',
+  arc: 'WYCK_A_ARC',
 };
 
+// Resolved lazily (at request time) so a missing env var can't break `next build`.
 async function alchemyRpc(chainKey: 'base' | 'robinhood' | 'arc', method: string, params: any[]) {
-  const res = await fetch(ALCHEMY_URLS[chainKey], {
+  const res = await fetch(requireEnv(ALCHEMY_ENV[chainKey]), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
