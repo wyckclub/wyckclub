@@ -11,7 +11,7 @@ import { useAccount, useBalance } from 'wagmi';
 export const WYCK_EVM_ADDRESS = '0xd3eaB7BF15cC6659e7921A1547406d43071B96EA' as const;
 
 // Solana mint address (leave '' to show "Coming soon" on the homepage)
-export const WYCK_SOLANA_ADDRESS = '';
+export const WYCK_SOLANA_ADDRESS = '994cLdKTCiQaSUp3j72QnygKKZfz5caqm7CZFYPfpump';
 
 export const WYCK_BASE_ADDRESS = WYCK_EVM_ADDRESS;
 export const WYCK_ROBINHOOD_ADDRESS = WYCK_EVM_ADDRESS;
